@@ -1,0 +1,91 @@
+/* Nested Navigation Styling */
+
+.nav-group-wrapper {
+    margin-bottom: 4px;
+}
+
+.nav-parent {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    transition: var(--transition);
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+}
+
+.nav-parent:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.nav-parent.active-parent {
+    color: var(--primary);
+    background: rgba(19, 127, 236, 0.05);
+}
+
+/* Material Symbols alignment inside parent */
+.nav-parent .material-symbols-outlined {
+    font-size: 22px;
+}
+
+.nav-item-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chevron {
+    font-size: 20px !important;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+}
+
+.chevron.expanded {
+    transform: rotate(180deg);
+}
+
+.nav-children {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+}
+
+.nav-children.show {
+    max-height: 500px;
+    opacity: 1;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-subitem {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px 10px 52px;
+    /* Indentation to align with text */
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 2px;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.nav-subitem:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.nav-subitem.active {
+    color: var(--primary);
+    background: rgba(19, 127, 236, 0.1);
+    font-weight: 600;
+}

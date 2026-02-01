@@ -1,0 +1,98 @@
+api post /auth/login {
+  alias login
+  body {
+    email string required
+    password string required
+  }
+  return schema.AuthResponse required
+}
+
+api post /auth/register {
+  alias register
+  body {
+    email string required
+    password string required
+    fullname string required
+    role string
+    id_factory number
+  }
+  return schema.AuthResponse required
+}
+
+api get /auth/me {
+  alias getMe
+  headers {
+    authorization string required
+  }
+  return table.User required
+}
+
+api put /auth/change-password {
+  alias changePassword
+  headers {
+    authorization string required
+  }
+  body {
+    old_password string required
+    new_password string required
+  }
+  return schema.MessageResponse required
+}
+
+api get /users {
+  alias getUsers
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    search string
+    role string
+    id_factory number
+  }
+  return {
+    total number required
+    data array table.User required
+  } required
+}
+
+api get /users/:id {
+  alias getUserById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.User required
+}
+
+api put /users/:id {
+  alias updateUser
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    email string
+    fullname string
+    role string
+    id_factory number
+    is_active boolean
+  }
+  return table.User required
+}
+
+api delete /users/:id {
+  alias deleteUser
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}

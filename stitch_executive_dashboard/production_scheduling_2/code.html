@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Production Scheduling - FactoryOS ERP</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3b82f6","primary-muted": "#eff6ff",
+                        "background-light": "#f8fafc","surface-white": "#ffffff",
+                        "surface-muted": "#f1f5f9","border-light": "#e2e8f0","text-primary": "#0f172a","text-secondary": "#64748b","task-blue": "#bfdbfe","task-blue-border": "#60a5fa","task-sage": "#dcfce7","task-sage-border": "#86efac","task-gray": "#e2e8f0","task-gray-border": "#94a3b8","task-amber": "#fef3c7","task-amber-border": "#fcd34d",},
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    boxShadow: {
+                        'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .gantt-grid {
+            background-image: linear-gradient(90deg, transparent 127px, #f1f5f9 128px);
+            background-size: 128px 100%;
+        }
+    </style>
+</head>
+<body class="bg-background-light font-display text-text-primary overflow-hidden h-screen flex flex-col antialiased">
+<div class="flex h-full w-full overflow-hidden">
+<aside class="w-64 bg-surface-white border-r border-border-light flex-shrink-0 flex flex-col justify-between hidden md:flex z-20 shadow-subtle">
+<div class="flex flex-col gap-4 p-4">
+<div class="flex gap-3 items-center mb-6 px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-xl size-10 shadow-sm border border-border-light" data-alt="FactoryOS Logo abstract geometric shape" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBrsiy7mSSNalWhTd4wNun14RdN3VgEuzDWEJs_RzWYWeovvD3sK3KRRWSP6gyinQ6TYamv8ktQ_DEoHQxM8N6_LM0N4TGqdH0CSLjskoKtf3FkShi5lagnC5KJZtIRNXiR7nFhQsfK2cD1rZ8_ftKGX71_yqcC4z8Jy_L8Ec9eS8AwdFcANoubvQKM2B1oyY6_Vycl6AbckELKeJMf4HO5PUuPECunFV6Lue8_c45OoNQwovll1WuGAiNGDr5Y1yhqwOMwz492mbU");'></div>
+<div class="flex flex-col">
+<h1 class="text-text-primary text-base font-bold leading-tight">FactoryOS</h1>
+<p class="text-text-secondary text-xs font-medium">Enterprise Edition</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">home</span>
+<span class="text-sm">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-lg shadow-sm font-semibold" href="#">
+<span class="material-symbols-outlined fill-1 text-[20px]">calendar_month</span>
+<span class="text-sm">Production</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="text-sm">Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span>
+<span class="text-sm">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">handyman</span>
+<span class="text-sm">Maintenance</span>
+</a>
+</nav>
+</div>
+<div class="p-4 border-t border-border-light">
+<button class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:text-text-primary w-full font-medium transition-colors">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="text-sm">Logout</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-light">
+<header class="flex items-center justify-between border-b border-border-light bg-surface-white px-6 py-3 h-16 shrink-0 z-20 shadow-sm">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-text-secondary hover:text-text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="text-text-primary text-xl font-bold hidden sm:block tracking-tight">Production Schedule</h2>
+<div class="hidden md:flex items-center rounded-lg bg-surface-muted border border-border-light h-10 w-72 ml-8 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+<div class="text-text-secondary flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-text-primary text-sm focus:ring-0 placeholder:text-text-secondary/70 px-2 font-medium" placeholder="Search orders, SKUs..."/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2.5 right-2.5 size-2 bg-red-500 rounded-full border-2 border-surface-white"></span>
+</button>
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary-muted rounded-lg transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-[1px] bg-border-light mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">Jane Doe</p>
+<p class="text-xs text-text-secondary font-medium">Plant Manager</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border border-border-light shadow-sm" data-alt="Profile picture of plant manager" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAexDDXDveTWUUUhq2WcUZr3IPghJQj4sJm3ZV3S9FdVxp_U-IKodWDTJ5EqvCPYt5siRam16NKLt3kxR47i0GFe3xLjGVuBKgq-ae5y79POWWJ6CRfei5U4vQ1cNyP_5bRXDsA5jW9UXfITYC_j2li3eDcsmXr7BoeQNuDRTQaa6rIO5VR6F1AAG-KH5oX6zdt1oKCKe5LtVBF4FQIF0DXdcSCjqDXWxzL5DvRtEsGfCrR1hOZfnitC-74EvWQNQNr-Ef8x3k2zCo");'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 py-4 bg-surface-white border-b border-border-light z-10">
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-muted border border-border-light rounded-lg p-1 shadow-sm">
+<button class="p-1.5 hover:bg-white rounded-md text-text-secondary hover:text-text-primary hover:shadow-sm transition-all">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="flex items-center gap-2 px-4 border-x border-transparent">
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+<span class="text-sm font-bold text-text-primary">November 2023</span>
+</div>
+<button class="p-1.5 hover:bg-white rounded-md text-text-secondary hover:text-text-primary hover:shadow-sm transition-all">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<div class="flex bg-surface-muted rounded-lg border border-border-light p-1 shadow-sm">
+<button class="px-4 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/50 rounded-md transition-all">Day</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-primary bg-white rounded-md shadow-sm border border-border-light/50">Week</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/50 rounded-md transition-all">Month</button>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center h-10 px-4 border border-border-light bg-white rounded-lg text-text-secondary hover:text-primary hover:border-primary/30 hover:bg-primary-muted/30 transition text-sm font-semibold gap-2 shadow-subtle">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filter
+                    </button>
+<button class="flex items-center justify-center h-10 px-4 border border-border-light bg-white rounded-lg text-text-secondary hover:text-primary hover:border-primary/30 hover:bg-primary-muted/30 transition text-sm font-semibold gap-2 shadow-subtle">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Export
+                    </button>
+<button class="flex items-center justify-center h-10 px-5 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-bold gap-2 shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/30">
+<span class="material-symbols-outlined text-[18px] fill-1">auto_awesome</span>
+                        Auto-Schedule
+                    </button>
+</div>
+</div>
+<div class="flex-1 flex overflow-hidden">
+<div class="flex-1 overflow-auto bg-white relative flex flex-col">
+<div class="sticky top-0 z-30 flex min-w-max bg-surface-white border-b border-border-light shadow-subtle">
+<div class="sticky left-0 z-40 w-64 min-w-[256px] bg-surface-muted/50 backdrop-blur-sm border-r border-border-light p-4 flex items-end pb-3">
+<span class="text-xs font-bold text-text-secondary uppercase tracking-wider">Production Line</span>
+</div>
+<div class="flex h-16">
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Mon</span>
+<span class="text-lg font-bold text-text-primary">13</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-blue-50/50 relative">
+<span class="text-xs text-primary font-bold">Tue</span>
+<span class="text-lg font-bold text-primary">14</span>
+<div class="h-0.5 w-full bg-primary absolute bottom-0"></div>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Wed</span>
+<span class="text-lg font-bold text-text-primary">15</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Thu</span>
+<span class="text-lg font-bold text-text-primary">16</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Fri</span>
+<span class="text-lg font-bold text-text-primary">17</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-gray-50/80">
+<span class="text-xs text-text-secondary font-medium">Sat</span>
+<span class="text-lg font-bold text-text-secondary/50">18</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-gray-50/80">
+<span class="text-xs text-text-secondary font-medium">Sun</span>
+<span class="text-lg font-bold text-text-secondary/50">19</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Mon</span>
+<span class="text-lg font-bold text-text-primary">20</span>
+</div>
+<div class="w-32 border-r border-border-light/40 flex flex-col justify-center items-center px-2 bg-surface-white">
+<span class="text-xs text-text-secondary font-medium">Tue</span>
+<span class="text-lg font-bold text-text-primary">21</span>
+</div>
+</div>
+</div>
+<div class="min-w-max relative">
+<div class="absolute top-0 bottom-0 left-[230px] z-20 w-px bg-primary pointer-events-none">
+<div class="absolute -top-1 -translate-x-1/2 text-[10px] bg-primary text-white px-1.5 py-0.5 rounded shadow-sm font-bold">10:30</div>
+<div class="h-full w-full bg-primary/20 blur-[1px]"></div>
+</div>
+<div class="flex h-28 border-b border-border-light group hover:bg-gray-50 transition-colors">
+<div class="sticky left-0 w-64 min-w-[256px] bg-white group-hover:bg-gray-50 border-r border-border-light p-4 flex flex-col justify-center z-10 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-bold text-sm text-text-primary">Line A - Heavy</h3>
+<p class="text-[11px] font-medium text-text-secondary mt-0.5">Automotive Chassis</p>
+</div>
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 shadow-sm">ACTIVE</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+<div class="bg-green-500 h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-text-secondary font-medium">85% Load</span>
+<span class="text-[10px] text-text-secondary font-medium">500 u/hr</span>
+</div>
+</div>
+<div class="flex-1 relative gantt-grid">
+<div class="absolute top-4 left-4 w-40 h-20 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden flex flex-col cursor-pointer opacity-80 hover:opacity-100 transition-all">
+<div class="h-full w-1.5 bg-gray-400 absolute left-0 top-0"></div>
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div>
+<span class="text-[10px] font-bold text-gray-500 block mb-0.5 tracking-wider">COMPLETED</span>
+<span class="text-sm font-bold text-gray-700 block truncate">WO-3901</span>
+<span class="text-xs text-gray-500 block truncate">Chassis Unit</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Qty: 500</span>
+<span class="material-symbols-outlined text-[16px] text-green-600">check_circle</span>
+</div>
+</div>
+</div>
+<div class="absolute top-4 left-48 w-56 h-20 bg-task-blue/30 border border-task-blue-border/40 rounded-lg shadow-sm overflow-hidden flex flex-col cursor-grab active:cursor-grabbing hover:border-task-blue-border hover:shadow-md transition-all z-10 hover:z-20">
+<div class="h-full w-1.5 bg-blue-500 absolute left-0 top-0"></div>
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div>
+<div class="flex justify-between items-start mb-0.5">
+<span class="text-[10px] font-bold text-blue-700 tracking-wider">IN PROGRESS</span>
+<span class="bg-white/80 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-100 shadow-sm">3h left</span>
+</div>
+<span class="text-sm font-bold text-gray-900 block truncate">WO-3902</span>
+<span class="text-xs font-medium text-gray-600 block truncate">Engine Mount Assembly</span>
+</div>
+<div class="flex justify-between items-end mt-1">
+<div class="flex -space-x-1.5">
+<div class="w-6 h-6 rounded-full bg-cover border-2 border-white shadow-sm" data-alt="Worker A" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSY11J9fwhIKDR0Mgnw9wYd9_sIrKccbrkpjv2LEh__VMGYW_9JOws0sGeDcI3pY6CZGjFFcGAMFEK8Sm8MlDJe8cl9QpmDX6tTZlDvQJVpgwpC4e5wkzU_KnGCikfhJFW6mBM6ddJitOrkG4qTl49JW5ejrBCAjOcOJE-kbiKKupXSSBRbB6LnO23cO9YkPIUyQ7PMi7IvXALOl0R8rZemrr0imHKywHkMMYWUtxP4H61Pn0Suo0tUZnUNGaZyJ9rNYGaA7LPXC8");'></div>
+<div class="w-6 h-6 rounded-full bg-cover border-2 border-white shadow-sm" data-alt="Worker B" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDtep5YO9_yWCTQE5m7UrDwaBFRayD3NXwmwuFI6Id8WJ0RwrSP5gvvEt-6SOiKPx5nPMCi91ESHUZjS-sG_gCLAwStvss2L7r_sZNE744p1_xXv-LcoRufHAh7WKpfVjL8VLBfm2rN_t0i6GoFJE3ApiRMX7xoXQVChS5uuVTkQVLB5_DkzLJsZphGlofQHmgqGB1dKq3quNr9h4kllO1Uqr4Ln08yvcmQn49bHflzJIhN-5GE2KCi2Im4GfA0mwU-T1WMzzWBMR0");'></div>
+</div>
+<div class="w-20 bg-blue-100 rounded-full h-1.5">
+<div class="bg-blue-500 h-1.5 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute top-4 left-[420px] w-64 h-20 bg-white border border-border-light rounded-lg shadow-sm overflow-hidden flex flex-col cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="h-full w-1.5 bg-gray-300 absolute left-0 top-0"></div>
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div>
+<span class="text-[10px] font-bold text-gray-500 block mb-0.5 tracking-wider">SCHEDULED</span>
+<span class="text-sm font-bold text-gray-900 block truncate">WO-3905</span>
+<span class="text-xs text-gray-600 block truncate">Axle Assy - Rear</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-[10px] font-medium text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">Qty: 1200</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex h-28 border-b border-border-light group hover:bg-gray-50 transition-colors">
+<div class="sticky left-0 w-64 min-w-[256px] bg-white group-hover:bg-gray-50 border-r border-border-light p-4 flex flex-col justify-center z-10 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-center mb-2">
+<div>
+<h3 class="font-bold text-sm text-text-primary">Line B - Precision</h3>
+<p class="text-[11px] font-medium text-text-secondary mt-0.5">CNC Machining</p>
+</div>
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">MAINT</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+<div class="bg-gray-300 h-1.5 rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-text-secondary font-medium">Offline</span>
+<span class="text-[10px] text-text-secondary font-medium">120 u/hr</span>
+</div>
+</div>
+<div class="flex-1 relative gantt-grid">
+<div class="absolute top-2 left-32 w-48 h-[calc(100%-16px)] bg-amber-50/50 border border-dashed border-amber-300 rounded-lg flex items-center justify-center backdrop-blur-[1px]">
+<div class="bg-white/90 px-3 py-1.5 rounded-full border border-amber-200 shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 text-sm">handyman</span>
+<span class="text-xs font-bold text-amber-600">Maintenance</span>
+</div>
+</div>
+<div class="absolute top-4 left-[340px] w-48 h-20 bg-white border border-border-light rounded-lg shadow-sm overflow-hidden flex flex-col cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="h-full w-1.5 bg-purple-400 absolute left-0 top-0"></div>
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div>
+<span class="text-[10px] font-bold text-purple-600 block mb-0.5 tracking-wider">QUEUED</span>
+<span class="text-sm font-bold text-gray-900 block truncate">WO-4100</span>
+<span class="text-xs text-gray-600 block truncate">Precision Gears</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">High Priority</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex h-28 border-b border-border-light group hover:bg-gray-50 transition-colors">
+<div class="sticky left-0 w-64 min-w-[256px] bg-white group-hover:bg-gray-50 border-r border-border-light p-4 flex flex-col justify-center z-10 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-center mb-2">
+<div>
+<h3 class="font-bold text-sm text-text-primary">Line C - Paint</h3>
+<p class="text-[11px] font-medium text-text-secondary mt-0.5">Coating &amp; Finish</p>
+</div>
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 shadow-sm">ACTIVE</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+<div class="bg-green-500 h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-text-secondary font-medium">65% Load</span>
+<span class="text-[10px] text-text-secondary font-medium">200 u/hr</span>
+</div>
+</div>
+<div class="flex-1 relative gantt-grid">
+<div class="absolute top-4 left-10 w-96 h-20 bg-task-sage/60 border border-task-sage-border/60 rounded-lg shadow-sm overflow-hidden flex flex-col cursor-grab hover:border-green-400 hover:shadow-md transition-all">
+<div class="h-full w-1.5 bg-green-500 absolute left-0 top-0"></div>
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div class="flex justify-between">
+<div>
+<span class="text-[10px] font-bold text-green-700 block mb-0.5 tracking-wider">IN PROGRESS</span>
+<span class="text-sm font-bold text-gray-900 block truncate">WO-3882</span>
+<span class="text-xs font-medium text-gray-600 block truncate">Body Panels (Midnight Blue)</span>
+</div>
+<div class="bg-white/60 p-1.5 rounded-lg border border-green-100 h-fit">
+<span class="material-symbols-outlined text-green-600 text-[18px]">format_paint</span>
+</div>
+</div>
+<div class="flex justify-between items-end w-full">
+<span class="text-[10px] font-medium text-gray-600">200 Units</span>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-green-700">65%</span>
+<div class="h-1.5 w-16 bg-white/70 rounded-full overflow-hidden border border-green-100">
+<div class="h-full bg-green-500 w-[65%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex h-28 border-b border-border-light group hover:bg-gray-50 transition-colors">
+<div class="sticky left-0 w-64 min-w-[256px] bg-white group-hover:bg-gray-50 border-r border-border-light p-4 flex flex-col justify-center z-10 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-center mb-2">
+<div>
+<h3 class="font-bold text-sm text-text-primary">Line D - Pack</h3>
+<p class="text-[11px] font-medium text-text-secondary mt-0.5">Final Packaging</p>
+</div>
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 shadow-sm">STOPPED</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+<div class="bg-red-400 h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-red-500 font-bold">Error</span>
+<span class="text-[10px] text-text-secondary font-medium">800 u/hr</span>
+</div>
+</div>
+<div class="flex-1 relative gantt-grid">
+<div class="absolute top-4 left-80 w-40 h-20 bg-red-50 border border-red-200 rounded-lg shadow-sm overflow-hidden flex flex-col cursor-grab hover:shadow-red-100 hover:shadow-lg transition-all border-l-4 border-l-red-500">
+<div class="px-3 py-2 flex flex-col justify-between h-full">
+<div>
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold text-red-600 block mb-0.5 tracking-wider">HALTED</span>
+<span class="material-symbols-outlined text-[16px] text-red-500">warning</span>
+</div>
+<span class="text-sm font-bold text-gray-900 block truncate">WO-3990</span>
+<span class="text-xs text-gray-600 block truncate">Packaging</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">Err: Material</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<aside class="w-80 bg-surface-muted/50 border-l border-border-light flex flex-col flex-shrink-0 z-30 shadow-[ -1px_0_3px_0_rgba(0,0,0,0.05)]">
+<div class="p-4 border-b border-border-light flex justify-between items-center bg-white">
+<h3 class="text-sm font-bold text-text-primary uppercase tracking-wide">Unscheduled Orders</h3>
+<span class="bg-primary/10 text-primary border border-primary/20 text-xs font-bold px-2.5 py-0.5 rounded-full">4</span>
+</div>
+<div class="p-4 overflow-y-auto flex-1 flex flex-col gap-3 bg-background-light">
+<div class="p-3 border-2 border-dashed border-border-light rounded-lg text-center bg-white/50 mb-1">
+<p class="text-xs font-medium text-text-secondary">Drag cards onto the timeline to schedule production.</p>
+</div>
+<div class="bg-white p-4 rounded-xl border border-border-light shadow-card cursor-grab hover:border-primary/40 hover:shadow-lg transition-all group active:cursor-grabbing">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">WO-4920</span>
+<span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">drag_indicator</span>
+</div>
+<h4 class="text-sm font-bold text-text-primary mb-1">Engine Assembly V8</h4>
+<div class="flex justify-between items-end mt-3 text-text-secondary">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Quantity</span>
+<span class="text-xs font-semibold text-text-primary">50 Units</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Est. Time</span>
+<span class="text-xs font-semibold text-text-primary">4h 30m</span>
+</div>
+</div>
+<div class="mt-3 pt-2 border-t border-border-light/50 flex gap-2">
+<span class="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-100">High Priority</span>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-border-light shadow-card cursor-grab hover:border-primary/40 hover:shadow-lg transition-all group active:cursor-grabbing">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-text-secondary bg-gray-50 px-2 py-0.5 rounded border border-gray-200">WO-4922</span>
+<span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">drag_indicator</span>
+</div>
+<h4 class="text-sm font-bold text-text-primary mb-1">Transmission Kit</h4>
+<div class="flex justify-between items-end mt-3 text-text-secondary">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Quantity</span>
+<span class="text-xs font-semibold text-text-primary">120 Units</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Est. Time</span>
+<span class="text-xs font-semibold text-text-primary">6h 00m</span>
+</div>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-border-light shadow-card cursor-grab hover:border-primary/40 hover:shadow-lg transition-all group active:cursor-grabbing">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-text-secondary bg-gray-50 px-2 py-0.5 rounded border border-gray-200">WO-4925</span>
+<span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">drag_indicator</span>
+</div>
+<h4 class="text-sm font-bold text-text-primary mb-1">Brake Calipers (Rear)</h4>
+<div class="flex justify-between items-end mt-3 text-text-secondary">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Quantity</span>
+<span class="text-xs font-semibold text-text-primary">500 Units</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Est. Time</span>
+<span class="text-xs font-semibold text-text-primary">2h 15m</span>
+</div>
+</div>
+<div class="mt-3 pt-2 border-t border-border-light/50 flex gap-2">
+<span class="text-[10px] font-bold px-2 py-1 rounded bg-amber-50 text-amber-600 border border-amber-100">Running Late</span>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-border-light shadow-card cursor-grab hover:border-primary/40 hover:shadow-lg transition-all group active:cursor-grabbing opacity-75">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-text-secondary bg-gray-50 px-2 py-0.5 rounded border border-gray-200">WO-4930</span>
+<span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">drag_indicator</span>
+</div>
+<h4 class="text-sm font-bold text-text-primary mb-1">Steering Column</h4>
+<div class="flex justify-between items-end mt-3 text-text-secondary">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Quantity</span>
+<span class="text-xs font-semibold text-text-primary">80 Units</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold uppercase tracking-wider mb-0.5">Est. Time</span>
+<span class="text-xs font-semibold text-text-primary">3h 45m</span>
+</div>
+</div>
+<div class="mt-3 pt-2 border-t border-border-light/50 flex gap-2">
+<span class="text-[10px] font-bold flex items-center gap-1 text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100 w-full justify-center">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                                    Missing Parts
+                                </span>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-border-light bg-white">
+<button class="w-full flex items-center justify-center h-10 bg-surface-muted hover:bg-gray-200 border border-border-light rounded-lg text-text-primary text-sm font-bold transition-all shadow-sm gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Create New Order
+                        </button>
+</div>
+</aside>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,69 @@
+api get /factories {
+  alias getFactories
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    search string
+  }
+  return {
+    total number required
+    data array table.Factory required
+  } required
+}
+
+api get /factories/:id {
+  alias getFactoryById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Factory required
+}
+
+api post /factories {
+  alias createFactory
+  headers {
+    authorization string required
+  }
+  body {
+    code string required
+    name string required
+    address string
+    phone string
+  }
+  return table.Factory required
+}
+
+api put /factories/:id {
+  alias updateFactory
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    code string
+    name string
+    address string
+    phone string
+    is_active boolean
+  }
+  return table.Factory required
+}
+
+api delete /factories/:id {
+  alias deleteFactory
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}

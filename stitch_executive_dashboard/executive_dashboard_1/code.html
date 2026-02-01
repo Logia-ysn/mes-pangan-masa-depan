@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Executive Dashboard - Mfg ERP</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#1d2833", // Slightly lighter than background-dark for cards
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101922; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex w-[260px] flex-col justify-between bg-background-dark border-r border-slate-800 p-4 shrink-0">
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 shadow-lg shadow-blue-900/20" data-alt="Abstract blue geometric logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD469t3qD2kwU_-lTggbG8GA5Uw_DtLtizS_f6DoMZ_1Zu1BYu-SH0_G6N-Y-IOys6wXxGfQYeOZ3p2Worytkby_7qsKsWvF6v0MPtLl-7foHmbQYGQNTzwtZQzbLtESvg699p5Rw_5n8kHnXj6AyekwgKV94DsrixdjZwmnZ_h2zE9lpZpUK3pnjFYwYTc-GOmiHLrElreZ4rJ4gzpuwwa5H_v0f-RWe0GdXEJl70cWNzcinu7lXsaG-5V47ZDBRgbfQ4ZjYHNycw");'></div>
+<h1 class="text-white text-lg font-bold leading-normal tracking-tight">Mfg ERP</h1>
+</div>
+<!-- Navigation -->
+<div class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-600" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">factory</span>
+<p class="text-sm font-medium">Production</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">inventory_2</span>
+<p class="text-sm font-medium">Inventory</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">shopping_cart</span>
+<p class="text-sm font-medium">Orders</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">build</span>
+<p class="text-sm font-medium">Maintenance</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+<p class="text-sm font-medium">Reports</p>
+</a>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="flex flex-col gap-2 border-t border-slate-800 pt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
+<p class="text-sm font-medium">Settings</p>
+</a>
+<div class="flex items-center gap-3 px-3 py-2 mt-2">
+<div class="size-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">JD</div>
+<div class="flex flex-col">
+<p class="text-white text-xs font-medium">John Doe</p>
+<p class="text-slate-500 text-[10px]">Plant Manager</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Top Bar / Header -->
+<div class="flex-none px-6 py-5 border-b border-slate-800 bg-background-dark/95 backdrop-blur z-10">
+<div class="flex flex-wrap justify-between items-end gap-4 max-w-[1400px] mx-auto">
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-2xl font-bold tracking-tight">Executive Dashboard</h2>
+<p class="text-slate-400 text-sm">Real-time manufacturing insights and performance metrics</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+<span>Last 30 Days</span>
+<span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<button class="flex items-center justify-center p-2 rounded-lg bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-6 scroll-smooth">
+<div class="flex flex-col gap-6 max-w-[1400px] mx-auto pb-10">
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- KPI Card 1 -->
+<div class="flex flex-col gap-3 rounded-xl p-5 bg-surface-dark border border-slate-800 hover:border-slate-700 transition-colors shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-400 text-sm font-medium">OEE</p>
+<span class="material-symbols-outlined text-slate-500 text-xl">speed</span>
+</div>
+<div class="flex items-end gap-3">
+<p class="text-white text-3xl font-bold">87%</p>
+<div class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
+                                    0.5%
+                                </div>
+</div>
+<div class="w-full bg-slate-700 h-1 rounded-full mt-1 overflow-hidden">
+<div class="bg-emerald-500 h-1 rounded-full" style="width: 87%"></div>
+</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="flex flex-col gap-3 rounded-xl p-5 bg-surface-dark border border-slate-800 hover:border-slate-700 transition-colors shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-400 text-sm font-medium">Production Vol</p>
+<span class="material-symbols-outlined text-slate-500 text-xl">precision_manufacturing</span>
+</div>
+<div class="flex items-end gap-3">
+<p class="text-white text-3xl font-bold">12.4k</p>
+<div class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
+                                    5.0%
+                                </div>
+</div>
+<div class="h-8 flex items-end gap-1 mt-1">
+<div class="w-1 bg-slate-700 h-[40%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[60%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[50%] rounded-sm"></div>
+<div class="w-1 bg-primary h-[80%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[60%] rounded-sm"></div>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="flex flex-col gap-3 rounded-xl p-5 bg-surface-dark border border-slate-800 hover:border-slate-700 transition-colors shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-400 text-sm font-medium">Inventory Value</p>
+<span class="material-symbols-outlined text-slate-500 text-xl">inventory</span>
+</div>
+<div class="flex items-end gap-3">
+<p class="text-white text-3xl font-bold">$1.2M</p>
+<div class="flex items-center text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_down</span>
+                                    2.0%
+                                </div>
+</div>
+<div class="w-full bg-slate-700 h-1 rounded-full mt-1 overflow-hidden">
+<div class="bg-rose-500 h-1 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- KPI Card 4 -->
+<div class="flex flex-col gap-3 rounded-xl p-5 bg-surface-dark border border-slate-800 hover:border-slate-700 transition-colors shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-slate-400 text-sm font-medium">Revenue</p>
+<span class="material-symbols-outlined text-slate-500 text-xl">payments</span>
+</div>
+<div class="flex items-end gap-3">
+<p class="text-white text-3xl font-bold">$4.5M</p>
+<div class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
+                                    1.2%
+                                </div>
+</div>
+<div class="h-8 flex items-end gap-1 mt-1">
+<div class="w-1 bg-slate-700 h-[30%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[45%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[35%] rounded-sm"></div>
+<div class="w-1 bg-slate-700 h-[60%] rounded-sm"></div>
+<div class="w-1 bg-emerald-500 h-[90%] rounded-sm"></div>
+</div>
+</div>
+</div>
+<!-- Main Chart Section -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Production Trends Chart (Takes up 2 cols) -->
+<div class="xl:col-span-2 rounded-xl bg-surface-dark border border-slate-800 p-6 shadow-sm">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="text-white text-lg font-semibold">Production Trends</h3>
+<p class="text-slate-400 text-sm">Monthly output vs Target</p>
+</div>
+<div class="flex bg-slate-800 rounded-lg p-0.5">
+<button class="px-3 py-1 text-xs font-medium text-white bg-slate-700 rounded-md shadow">Daily</button>
+<button class="px-3 py-1 text-xs font-medium text-slate-400 hover:text-white transition-colors">Weekly</button>
+<button class="px-3 py-1 text-xs font-medium text-slate-400 hover:text-white transition-colors">Monthly</button>
+</div>
+</div>
+<!-- Graph Area -->
+<div class="relative w-full h-[280px]">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 300">
+<!-- Grid Lines -->
+<line stroke="#334155" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="250" y2="250"></line>
+<line stroke="#334155" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="175" y2="175"></line>
+<line stroke="#334155" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="100" y2="100"></line>
+<line stroke="#334155" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="25" y2="25"></line>
+<!-- Gradient Fill -->
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#137fec" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#137fec" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0 200 C100 200, 150 100, 200 120 S 300 180, 400 150 S 500 50, 600 80 S 700 120, 800 100 V 300 H 0 Z" fill="url(#chartGradient)"></path>
+<!-- Line Path -->
+<path d="M0 200 C100 200, 150 100, 200 120 S 300 180, 400 150 S 500 50, 600 80 S 700 120, 800 100" fill="none" stroke="#137fec" stroke-linecap="round" stroke-width="3"></path>
+<!-- Secondary Dashed Line -->
+<path d="M0 220 C100 230, 150 180, 200 190 S 300 220, 400 200 S 500 150, 600 170 S 700 180, 800 160" fill="none" stroke="#64748b" stroke-dasharray="6 4" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="flex justify-between mt-2 text-xs text-slate-500 font-medium px-1">
+<span>Mon</span>
+<span>Tue</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Sun</span>
+</div>
+</div>
+</div>
+<!-- Inventory Distribution (Takes up 1 col) -->
+<div class="flex flex-col rounded-xl bg-surface-dark border border-slate-800 p-6 shadow-sm h-full">
+<h3 class="text-white text-lg font-semibold mb-1">Inventory Distribution</h3>
+<p class="text-slate-400 text-sm mb-6">By category type</p>
+<div class="flex flex-1 items-center justify-center relative min-h-[200px]">
+<!-- Donut Chart SVG -->
+<svg class="transform -rotate-90" height="200" viewbox="0 0 100 100" width="200">
+<!-- Background Circle -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#1e293b" stroke-width="12"></circle>
+<!-- Segments -->
+<!-- Finished Goods (35%) -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#137fec" stroke-dasharray="35 65" stroke-dashoffset="0" stroke-width="12"></circle>
+<!-- Raw Materials (40%) -->
+<circle class="opacity-60" cx="50" cy="50" fill="transparent" r="40" stroke="#3b82f6" stroke-dasharray="40 60" stroke-dashoffset="-35" stroke-width="12"></circle>
+<!-- WIP (25%) -->
+<circle class="opacity-30" cx="50" cy="50" fill="transparent" r="40" stroke="#93c5fd" stroke-dasharray="25 75" stroke-dashoffset="-75" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<span class="text-2xl font-bold text-white">100%</span>
+<span class="text-[10px] text-slate-400 uppercase tracking-wider">Total</span>
+</div>
+</div>
+<div class="flex flex-col gap-3 mt-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-sm text-slate-300">Finished Goods</span>
+</div>
+<span class="text-sm font-bold text-white">35%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary opacity-60"></div>
+<span class="text-sm text-slate-300">Raw Materials</span>
+</div>
+<span class="text-sm font-bold text-white">40%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary opacity-30"></div>
+<span class="text-sm text-slate-300">WIP</span>
+</div>
+<span class="text-sm font-bold text-white">25%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Alerts & Detailed Table -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Recent Alerts -->
+<div class="rounded-xl bg-surface-dark border border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
+<div class="p-5 border-b border-slate-800 flex justify-between items-center bg-red-950/20">
+<h3 class="text-white text-lg font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">warning</span>
+                                    Recent Alerts
+                                </h3>
+<span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-bold">3 Critical</span>
+</div>
+<div class="flex flex-col divide-y divide-slate-800">
+<div class="p-4 flex gap-4 hover:bg-slate-800/50 transition-colors">
+<div class="flex-none pt-1">
+<div class="size-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-white">Critical: CNC Machine 04 Overheating</p>
+<p class="text-xs text-slate-400 mt-1">Temperature exceeded safety threshold by 15°C.</p>
+</div>
+<span class="text-xs text-slate-500 whitespace-nowrap">10m ago</span>
+</div>
+<div class="p-4 flex gap-4 hover:bg-slate-800/50 transition-colors">
+<div class="flex-none pt-1">
+<div class="size-2 rounded-full bg-orange-500"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-white">Warning: Low Stock on Polymer Resins</p>
+<p class="text-xs text-slate-400 mt-1">Inventory level dropped below reorder point.</p>
+</div>
+<span class="text-xs text-slate-500 whitespace-nowrap">2h ago</span>
+</div>
+<div class="p-4 flex gap-4 hover:bg-slate-800/50 transition-colors">
+<div class="flex-none pt-1">
+<div class="size-2 rounded-full bg-blue-500"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-white">Info: Shift B Efficiency Report Ready</p>
+<p class="text-xs text-slate-400 mt-1">Daily efficiency report is available for review.</p>
+</div>
+<span class="text-xs text-slate-500 whitespace-nowrap">4h ago</span>
+</div>
+<div class="p-4 flex items-center justify-center">
+<button class="text-sm text-primary hover:text-blue-400 font-medium transition-colors">View All Alerts</button>
+</div>
+</div>
+</div>
+<!-- Active Production Orders -->
+<div class="xl:col-span-2 rounded-xl bg-surface-dark border border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
+<div class="p-5 border-b border-slate-800 flex justify-between items-center">
+<h3 class="text-white text-lg font-semibold">Active Production Orders</h3>
+<button class="text-sm text-slate-400 hover:text-white transition-colors">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider">
+<th class="px-6 py-4 font-semibold">Order ID</th>
+<th class="px-6 py-4 font-semibold">Product</th>
+<th class="px-6 py-4 font-semibold">Status</th>
+<th class="px-6 py-4 font-semibold">Progress</th>
+<th class="px-6 py-4 font-semibold text-right">Due Date</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-800 text-sm">
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-white">#ORD-2023-884</td>
+<td class="px-6 py-4 text-slate-300">Ind. Pump Series X</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400">
+                                                    In Progress
+                                                </span>
+</td>
+<td class="px-6 py-4 align-middle">
+<div class="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 rounded-full" style="width: 75%"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400 text-right">Oct 24, 2023</td>
+</tr>
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-white">#ORD-2023-885</td>
+<td class="px-6 py-4 text-slate-300">Hydraulic Valve B2</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400">
+                                                    Quality Check
+                                                </span>
+</td>
+<td class="px-6 py-4 align-middle">
+<div class="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 95%"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400 text-right">Oct 25, 2023</td>
+</tr>
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-white">#ORD-2023-886</td>
+<td class="px-6 py-4 text-slate-300">Steel Chassis Frame</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-400">
+                                                    Scheduled
+                                                </span>
+</td>
+<td class="px-6 py-4 align-middle">
+<div class="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-amber-500 rounded-full" style="width: 10%"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400 text-right">Oct 28, 2023</td>
+</tr>
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-white">#ORD-2023-887</td>
+<td class="px-6 py-4 text-slate-300">Control Panel V5</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400">
+                                                    In Progress
+                                                </span>
+</td>
+<td class="px-6 py-4 align-middle">
+<div class="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 rounded-full" style="width: 45%"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400 text-right">Oct 30, 2023</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

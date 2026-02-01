@@ -1,0 +1,222 @@
+api get /employees {
+  alias getEmployees
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    search string
+    department string
+    employment_status string
+    is_active boolean
+  }
+  return {
+    total number required
+    data array table.Employee required
+  } required
+}
+
+api get /employees/:id {
+  alias getEmployeeById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Employee required
+}
+
+api post /employees {
+  alias createEmployee
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    id_user number
+    employee_code string required
+    fullname string required
+    nik string
+    phone string
+    email string
+    address string
+    birth_date string
+    birth_place string
+    gender string required
+    religion string
+    marital_status string
+    position string required
+    department string
+    join_date string required
+    employment_status string
+    salary number
+  }
+  return table.Employee required
+}
+
+api put /employees/:id {
+  alias updateEmployee
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    id_factory number
+    id_user number
+    employee_code string
+    fullname string
+    nik string
+    phone string
+    email string
+    address string
+    birth_date string
+    birth_place string
+    gender string
+    religion string
+    marital_status string
+    position string
+    department string
+    join_date string
+    employment_status string
+    salary number
+    is_active boolean
+  }
+  return table.Employee required
+}
+
+api delete /employees/:id {
+  alias deleteEmployee
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /attendances {
+  alias getAttendances
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_employee number
+    status string
+    start_date string
+    end_date string
+  }
+  return {
+    total number required
+    data array table.Attendance required
+  } required
+}
+
+api get /attendances/:id {
+  alias getAttendanceById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Attendance required
+}
+
+api post /attendances {
+  alias createAttendance
+  headers {
+    authorization string required
+  }
+  body {
+    id_employee number required
+    attendance_date string required
+    check_in_time string
+    check_out_time string
+    status string
+    notes string
+  }
+  return table.Attendance required
+}
+
+api put /attendances/:id {
+  alias updateAttendance
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    attendance_date string
+    check_in_time string
+    check_out_time string
+    status string
+    notes string
+  }
+  return table.Attendance required
+}
+
+api delete /attendances/:id {
+  alias deleteAttendance
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /reports/attendance-summary {
+  alias getAttendanceSummary
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    id_employee number
+    start_date string required
+    end_date string required
+  }
+  return {
+    total_present number required
+    total_absent number required
+    total_sick number required
+    total_leave number required
+    total_permission number required
+    attendance_rate number required
+  } required
+}
+
+api get /reports/employee-demographics {
+  alias getEmployeeDemographics
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+  }
+  return {
+    total_employees number required
+    by_gender array {
+      gender string required
+      count number required
+    } required
+    by_department array {
+      department string required
+      count number required
+    } required
+    by_employment_status array {
+      status string required
+      count number required
+    } required
+  } required
+}

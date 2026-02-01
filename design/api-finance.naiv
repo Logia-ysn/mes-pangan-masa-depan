@@ -1,0 +1,160 @@
+api get /expense-categories {
+  alias getExpenseCategories
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    search string
+  }
+  return {
+    total number required
+    data array table.ExpenseCategory required
+  } required
+}
+
+api get /expense-categories/:id {
+  alias getExpenseCategoryById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.ExpenseCategory required
+}
+
+api post /expense-categories {
+  alias createExpenseCategory
+  headers {
+    authorization string required
+  }
+  body {
+    code string required
+    name string required
+    description string
+  }
+  return table.ExpenseCategory required
+}
+
+api put /expense-categories/:id {
+  alias updateExpenseCategory
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    code string
+    name string
+    description string
+  }
+  return table.ExpenseCategory required
+}
+
+api delete /expense-categories/:id {
+  alias deleteExpenseCategory
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /daily-expenses {
+  alias getDailyExpenses
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    id_expense_category number
+    start_date string
+    end_date string
+  }
+  return {
+    total number required
+    data array table.DailyExpense required
+  } required
+}
+
+api get /daily-expenses/:id {
+  alias getDailyExpenseById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.DailyExpense required
+}
+
+api post /daily-expenses {
+  alias createDailyExpense
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    id_expense_category number required
+    expense_date string required
+    amount number required
+    description string required
+    receipt_url string
+  }
+  return table.DailyExpense required
+}
+
+api put /daily-expenses/:id {
+  alias updateDailyExpense
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    id_expense_category number
+    expense_date string
+    amount number
+    description string
+    receipt_url string
+  }
+  return table.DailyExpense required
+}
+
+api delete /daily-expenses/:id {
+  alias deleteDailyExpense
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /reports/expense-summary {
+  alias getExpenseSummary
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    start_date string required
+    end_date string required
+  }
+  return {
+    total_expense number required
+    by_category array {
+      category_name string required
+      total number required
+    } required
+  } required
+}

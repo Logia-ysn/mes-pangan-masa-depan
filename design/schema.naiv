@@ -1,0 +1,22 @@
+schema AuthResponse {
+  token string required
+  user table.User required
+}
+
+schema PaginatedResponse {
+  total number required
+  page number required
+  limit number required
+}
+
+schema MessageResponse {
+  message string required
+  success boolean required
+}
+
+schema DashboardStats {
+  total_production number required
+  total_revenue number required
+  total_expenses number required
+  total_employees number required
+}

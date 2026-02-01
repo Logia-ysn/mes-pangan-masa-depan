@@ -1,0 +1,13 @@
+import { T_deleteProductType } from "../types/api/T_deleteProductType";
+import { ProductType } from "../types/model/table/ProductType";
+import { getUserFromToken } from "../utility/auth";
+
+export const t_deleteProductType: T_deleteProductType = async (req, res) => {
+  await getUserFromToken(req.headers.authorization);
+
+  const productType = await ProductType.findOne({ where: { id: req.path.id } });
+  if (!productType) throw new Error('Product type not found');
+
+  await productType.remove();
+  return { message: 'Product type deleted successfully', success: true };
+}

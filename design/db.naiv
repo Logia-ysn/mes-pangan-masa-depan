@@ -1,0 +1,281 @@
+table User {
+  id bigint pk inc notnull
+  email varchar(100) unique notnull
+  password_hash varchar(255) notnull
+  fullname varchar(200) notnull
+  role enum.UserRole notnull default=OPERATOR
+  id_factory Factory.id
+  is_active boolean notnull default=true
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  OPERATOR
+}
+
+table Factory {
+  id bigint pk inc notnull
+  code varchar(20) unique notnull
+  name varchar(200) notnull
+  address text
+  phone varchar(20)
+  is_active boolean notnull default=true
+  created_at timestamp notnull default=NOW()
+}
+
+table ProductType {
+  id bigint pk inc notnull
+  code varchar(20) unique notnull
+  name varchar(100) notnull
+  description text
+  unit varchar(20) notnull default="kg"
+}
+
+table Worksheet {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  worksheet_date date notnull
+  shift enum.WorkshiftType notnull
+  gabah_input decimal(15,2) notnull
+  beras_output decimal(15,2) notnull
+  menir_output decimal(15,2) notnull default=0
+  dedak_output decimal(15,2) notnull default=0
+  sekam_output decimal(15,2) notnull default=0
+  rendemen decimal(5,2)
+  machine_hours decimal(5,2) notnull default=0
+  downtime_hours decimal(5,2) notnull default=0
+  downtime_reason text
+  notes text
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}
+
+enum WorkshiftType {
+  SHIFT_1
+  SHIFT_2
+  SHIFT_3
+}
+
+table Stock {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_product_type ProductType.id notnull
+  quantity decimal(15,2) notnull default=0
+  unit varchar(20) notnull default="kg"
+  updated_at timestamp notnull default=NOW()
+}
+
+table StockMovement {
+  id bigint pk inc notnull
+  id_stock Stock.id notnull
+  id_user User.id notnull
+  movement_type enum.MovementType notnull
+  quantity decimal(15,2) notnull
+  reference_type varchar(50)
+  reference_id bigint
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+table Machine {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  code varchar(50) unique notnull
+  name varchar(200) notnull
+  machine_type varchar(100)
+  capacity_per_hour decimal(10,2)
+  status enum.MachineStatus notnull default=ACTIVE
+  last_maintenance_date date
+  next_maintenance_date date
+}
+
+enum MachineStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+table Maintenance {
+  id bigint pk inc notnull
+  id_machine Machine.id notnull
+  id_user User.id notnull
+  maintenance_type enum.MaintenanceType notnull
+  maintenance_date date notnull
+  cost decimal(15,2) notnull default=0
+  description text
+  parts_replaced text
+  next_maintenance_date date
+  created_at timestamp notnull default=NOW()
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+}
+
+table Customer {
+  id bigint pk inc notnull
+  code varchar(20) unique notnull
+  name varchar(200) notnull
+  contact_person varchar(200)
+  phone varchar(20)
+  email varchar(100)
+  address text
+  is_active boolean notnull default=true
+  created_at timestamp notnull default=NOW()
+}
+
+table Supplier {
+  id bigint pk inc notnull
+  code varchar(20) unique notnull
+  name varchar(200) notnull
+  contact_person varchar(200)
+  phone varchar(20)
+  email varchar(100)
+  address text
+  is_active boolean notnull default=true
+  created_at timestamp notnull default=NOW()
+}
+
+table Invoice {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_customer Customer.id notnull
+  id_user User.id notnull
+  invoice_number varchar(50) unique notnull
+  invoice_date date notnull
+  due_date date notnull
+  subtotal decimal(15,2) notnull default=0
+  tax decimal(15,2) notnull default=0
+  discount decimal(15,2) notnull default=0
+  total decimal(15,2) notnull default=0
+  status enum.InvoiceStatus notnull default=DRAFT
+  notes text
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIAL
+  CANCELLED
+}
+
+table InvoiceItem {
+  id bigint pk inc notnull
+  id_invoice Invoice.id notnull
+  id_product_type ProductType.id notnull
+  quantity decimal(15,2) notnull
+  unit_price decimal(15,2) notnull
+  subtotal decimal(15,2) notnull
+}
+
+table Payment {
+  id bigint pk inc notnull
+  id_invoice Invoice.id notnull
+  id_user User.id notnull
+  payment_date date notnull
+  amount decimal(15,2) notnull
+  payment_method enum.PaymentMethodType notnull
+  reference_number varchar(100)
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+enum PaymentMethodType {
+  CASH
+  TRANSFER
+  CHECK
+  GIRO
+}
+
+table ExpenseCategory {
+  id bigint pk inc notnull
+  code varchar(20) unique notnull
+  name varchar(100) notnull
+  description text
+}
+
+table DailyExpense {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  id_expense_category ExpenseCategory.id notnull
+  expense_date date notnull
+  amount decimal(15,2) notnull
+  description text notnull
+  receipt_url varchar(255)
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}
+
+table Employee {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id
+  employee_code varchar(20) unique notnull
+  fullname varchar(200) notnull
+  nik varchar(16)
+  phone varchar(20)
+  email varchar(100)
+  address text
+  birth_date date
+  birth_place varchar(100)
+  gender enum.Gender notnull
+  religion varchar(50)
+  marital_status varchar(50)
+  position varchar(100) notnull
+  department varchar(100)
+  join_date date notnull
+  employment_status enum.EmploymentStatus notnull default=PERMANENT
+  salary decimal(15,2)
+  is_active boolean notnull default=true
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EmploymentStatus {
+  PERMANENT
+  CONTRACT
+  DAILY
+  INTERN
+}
+
+table Attendance {
+  id bigint pk inc notnull
+  id_employee Employee.id notnull
+  id_user User.id notnull
+  attendance_date date notnull
+  check_in_time time
+  check_out_time time
+  status enum.AttendanceStatus notnull default=PRESENT
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  SICK
+  LEAVE
+  PERMISSION
+}

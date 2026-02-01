@@ -1,0 +1,90 @@
+api get /dashboard/stats {
+  alias getDashboardStats
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    start_date string
+    end_date string
+  }
+  return {
+    total_gabah_input number required
+    total_beras_output number required
+    average_rendemen number required
+    total_revenue number required
+    total_expenses number required
+    total_employees number required
+    production_trend array {
+      date string required
+      gabah_input number required
+      beras_output number required
+    } required
+  } required
+}
+
+api get /reports/production-summary {
+  alias getProductionSummary
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    start_date string required
+    end_date string required
+  }
+  return {
+    total_gabah_input number required
+    total_beras_output number required
+    total_menir_output number required
+    total_dedak_output number required
+    total_sekam_output number required
+    average_rendemen number required
+    total_machine_hours number required
+    total_downtime_hours number required
+    oee number required
+  } required
+}
+
+api get /reports/sales-summary {
+  alias getSalesSummary
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    start_date string required
+    end_date string required
+  }
+  return {
+    total_invoices number required
+    total_revenue number required
+    total_paid number required
+    total_outstanding number required
+    by_customer array {
+      customer_name string required
+      total number required
+    } required
+  } required
+}
+
+api get /reports/cogm {
+  alias getCOGMReport
+  headers {
+    authorization string required
+  }
+  query {
+    id_factory number
+    start_date string required
+    end_date string required
+  }
+  return {
+    total_production_cost number required
+    total_beras_output number required
+    cost_per_kg number required
+    breakdown array {
+      category string required
+      amount number required
+    } required
+  } required
+}

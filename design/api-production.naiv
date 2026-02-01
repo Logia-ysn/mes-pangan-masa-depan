@@ -1,0 +1,399 @@
+api get /product-types {
+  alias getProductTypes
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    search string
+  }
+  return {
+    total number required
+    data array table.ProductType required
+  } required
+}
+
+api get /product-types/:id {
+  alias getProductTypeById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.ProductType required
+}
+
+api post /product-types {
+  alias createProductType
+  headers {
+    authorization string required
+  }
+  body {
+    code string required
+    name string required
+    description string
+    unit string
+  }
+  return table.ProductType required
+}
+
+api put /product-types/:id {
+  alias updateProductType
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    code string
+    name string
+    description string
+    unit string
+  }
+  return table.ProductType required
+}
+
+api delete /product-types/:id {
+  alias deleteProductType
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /worksheets {
+  alias getWorksheets
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    start_date string
+    end_date string
+    shift string
+  }
+  return {
+    total number required
+    data array table.Worksheet required
+  } required
+}
+
+api get /worksheets/:id {
+  alias getWorksheetById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Worksheet required
+}
+
+api post /worksheets {
+  alias createWorksheet
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    worksheet_date string required
+    shift string required
+    gabah_input number required
+    beras_output number required
+    menir_output number
+    dedak_output number
+    sekam_output number
+    machine_hours number
+    downtime_hours number
+    downtime_reason string
+    notes string
+  }
+  return table.Worksheet required
+}
+
+api put /worksheets/:id {
+  alias updateWorksheet
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    worksheet_date string
+    shift string
+    gabah_input number
+    beras_output number
+    menir_output number
+    dedak_output number
+    sekam_output number
+    machine_hours number
+    downtime_hours number
+    downtime_reason string
+    notes string
+  }
+  return table.Worksheet required
+}
+
+api delete /worksheets/:id {
+  alias deleteWorksheet
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /stocks {
+  alias getStocks
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    id_product_type number
+  }
+  return {
+    total number required
+    data array table.Stock required
+  } required
+}
+
+api get /stocks/:id {
+  alias getStockById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Stock required
+}
+
+api post /stocks {
+  alias createStock
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    id_product_type number required
+    quantity number required
+    unit string
+  }
+  return table.Stock required
+}
+
+api put /stocks/:id {
+  alias updateStock
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    quantity number
+    unit string
+  }
+  return table.Stock required
+}
+
+api get /stock-movements {
+  alias getStockMovements
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_stock number
+    movement_type string
+    start_date string
+    end_date string
+  }
+  return {
+    total number required
+    data array table.StockMovement required
+  } required
+}
+
+api post /stock-movements {
+  alias createStockMovement
+  headers {
+    authorization string required
+  }
+  body {
+    id_stock number required
+    movement_type string required
+    quantity number required
+    reference_type string
+    reference_id number
+    notes string
+  }
+  return table.StockMovement required
+}
+
+api get /machines {
+  alias getMachines
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    status string
+  }
+  return {
+    total number required
+    data array table.Machine required
+  } required
+}
+
+api get /machines/:id {
+  alias getMachineById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Machine required
+}
+
+api post /machines {
+  alias createMachine
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    code string required
+    name string required
+    machine_type string
+    capacity_per_hour number
+    status string
+  }
+  return table.Machine required
+}
+
+api put /machines/:id {
+  alias updateMachine
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    code string
+    name string
+    machine_type string
+    capacity_per_hour number
+    status string
+    last_maintenance_date string
+    next_maintenance_date string
+  }
+  return table.Machine required
+}
+
+api delete /machines/:id {
+  alias deleteMachine
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
+
+api get /maintenances {
+  alias getMaintenances
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_machine number
+    maintenance_type string
+    start_date string
+    end_date string
+  }
+  return {
+    total number required
+    data array table.Maintenance required
+  } required
+}
+
+api get /maintenances/:id {
+  alias getMaintenanceById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.Maintenance required
+}
+
+api post /maintenances {
+  alias createMaintenance
+  headers {
+    authorization string required
+  }
+  body {
+    id_machine number required
+    maintenance_type string required
+    maintenance_date string required
+    cost number
+    description string
+    parts_replaced string
+    next_maintenance_date string
+  }
+  return table.Maintenance required
+}
+
+api put /maintenances/:id {
+  alias updateMaintenance
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    maintenance_type string
+    maintenance_date string
+    cost number
+    description string
+    parts_replaced string
+    next_maintenance_date string
+  }
+  return table.Maintenance required
+}
+
+api delete /maintenances/:id {
+  alias deleteMaintenance
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}

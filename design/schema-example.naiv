@@ -1,4 +1,0 @@
-schema AuthResponse {
-  token string required
-  data table.User required
-}

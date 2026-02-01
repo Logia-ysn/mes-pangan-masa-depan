@@ -1,0 +1,174 @@
+
+> erp-pangan-masa-depan@1.0.0 dev
+> npm run build && npm start
+
+
+> erp-pangan-masa-depan@1.0.0 build
+> rm -rf dist && tsc
+
+
+> erp-pangan-masa-depan@1.0.0 start
+> node dist
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+✅api [normal] 'put /auth/change-password' (T_changePassword) is ready
+✅api [normal] 'post /attendances' (T_createAttendance) is ready
+✅api [normal] 'post /customers' (T_createCustomer) is ready
+✅api [normal] 'post /daily-expenses' (T_createDailyExpense) is ready
+✅api [normal] 'post /employees' (T_createEmployee) is ready
+✅api [normal] 'post /expense-categories' (T_createExpenseCategory) is ready
+✅api [normal] 'post /factories' (T_createFactory) is ready
+✅api [normal] 'post /invoices' (T_createInvoice) is ready
+✅api [normal] 'post /invoices/:id/items' (T_createInvoiceItem) is ready
+✅api [normal] 'post /machines' (T_createMachine) is ready
+✅api [normal] 'post /maintenances' (T_createMaintenance) is ready
+✅api [normal] 'post /output-products' (T_createOutputProduct) is ready
+✅api [normal] 'post /payments' (T_createPayment) is ready
+✅api [normal] 'post /process-categories' (T_createProcessCategory) is ready
+✅api [normal] 'post /product-types' (T_createProductType) is ready
+✅api [normal] 'post /quality-parameters' (T_createQualityParameter) is ready
+✅api [normal] 'post /raw-material-categories' (T_createRawMaterialCategory) is ready
+✅api [normal] 'post /raw-material-varieties' (T_createRawMaterialVariety) is ready
+✅api [normal] 'post /stocks' (T_createStock) is ready
+✅api [normal] 'post /stock-movements' (T_createStockMovement) is ready
+✅api [normal] 'post /suppliers' (T_createSupplier) is ready
+✅api [normal] 'post /worksheets' (T_createWorksheet) is ready
+✅api [normal] 'delete /attendances/:id' (T_deleteAttendance) is ready
+✅api [normal] 'delete /customers/:id' (T_deleteCustomer) is ready
+✅api [normal] 'delete /daily-expenses/:id' (T_deleteDailyExpense) is ready
+✅api [normal] 'delete /employees/:id' (T_deleteEmployee) is ready
+✅api [normal] 'delete /expense-categories/:id' (T_deleteExpenseCategory) is ready
+✅api [normal] 'delete /factories/:id' (T_deleteFactory) is ready
+✅api [normal] 'delete /invoices/:id' (T_deleteInvoice) is ready
+✅api [normal] 'delete /invoice-items/:id' (T_deleteInvoiceItem) is ready
+✅api [normal] 'delete /machines/:id' (T_deleteMachine) is ready
+✅api [normal] 'delete /maintenances/:id' (T_deleteMaintenance) is ready
+✅api [normal] 'delete /payments/:id' (T_deletePayment) is ready
+✅api [normal] 'delete /product-types/:id' (T_deleteProductType) is ready
+✅api [normal] 'delete /quality-parameters/:id' (T_deleteQualityParameter) is ready
+⚠️ api 'undefined undefined' doesnt have alias name, skip.
+⚠️ api 'undefined undefined' doesnt have alias name, skip.
+✅api [normal] 'delete /suppliers/:id' (T_deleteSupplier) is ready
+✅api [normal] 'delete /users/:id' (T_deleteUser) is ready
+✅api [normal] 'delete /worksheets/:id' (T_deleteWorksheet) is ready
+✅api [normal] 'get /attendances/:id' (T_getAttendanceById) is ready
+✅api [normal] 'get /reports/attendance-summary' (T_getAttendanceSummary) is ready
+✅api [normal] 'get /attendances' (T_getAttendances) is ready
+✅api [normal] 'get /reports/cogm' (T_getCOGMReport) is ready
+✅api [normal] 'get /customers/:id' (T_getCustomerById) is ready
+✅api [normal] 'get /customers' (T_getCustomers) is ready
+✅api [normal] 'get /daily-expenses/:id' (T_getDailyExpenseById) is ready
+✅api [normal] 'get /daily-expenses' (T_getDailyExpenses) is ready
+✅api [normal] 'get /dashboard/stats' (T_getDashboardStats) is ready
+✅api [normal] 'get /employees/:id' (T_getEmployeeById) is ready
+✅api [normal] 'get /reports/employee-demographics' (T_getEmployeeDemographics) is ready
+✅api [normal] 'get /employees' (T_getEmployees) is ready
+✅api [normal] 'get /expense-categories' (T_getExpenseCategories) is ready
+✅api [normal] 'get /expense-categories/:id' (T_getExpenseCategoryById) is ready
+✅api [normal] 'get /reports/expense-summary' (T_getExpenseSummary) is ready
+✅api [normal] 'get /factories' (T_getFactories) is ready
+✅api [normal] 'get /factories/:id' (T_getFactoryById) is ready
+✅api [normal] 'get /invoices/:id' (T_getInvoiceById) is ready
+✅api [normal] 'get /invoices/:id/items' (T_getInvoiceItems) is ready
+✅api [normal] 'get /invoices' (T_getInvoices) is ready
+✅api [normal] 'get /machines/:id' (T_getMachineById) is ready
+✅api [normal] 'get /machines' (T_getMachines) is ready
+✅api [normal] 'get /maintenances/:id' (T_getMaintenanceById) is ready
+✅api [normal] 'get /maintenances' (T_getMaintenances) is ready
+✅api [normal] 'get /auth/me' (T_getMe) is ready
+✅api [normal] 'get /output-products' (T_getOutputProducts) is ready
+✅api [normal] 'get /payments/:id' (T_getPaymentById) is ready
+✅api [normal] 'get /payments' (T_getPayments) is ready
+✅api [normal] 'get /process-categories' (T_getProcessCategories) is ready
+✅api [normal] 'get /product-types/:id' (T_getProductTypeById) is ready
+✅api [normal] 'get /product-types' (T_getProductTypes) is ready
+✅api [normal] 'get /reports/production-summary' (T_getProductionSummary) is ready
+✅api [normal] 'get /quality-parameters' (T_getQualityParameters) is ready
+✅api [normal] 'get /raw-material-categories' (T_getRawMaterialCategories) is ready
+✅api [normal] 'get /raw-material-varieties' (T_getRawMaterialVarieties) is ready
+✅api [normal] 'get /reports/sales-summary' (T_getSalesSummary) is ready
+✅api [normal] 'get /stocks/:id' (T_getStockById) is ready
+✅api [normal] 'get /stock-movements' (T_getStockMovements) is ready
+✅api [normal] 'get /stocks' (T_getStocks) is ready
+✅api [normal] 'get /suppliers/:id' (T_getSupplierById) is ready
+✅api [normal] 'get /suppliers' (T_getSuppliers) is ready
+✅api [normal] 'get /users/:id' (T_getUserById) is ready
+✅api [normal] 'get /users' (T_getUsers) is ready
+✅api [normal] 'get /worksheets/:id' (T_getWorksheetById) is ready
+✅api [normal] 'get /worksheets' (T_getWorksheets) is ready
+✅api [normal] 'post /auth/login' (T_login) is ready
+✅api [normal] 'post /auth/register' (T_register) is ready
+✅api [normal] 'post /reset-data' (T_resetData) is ready
+✅api [normal] 'post /seed-data' (T_seedData) is ready
+✅api [normal] 'post /quality-analysis' (T_submitQualityAnalysis) is ready
+✅api [normal] 'put /attendances/:id' (T_updateAttendance) is ready
+✅api [normal] 'put /customers/:id' (T_updateCustomer) is ready
+✅api [normal] 'put /daily-expenses/:id' (T_updateDailyExpense) is ready
+✅api [normal] 'put /employees/:id' (T_updateEmployee) is ready
+✅api [normal] 'put /expense-categories/:id' (T_updateExpenseCategory) is ready
+✅api [normal] 'put /factories/:id' (T_updateFactory) is ready
+✅api [normal] 'put /invoices/:id' (T_updateInvoice) is ready
+✅api [normal] 'put /invoice-items/:id' (T_updateInvoiceItem) is ready
+✅api [normal] 'put /machines/:id' (T_updateMachine) is ready
+✅api [normal] 'put /maintenances/:id' (T_updateMaintenance) is ready
+✅api [normal] 'put /payments/:id' (T_updatePayment) is ready
+✅api [normal] 'put /product-types/:id' (T_updateProductType) is ready
+✅api [normal] 'put /quality-parameters/:id' (T_updateQualityParameter) is ready
+✅api [normal] 'put /stocks/:id' (T_updateStock) is ready
+✅api [normal] 'put /suppliers/:id' (T_updateSupplier) is ready
+✅api [normal] 'put /users/:id' (T_updateUser) is ready
+✅api [normal] 'put /worksheets/:id' (T_updateWorksheet) is ready
+
+⚡️[server]: Server is running at http://localhost:3000
+Creating worksheet: {
+  id_factory: 6,
+  worksheet_date: '2026-01-26',
+  shift: 'SHIFT_1',
+  id_machine: 22,
+  id_output_product: 1,
+  process_steps: '["DRYING","HUSKING","STONER_POLISHER_1","STONER_POLISHER_2"]',
+  batch_code: 'P1-20260126-1172',
+  input_batches: [
+    {
+      id_stock: 34,
+      quantity: 10000,
+      unit_price: 7500,
+      total_cost: 75000000
+    }
+  ],
+  side_products: [
+    {
+      product_code: 'BEKATUL',
+      product_name: 'Bekatul',
+      quantity: 0,
+      unit_price: 0,
+      total_value: 0,
+      is_auto_calculated: false,
+      auto_percentage: 0
+    },
+    {
+      product_code: 'SEKAM',
+      product_name: 'Sekam',
+      quantity: 1500,
+      unit_price: 100,
+      total_value: 150000,
+      is_auto_calculated: true,
+      auto_percentage: 15
+    }
+  ],
+  gabah_input: 10000,
+  beras_output: 7000,
+  menir_output: 0,
+  dedak_output: 0,
+  sekam_output: 1500,
+  machine_hours: 8,
+  downtime_hours: 0,
+  production_cost: 450,
+  raw_material_cost: 75000000,
+  side_product_revenue: 150000,
+  hpp: 74850450,
+  hpp_per_kg: 10692.921428571428,
+  notes: 'Operator ID: 15'
+}
+ProductType PK not found, skipping stock update

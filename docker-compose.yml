@@ -1,7 +1,40 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp_pangan_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: erp_pangan_masa_depan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
   naiv:
     build: .
-    container_name: boilerplate
+    container_name: erp_pangan_api
     ports:
       - "9415:9415"
+    depends_on:
+      - db
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
+      DB_NAME: erp_pangan_masa_depan
+      ML_SERVICE_URL: http://ml-service:8000
     restart: always
+
+  ml-service:
+    build: ./ml-service
+    container_name: erp_pangan_ml
+    ports:
+      - "8000:8000"
+    restart: always
+
+volumes:
+  postgres_data:
