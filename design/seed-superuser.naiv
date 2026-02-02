@@ -1,0 +1,10 @@
+api post /seed-superuser {
+  alias seedSuperuser
+  body {
+    secretKey string required
+  }
+  return {
+    success boolean required
+    message string required
+  }
+}

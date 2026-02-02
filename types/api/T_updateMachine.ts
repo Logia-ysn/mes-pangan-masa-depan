@@ -18,59 +18,25 @@ export class T_updateMachine_body {
   @IsOptional()
   @IsString({ message: 'code must be a string' })
   code?: string
-
   @IsOptional()
   @IsString({ message: 'name must be a string' })
   name?: string
-
   @IsOptional()
   @IsString({ message: 'machine_type must be a string' })
   machine_type?: string
-
-  @IsOptional()
-  @IsString({ message: 'serial_number must be a string' })
-  serial_number?: string
-
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'manufacture_year must be a number' })
-  manufacture_year?: number
-
   @IsOptional()
   @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
   @IsNumber({}, { message: 'capacity_per_hour must be a number (decimal)' })
   capacity_per_hour?: number
-
   @IsOptional()
   @IsString({ message: 'status must be a string' })
   status?: string
-
   @IsOptional()
   @IsString({ message: 'last_maintenance_date must be a string' })
   last_maintenance_date?: string
-
   @IsOptional()
   @IsString({ message: 'next_maintenance_date must be a string' })
   next_maintenance_date?: string
-
-  @IsOptional()
-  @IsString({ message: 'purchase_date must be a string' })
-  purchase_date?: string
-
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'vendor_id must be a number' })
-  vendor_id?: number
-
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'purchase_price must be a number' })
-  purchase_price?: number
-
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'warranty_months must be a number' })
-  warranty_months?: number
 }
 
 export type T_updateMachine = (request: {

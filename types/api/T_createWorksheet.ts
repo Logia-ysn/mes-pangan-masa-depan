@@ -53,53 +53,6 @@ export class T_createWorksheet_body {
   @IsOptional()
   @IsString({ message: 'notes must be a string' })
   notes?: string
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'input_batch_id must be a number' })
-  input_batch_id?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'id_machine must be a number' })
-  id_machine?: number
-  @IsOptional()
-  @IsString({ message: 'input_category_code must be a string' })
-  input_category_code?: string
-  @IsOptional()
-  @IsString({ message: 'process_step must be a string' })
-  process_step?: string
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'production_cost must be a number' })
-  production_cost?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'id_output_product must be a number' })
-  id_output_product?: number
-  @IsOptional()
-  @IsString({ message: 'process_steps must be a string' })
-  process_steps?: string
-  @IsOptional()
-  @IsString({ message: 'batch_code must be a string' })
-  batch_code?: string
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'raw_material_cost must be a number' })
-  raw_material_cost?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'side_product_revenue must be a number' })
-  side_product_revenue?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'hpp must be a number' })
-  hpp?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'hpp_per_kg must be a number' })
-  hpp_per_kg?: number
-  @IsOptional()
-  @IsArray()
-  input_batches?: any[]
 }
 
 export type T_createWorksheet = (request: {
