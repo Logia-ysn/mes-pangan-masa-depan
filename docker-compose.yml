@@ -1,4 +1,25 @@
+# ==================================
+# Docker Compose - ERP Pangan Masa Depan
+# ==================================
+#
+# CARA PAKAI:
+# 1. Install Docker Desktop: https://docker.com/products/docker-desktop
+# 2. Buka terminal di folder ini
+# 3. Jalankan: docker-compose up -d
+# 4. Buka browser: http://localhost
+#
+# PERINTAH BERGUNA:
+# - Lihat status: docker-compose ps
+# - Lihat logs: docker-compose logs -f
+# - Stop semua: docker-compose down
+# - Rebuild: docker-compose up -d --build
+#
+# ==================================
+
 services:
+  # ==================================
+  # Database PostgreSQL
+  # ==================================
   db:
     image: postgres:16-alpine
     container_name: erp_pangan_db
@@ -11,14 +32,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ==================================
+  # Backend API (Node.js + TypeScript)
+  # ==================================
   naiv:
     build: .
     container_name: erp_pangan_api
     ports:
-      - "9415:9415"
+      - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DB_TYPE: postgres
       DB_HOST: db
@@ -26,14 +56,33 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres123
       DB_NAME: erp_pangan_masa_depan
+      PORT: 3000
+      JWT_SECRET: super-secret-jwt-key-ganti-ini-di-production
       ML_SERVICE_URL: http://ml-service:8000
     restart: always
 
+  # ==================================
+  # ML Service (Python + FastAPI)
+  # ==================================
   ml-service:
     build: ./ml-service
     container_name: erp_pangan_ml
     ports:
       - "8000:8000"
+    restart: always
+
+  # ==================================
+  # Frontend (React + Nginx)
+  # ==================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: erp_pangan_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - naiv
     restart: always
 
 volumes:
