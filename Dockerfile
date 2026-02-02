@@ -1,3 +1,6 @@
+# ==================================
+# Backend Dockerfile
+# ==================================
 FROM node:20
 
 WORKDIR /app
@@ -9,8 +12,14 @@ RUN npm install
 # Copy source
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x docker-entrypoint.sh
+
 # Build step
 RUN npm run build
 
-# Run app
-CMD ["npm", "start"]
+# Expose port
+EXPOSE 3000
+
+# Run with entrypoint script
+CMD ["./docker-entrypoint.sh"]

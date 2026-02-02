@@ -10,7 +10,8 @@
     "codegen-init": "npx ts-node ./generate-initial-api.ts",
     "build": "rm -rf dist && tsc",
     "start": "node dist",
-    "dev": "npm run build && npm start"
+    "dev": "npm run build && npm start",
+    "seed-admin": "npx ts-node ./seed-admin.ts"
   },
   "keywords": [],
   "author": "",
