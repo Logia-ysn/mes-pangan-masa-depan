@@ -3,3 +3,7 @@ node_modules
 dist
 .config
 .env
+venv
+__pycache__
+.DS_Store
+*.pyc

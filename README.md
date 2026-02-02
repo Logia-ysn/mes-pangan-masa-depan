@@ -1,125 +1,372 @@
-# Naiv | API with Typescript
+# 🌾 ERP Pangan Masa Depan
 
-Install **Naiv Developer Tools** on your VSCode or VSCodium
+> **Modern ERP Manufacturing System with AI-Powered Quality Analysis for Rice Mill Industry**
 
-- VSCode Extension Link: https://marketplace.visualstudio.com/items?itemName=NaivDeveloper.naiv-vscode-extension
-- VSCodium Extension Link: https://open-vsx.org/extension/NaivDeveloper/naiv-vscode-extension
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
+[![TypeORM](https://img.shields.io/badge/TypeORM-0.3-orange.svg)](https://typeorm.io/)
+[![Python](https://img.shields.io/badge/Python-3.9+-yellow.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-AI Agent please read `INSTRUCTION.md` as your base knowledge to walk through NAIV framework.
+---
 
-## Design Process
+## 📋 Deskripsi
 
-Before start writing API program:
-1. Define your data schema, relationships, and constraints. A well-structured schema reduces technical debt later.
-2. Define API endpoints and its request/response formats.
+**ERP Pangan Masa Depan** adalah sistem Enterprise Resource Planning (ERP) generasi terbaru yang dirancang khusus untuk industri penggilingan padi modern. Sistem ini mengintegrasikan **Machine Learning** untuk analisis kualitas gabah secara otomatis, menjadikannya solusi unik di industri ini.
 
-Take a look at our design example on `design` folder, it is simple and self-explain format.
+Dengan arsitektur **Layered Architecture** yang bersih dan modular, sistem ini mudah dikembangkan, di-maintain, dan di-deploy baik secara lokal maupun cloud.
 
-Click **Open Editor** to modify the design or create a new file with extension `.naiv` on the same folder. All the design files inside `design` folder are connected and can cross-reference to each other.
+### 🎯 Visi
+Memberdayakan industri penggilingan padi dengan teknologi modern untuk meningkatkan efisiensi, akurasi, dan profitabilitas.
 
-## Generate API Types
+---
 
-After design process, compile the design into typescript language:
+## ✨ Fitur Utama
+
+### 🤖 AI-Powered Quality Analysis
+- **Color Grading**: Analisis warna gabah otomatis menggunakan Computer Vision (OpenCV + HSV Segmentation)
+- **Dynamic Calibration**: Konfigurasi ambang batas warna (Hue, Saturation, Value) melalui database
+- **Point-Based Grading System**: Sistem penilaian kualitas berbasis poin (1-30) dengan 9 tingkat grade (KW 1:1 hingga KW 3:3)
+- **Real-time Analysis**: Upload foto gabah dan dapatkan hasil analisis dalam hitungan detik
+
+### 🏭 Production Management
+- **Worksheet Management**: Kelola lembar kerja produksi harian dengan tracking input/output
+- **Multi-Factory Support**: Dukungan untuk PMD 1 & PMD 2 dengan output product berbeda
+- **Process Steps Tracking**: Monitoring proses Drying, Husking, Polishing, dan Packing
+- **HPP Calculation**: Hitung Harga Pokok Produksi secara otomatis
+- **Side Product Tracking**: Kelola produk samping (Bekatul, Sekam, Menir)
+
+### 📦 Inventory & Stock Management
+- **Real-time Stock Tracking**: Monitor stok bahan baku dan produk jadi
+- **Batch Management**: Tracking batch dari penerimaan hingga produksi
+- **Stock Movement History**: Riwayat lengkap pergerakan stok
+- **Multi-Product Type**: Dukungan GKP, GKG, PK, Glosor, Beras berbagai grade
+
+### 💰 Finance Management
+- **Daily Expenses**: Pencatatan pengeluaran harian
+- **COGM Analysis**: Analisis Cost of Goods Manufactured
+- **Expense Categories**: Kategorisasi pengeluaran terstruktur
+
+### 👥 HRD Management
+- **Attendance Tracking**: Pencatatan kehadiran karyawan
+- **Employee Database**: Manajemen data karyawan lengkap
+- **Demographics Report**: Laporan demografi karyawan
+
+### 📊 Sales & Customer Management
+- **Invoice Management**: Pembuatan dan manajemen faktur
+- **Customer Database**: Database pelanggan terintegrasi
+- **Payment Tracking**: Tracking pembayaran
+
+### 🔧 Advanced Features
+- **OEE Monitoring**: Overall Equipment Effectiveness tracking
+- **Machine Maintenance**: Penjadwalan dan tracking maintenance mesin
+- **Export & Print**: Export data ke CSV dan cetak laporan
+- **Dark/Light Theme**: UI modern dengan dukungan tema gelap/terang
+
+---
+
+## 🏗️ Tech Stack
+
+### Backend
+| Technology | Description |
+|------------|-------------|
+| **Node.js** | JavaScript runtime |
+| **TypeScript** | Type-safe JavaScript |
+| **Express.js** | Web framework |
+| **TypeORM** | ORM untuk database |
+| **MySQL/PostgreSQL** | Database |
+| **JWT** | Authentication |
+| **NAIV Framework** | API design & codegen |
+
+### Frontend
+| Technology | Description |
+|------------|-------------|
+| **React 18** | UI Library |
+| **Vite** | Build tool & dev server |
+| **Vanilla CSS** | Custom styling dengan glassmorphism |
+| **Recharts** | Data visualization |
+| **Material Symbols** | Icon library |
+
+### Machine Learning Service
+| Technology | Description |
+|------------|-------------|
+| **Python 3.9+** | ML runtime |
+| **OpenCV** | Computer vision |
+| **NumPy** | Numerical computing |
+| **FastAPI** (optional) | ML API server |
+
+---
+
+## 📁 Project Structure
+
+```
+erp-pangan-masa-depan/
+├── 📁 design/                 # NAIV API design files (.naiv)
+├── 📁 types/                  # Generated TypeScript types
+│   ├── api/                  # API type definitions
+│   └── model/                # Database model types
+├── 📁 implementation/         # API handler implementations
+├── 📁 src/
+│   ├── services/             # Business logic layer
+│   ├── repositories/         # Data access layer
+│   ├── dto/                  # Data Transfer Objects
+│   ├── utils/                # Utilities & helpers
+│   └── ml/                   # ML Python scripts
+├── 📁 frontend/               # React frontend application
+│   ├── src/
+│   │   ├── components/       # Reusable components
+│   │   ├── pages/            # Page components
+│   │   ├── contexts/         # React contexts
+│   │   ├── services/         # API services
+│   │   └── utils/            # Frontend utilities
+│   └── public/               # Static assets
+├── 📁 ml-service/             # Machine Learning service
+│   └── app/                  # FastAPI ML application
+├── 📁 migration/              # Database migrations
+├── 📄 data-source.ts          # TypeORM configuration
+├── 📄 index.ts                # Server entry point
+├── 📄 package.json            # Node.js dependencies
+└── 📄 CHANGELOG.md            # Version history
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js 18+**
+- **npm** atau **yarn**
+- **Python 3.9+** (untuk ML service)
+- **MySQL** atau **PostgreSQL**
+- **Git**
+
+### Installation
 
 ```bash
-npm run codegen
-```
+# 1. Clone repository
+git clone https://github.com/Logia-ysn/erp-pangan-masa-depan.git
 
-it will create a new folder `types` with all generated typescript files. You should not modify the files since it will be regenerated later if you change the data or API design.
+# 2. Masuk ke direktori project
+cd erp-pangan-masa-depan
 
-## Write API Implementation
+# 3. Install backend dependencies
+npm install
 
-On the API design you can see `alias` key followed by a function-like name, look at a simple api design below
+# 4. Setup environment
+cp .env.example .env
+# Edit .env dengan database credentials Anda
 
-```
-api get /my-course {
-  alias getMyCourse
-  headers {
-    authorization string required
-  }
-  query {
-    limit number
-    offset number
-    q string
-  }
-  return {
-    total number required
-    data table.Course required
-  } required
-}
-```
-
-The design will be compiled into a typescript types with name:
-
-```typescript
-type T_getMyCourse
-```
-
-combination of `T_` + `getMyCourse`, same pattern apply for other API alias name.
-
-Now you can implement a function for the API on the file `implementation/getMyCourse.ts` like below:
-
-```typescript
-// implementation/getMyCourse.ts
-
-import { T_getMyCourse } from "../types/api/getMyCourse";
-
-export const getMyCourse: T_getMyCourse = async req => {
-  // 
-}
-```
-
-You should place the function name inside folder `implementation` with exactly same file name with alias API name and also same for the `export const` name, otherwise the server will not recognize your API implementation.
-
-## Run Server
-
-Before running the server, make sure you already have configure you database connection correctly. Look at the **Database Migration Guide** for db configuration.
-
-```bash
-npm run build && npm start
-```
-
-The server will automatically put your implementation function as controller/logic process on each API endpoint.
-
-## Database Migration Guide
-
-Before running db migration, you need to setup your database credential on `.env` file, duplicate from `.env.example` if it doesnt exist.
-
-### Generate Migration
-
-```bash
-npm run generate-migration migration/<Migration-File-Name>
-```
-
-This is an auto-generated migration provided by TypeORM, migration script will be automatically created on the folder `migration`. For more information please see TypeORM migration guide.
-
-### Running Migration
-
-After generating migration script file, run the migration to apply the changes to database
-
-```bash
+# 5. Run database migrations
 npm run migrate
+
+# 6. Install frontend dependencies
+cd frontend
+npm install
+cd ..
+
+# 7. (Optional) Setup ML service
+cd ml-service
+python -m venv venv
+source venv/bin/activate  # atau venv\Scripts\activate di Windows
+pip install -r requirements.txt
+cd ..
+
+# 8. Run development server
+npm run dev
 ```
 
-## FAQ
+Backend akan berjalan di `http://localhost:3000`
 
-### Where is the .env file?
+### Frontend Development
 
-You can copy the sample `.env.example` to `.env`.
-
-### Where can I setup the database?
-
-On the `.env` file
-
-### How to change API program port?
-
-On the `.env` file
-
-### How to custom the ExpressJS middleware?
-
-You can modify `index.ts` and access the ExpressJS instance from `server` variable.
-
-```typescript
-const server = new Server();
-server.express?.use(...); // <-- access ExpressJS instance
+```bash
+cd frontend
+npm run dev
 ```
+
+Frontend akan berjalan di `http://localhost:5173`
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=erp_pangan
+
+# Server Configuration
+PORT=3000
+JWT_SECRET=your_jwt_secret
+
+# Python Path (untuk ML service)
+PYTHON_PATH=python3
+```
+
+### Quality Parameter Configuration
+
+Parameter kualitas dan kalibrasi warna dikonfigurasi melalui tabel `QualityParameter`:
+
+| Parameter Type | Example Name | Description |
+|----------------|--------------|-------------|
+| Grading Rules | `Moisture`, `Density`, `GreenPercentage` | Aturan grading berdasarkan range nilai |
+| Calibration | `Calib_Green_Hue`, `Calib_Yellow_Sat` | Ambang batas HSV untuk deteksi warna |
+
+---
+
+## 🧪 ML Quality Analysis
+
+### Cara Kerja
+
+1. **Upload Gambar**: User mengupload foto sampel gabah
+2. **Preprocessing**: Gambar di-crop dan dinormalisasi
+3. **HSV Segmentation**: Deteksi area hijau (padi muda) dan kuning (padi matang)
+4. **Percentage Calculation**: Hitung persentase masing-masing warna
+5. **Grading**: Tentukan grade berdasarkan persentase hijau
+
+### Grading Point System
+
+| Grade | Level | Points |
+|-------|-------|--------|
+| KW 1 | 1 | 10 |
+| KW 1 | 2 | 9 |
+| KW 1 | 3 | 8 |
+| KW 2 | 1 | 7 |
+| KW 2 | 2 | 6 |
+| KW 2 | 3 | 5 |
+| KW 3 | 1 | 4 |
+| KW 3 | 2 | 3 |
+| KW 3 | 3 | 2 |
+| REJECT | - | 1 |
+
+Total Score = Points(Moisture) + Points(Density) + Points(Color)
+
+---
+
+## 📝 Available Scripts
+
+### Backend
+
+```bash
+npm run dev          # Build & start server
+npm run build        # Build TypeScript
+npm run start        # Start built server
+npm run codegen      # Generate API types from design
+npm run migrate      # Run database migrations
+npm run generate-migration migration/<name>  # Create new migration
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
+---
+
+## 🔐 Authentication
+
+### Demo Accounts
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | admin | admin123 |
+| Operator | operator | operator123 |
+
+### API Authentication
+
+Semua endpoint (kecuali `/auth/login`) memerlukan JWT token di header:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+## 🎨 Screenshots
+
+### Dashboard
+<p align="center">
+  <em>Dashboard dengan statistik real-time dan quick actions</em>
+</p>
+
+### Quality Analysis
+<p align="center">
+  <em>Modal analisis kualitas dengan ML-powered color grading</em>
+</p>
+
+### Production Module
+<p align="center">
+  <em>Manajemen worksheet produksi dengan HPP calculation</em>
+</p>
+
+---
+
+## 📚 Documentation
+
+- [CHANGELOG.md](CHANGELOG.md) - Riwayat perubahan versi
+- [INSTRUCTION.md](INSTRUCTION.md) - Panduan pengembangan dengan NAIV framework
+- [design/](design/) - API design files
+
+---
+
+## 🤝 Contributing
+
+Kontribusi sangat dihargai! Untuk berkontribusi:
+
+1. Fork repository ini
+2. Buat branch baru (`git checkout -b feature/AmazingFeature`)
+3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
+
+---
+
+## 📄 License
+
+Proyek ini dilisensikan di bawah **MIT License** - lihat file [LICENSE](LICENSE) untuk detail.
+
+---
+
+## 👥 Team
+
+| Role | Name |
+|------|------|
+| **Lead Developer** | Yayang Setya Nugroho |
+| **AI Assistant** | Claude by Anthropic |
+
+---
+
+## 📞 Support
+
+- **Email**: support@panganmasadepan.com
+- **Issues**: [GitHub Issues](https://github.com/Logia-ysn/erp-pangan-masa-depan/issues)
+
+---
+
+## 🙏 Acknowledgments
+
+- [NAIV Framework](https://naiv.dev) - API Design & Codegen
+- [TypeORM](https://typeorm.io) - Database ORM
+- [React](https://reactjs.org) - UI Library
+- [OpenCV](https://opencv.org) - Computer Vision
+- [Recharts](https://recharts.org) - Data Visualization
+
+---
+
+<p align="center">
+  Made with ❤️ for Indonesian Rice Mill Industry
+</p>
+
+<p align="center">
+  <strong>PT Pangan Masa Depan © 2026</strong>
+</p>
