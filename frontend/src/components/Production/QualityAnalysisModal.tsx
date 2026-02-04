@@ -168,15 +168,17 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
             return map[key] || 1; // Default to reject if unknown
         };
 
-        // Parse Color Result
-        let cResult = { grade: 'KW 1', level: 1 };
-        if (colorGrade && colorGrade !== '-' && colorGrade !== 'Analyzing...' && colorGrade !== 'Error') {
+
+        // Parse Color Result - Default to "Out of Range" if not analyzed
+        let cResult: { grade: string, level: number } = { grade: 'Out of Range', level: 99 };
+        if (colorGrade && colorGrade !== '-' && colorGrade !== 'Analyzing...' && colorGrade !== 'Error' && colorGrade !== 'Out of Range') {
             const parts = colorGrade.split(':');
             const gradePart = parts[0].trim();
             const levelPart = parts[1] ? parseInt(parts[1]) : 1;
-            cResult = { grade: gradePart, level: levelPart };
-        } else if (colorGrade === 'Error') {
-            cResult = { grade: 'Out of Range', level: 99 };
+            // Validate that it's a known grade
+            if (gradePart.startsWith('KW')) {
+                cResult = { grade: gradePart, level: levelPart };
+            }
         }
 
         const pA = getPoints(mResult);
