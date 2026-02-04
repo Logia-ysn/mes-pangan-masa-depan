@@ -86,7 +86,7 @@ class WorksheetService {
      */
     async createWorksheet(dto: CreateWorksheetDTO): Promise<Worksheet> {
         // Create worksheet entity
-        const worksheet = new Worksheet();
+        const worksheet = new Worksheet() as any; // Type assertion for extended properties
         worksheet.id_factory = dto.id_factory;
         worksheet.id_user = dto.id_user;
         worksheet.worksheet_date = new Date(dto.worksheet_date);
@@ -194,7 +194,7 @@ class WorksheetService {
     /**
      * Update stock based on production process (Legacy / Fallback)
      */
-    private async updateStockFromProduction(worksheet: Worksheet, userId: number): Promise<void> {
+    private async updateStockFromProduction(worksheet: any, userId: number): Promise<void> {
         const factoryId = worksheet.id_factory;
         const worksheetId = worksheet.id;
         const inputProductCode = worksheet.input_category_code || 'GKP';
@@ -218,7 +218,7 @@ class WorksheetService {
     /**
      * Add output stocks based on output product and side products
      */
-    private async addOutputStocks(worksheet: Worksheet, userId: number, sideProducts: WorksheetSideProduct[]): Promise<void> {
+    private async addOutputStocks(worksheet: any, userId: number, sideProducts: WorksheetSideProduct[]): Promise<void> {
         const factoryId = worksheet.id_factory;
         const worksheetId = worksheet.id;
 
@@ -323,7 +323,7 @@ class WorksheetService {
      * Update existing worksheet
      */
     async updateWorksheet(dto: UpdateWorksheetDTO): Promise<Worksheet> {
-        const worksheet = await worksheetRepository.findById(dto.id);
+        const worksheet = await worksheetRepository.findById(dto.id) as any;
 
         if (!worksheet) {
             throw new NotFoundError('Worksheet', dto.id);

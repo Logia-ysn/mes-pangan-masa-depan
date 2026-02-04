@@ -25,6 +25,7 @@ export const t_createWorksheet: T_createWorksheet = async (req, res) => {
   const user = await authService.getUserFromToken(req.headers.authorization!);
 
   // 2. Extract data from request
+  const body = req.body as any; // Type assertion for extended properties
   const {
     id_factory,
     worksheet_date,
@@ -52,7 +53,7 @@ export const t_createWorksheet: T_createWorksheet = async (req, res) => {
     hpp,
     hpp_per_kg,
     input_batches
-  } = req.body;
+  } = body;
 
   // 3. Call service (all business logic is there)
   const worksheet = await worksheetService.createWorksheet({

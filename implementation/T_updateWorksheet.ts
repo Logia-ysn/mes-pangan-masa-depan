@@ -11,6 +11,7 @@ export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
   const id = Number(req.path.id);
 
   // 2. Extract data from request body (only what's in API type)
+  const body = req.body as any; // Type assertion for extended properties
   const {
     worksheet_date,
     shift,
@@ -32,7 +33,7 @@ export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
     hpp,
     hpp_per_kg,
     side_products
-  } = req.body;
+  } = body;
 
   // 3. Call service
   const worksheet = await worksheetService.updateWorksheet({

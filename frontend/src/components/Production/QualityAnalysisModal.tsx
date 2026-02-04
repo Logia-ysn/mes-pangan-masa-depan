@@ -28,7 +28,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
     // Calculated Grades (Client-side preview)
     const [moistureGrade, setMoistureGrade] = useState('-');
     const [densityGrade, setDensityGrade] = useState('-');
-    const [colorGrade, setColorGrade] = useState('KW 1'); // Mock default
+    const [colorGrade, setColorGrade] = useState('-'); // Default to unanalyzed (Out of Range)
     const [finalGrade, setFinalGrade] = useState(initialData?.grade || '-');
     const [totalScore, setTotalScore] = useState<number>(0);
 
@@ -353,10 +353,11 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
     };
 
     const getGradeColor = (grade: string) => {
-        if (!grade) return '#9ca3af';
-        if (grade.startsWith('KW 1')) return '#22c55e';
-        if (grade.startsWith('KW 2')) return '#eab308';
-        if (grade.startsWith('KW 3')) return '#ef4444';
+        if (!grade || grade === '-') return '#9ca3af'; // Gray for unanalyzed
+        if (grade === 'Out of Range' || grade === 'REJECT') return '#dc2626'; // Red for reject
+        if (grade.startsWith('KW 1')) return '#22c55e'; // Green
+        if (grade.startsWith('KW 2')) return '#eab308'; // Yellow
+        if (grade.startsWith('KW 3')) return '#ef4444'; // Orange-Red
         return '#94a3b8';
     }
 
@@ -415,14 +416,21 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
 
                             <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
                                 <div style={{
-                                    width: 40, height: 40, borderRadius: 8,
+                                    width: moistureGrade === 'Out of Range' ? 'auto' : 40,
+                                    minWidth: 40,
+                                    height: 40, borderRadius: 8,
                                     background: getGradeColor(moistureGrade),
-                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
+                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
+                                    padding: moistureGrade === 'Out of Range' ? '0 8px' : 0,
+                                    fontSize: moistureGrade === 'Out of Range' ? '0.65rem' : '1rem'
                                 }}>
-                                    {moistureGrade === '-' ? '?' : moistureGrade.replace('KW ', '')}
+                                    {moistureGrade === '-' ? '?' : moistureGrade === 'Out of Range' ? 'Out of Range' : moistureGrade.replace('KW ', '')}
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{moistureGrade === 'KW 1' ? 'Standard Met' : 'Check Standard'}</div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                        {moistureGrade.startsWith('KW 1') ? 'Standard Met' :
+                                            moistureGrade === 'Out of Range' ? 'REJECT' : 'Check Standard'}
+                                    </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Classification Result</div>
                                 </div>
                             </div>
@@ -463,14 +471,21 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
 
                             <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
                                 <div style={{
-                                    width: 40, height: 40, borderRadius: 8,
+                                    width: densityGrade === 'Out of Range' ? 'auto' : 40,
+                                    minWidth: 40,
+                                    height: 40, borderRadius: 8,
                                     background: getGradeColor(densityGrade),
-                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
+                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
+                                    padding: densityGrade === 'Out of Range' ? '0 8px' : 0,
+                                    fontSize: densityGrade === 'Out of Range' ? '0.65rem' : '1rem'
                                 }}>
-                                    {densityGrade === '-' ? '?' : densityGrade.replace('KW ', '')}
+                                    {densityGrade === '-' ? '?' : densityGrade === 'Out of Range' ? 'Out of Range' : densityGrade.replace('KW ', '')}
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{densityGrade === 'KW 1' ? 'Optimal Density' : 'Check Standard'}</div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                        {densityGrade.startsWith('KW 1') ? 'Optimal Density' :
+                                            densityGrade === 'Out of Range' ? 'REJECT' : 'Check Standard'}
+                                    </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Classification Result</div>
                                 </div>
                             </div>
@@ -512,7 +527,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Grade</div>
-                                    <div style={{ fontWeight: 700 }}>{colorGrade}</div>
+                                    <div style={{ fontWeight: 700 }}>{colorGrade === '-' ? 'Out of Range' : colorGrade}</div>
                                 </div>
                             </div>
                         </div>

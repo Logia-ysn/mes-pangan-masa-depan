@@ -6,6 +6,7 @@ import { MachineStatus } from "../types/model/enum/MachineStatus";
 export const t_createMachine: T_createMachine = async (req, res) => {
   await getUserFromToken(req.headers.authorization);
 
+  const body = req.body as any; // Type assertion for extended properties
   const {
     id_factory,
     code,
@@ -19,14 +20,14 @@ export const t_createMachine: T_createMachine = async (req, res) => {
     vendor_id,
     purchase_price,
     warranty_months
-  } = req.body;
+  } = body;
 
   // Check for existing code
   const existing = await Machine.findOne({ where: { code } });
   if (existing) throw new Error('Machine code already exists');
 
   // Create machine
-  const machine = new Machine();
+  const machine = new Machine() as any;
   machine.id_factory = id_factory;
   machine.code = code;
   machine.name = name;

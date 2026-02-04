@@ -310,7 +310,7 @@ export const t_seedData: T_seedData = async (req, res) => {
         const stockGabah = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: (await ProductType.findOne({ where: { code: 'GKP' } }))?.id } });
 
         // Setup Worksheet
-        const ws = await Worksheet.create({
+        const wsData: any = {
             id_factory: factoryId1,
             id_user: userId,
             worksheet_date: new Date(),
@@ -328,12 +328,13 @@ export const t_seedData: T_seedData = async (req, res) => {
             id_machine: machine?.id,
             id_output_product: outputProduct?.id,
             batch_code: `BATCH-${new Date().getTime()}`,
-            production_cost: 500000, // 500 per kg input
-            raw_material_cost: 6000000, // 6000 per kg x 1000
-            side_product_revenue: 150000, // Est
+            production_cost: 500000,
+            raw_material_cost: 6000000,
+            side_product_revenue: 150000,
             hpp: 6350000,
             hpp_per_kg: 10583.33
-        }).save();
+        };
+        const ws = await Worksheet.save(Worksheet.create(wsData));
 
         // 1. Input Batch
         if (stockGabah) {

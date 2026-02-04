@@ -11,6 +11,7 @@ table User {
 }
 
 enum UserRole {
+  SUPERUSER
   ADMIN
   MANAGER
   SUPERVISOR

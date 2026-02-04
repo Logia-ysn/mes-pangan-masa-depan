@@ -6,9 +6,10 @@ import { MachineStatus } from "../types/model/enum/MachineStatus";
 export const t_updateMachine: T_updateMachine = async (req, res) => {
   await getUserFromToken(req.headers.authorization);
 
-  const machine = await Machine.findOne({ where: { id: req.path.id } });
+  const machine = await Machine.findOne({ where: { id: req.path.id } }) as any;
   if (!machine) throw new Error('Machine not found');
 
+  const body = req.body as any; // Type assertion for extended properties
   const {
     code,
     name,
@@ -23,7 +24,7 @@ export const t_updateMachine: T_updateMachine = async (req, res) => {
     vendor_id,
     purchase_price,
     warranty_months
-  } = req.body;
+  } = body;
 
   // Update existing fields
   if (code !== undefined) machine.code = code;
