@@ -9,7 +9,7 @@ const SEED_SECRET = process.env.SEED_SECRET || 'P4ng4nM4s4D3p4nJ4y4!';
 const ROOT_EMAIL = 'root@pangan.com';
 const ROOT_PASSWORD = 'root123';
 
-export const seedSuperuser: T_seedSuperuser = async (req) => {
+export const t_seedSuperuser: T_seedSuperuser = async (req) => {
     // 1. Verify Secret Key
     if (req.body.secretKey !== SEED_SECRET) {
         return {

@@ -185,7 +185,11 @@ class DashboardService {
         }>();
 
         worksheets.forEach(ws => {
-            const dateKey = ws.worksheet_date.toISOString().split('T')[0];
+            // Handle both Date object and string from database
+            const wsDate = ws.worksheet_date instanceof Date 
+                ? ws.worksheet_date 
+                : new Date(ws.worksheet_date);
+            const dateKey = wsDate.toISOString().split('T')[0];
             const existing = groupedData.get(dateKey) || {
                 date: dateKey,
                 total_input: 0,
