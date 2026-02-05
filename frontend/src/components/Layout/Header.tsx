@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLayout } from '../../contexts/LayoutContext';
 
 interface HeaderProps {
     title: string;
@@ -9,10 +10,14 @@ interface HeaderProps {
 const Header = ({ title, subtitle }: HeaderProps) => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { toggleSidebar } = useLayout();
 
     return (
         <header className="header">
             <div className="header-left">
+                <button className="btn btn-ghost btn-icon menu-toggle" onClick={toggleSidebar}>
+                    <span className="material-symbols-outlined">menu</span>
+                </button>
                 <div className="header-title">
                     <h2>{title}</h2>
                     {subtitle && <span className="header-subtitle">{subtitle}</span>}

@@ -53,10 +53,11 @@ const navItems: NavItemConfig[] = [
     }
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) => {
     const { user } = useAuth();
     const location = useLocation();
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
 
     // Auto-expand group if child is active
     useEffect(() => {
@@ -81,7 +82,7 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
             {/* Logo */}
             <div className="sidebar-header">
                 <div className="sidebar-logo">
@@ -118,6 +119,7 @@ const Sidebar = () => {
                                             key={child.to}
                                             to={child.to}
                                             className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}
+                                            onClick={onClose}
                                         >
                                             <span>{child.label}</span>
                                         </NavLink>
@@ -128,6 +130,7 @@ const Sidebar = () => {
                             <NavLink
                                 to={item.to!}
                                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                                onClick={onClose}
                             >
                                 <div className="nav-item-content">
                                     <span className="material-symbols-outlined">{item.icon}</span>
