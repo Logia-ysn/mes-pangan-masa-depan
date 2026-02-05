@@ -25,33 +25,9 @@ const navItems: NavItemConfig[] = [
             { label: 'Maintenance', to: '/production/maintenance' },
             { label: 'OEE Monitor', to: '/production/oee' },
         ]
-    },
-    {
-        label: 'Penjualan',
-        icon: 'shopping_cart',
-        children: [
-            { label: 'Pelanggan', to: '/sales/customers' },
-            { label: 'Invoice', to: '/sales/invoices' },
-            { label: 'Pembayaran', to: '/sales/payments' },
-        ]
-    },
-    {
-        label: 'Keuangan',
-        icon: 'account_balance_wallet',
-        children: [
-            { label: 'Pengeluaran', to: '/finance/expenses' },
-            { label: 'Laporan', to: '/finance/reports' },
-        ]
-    },
-    {
-        label: 'HRD',
-        icon: 'group',
-        children: [
-            { label: 'Karyawan', to: '/hrd/employees' },
-            { label: 'Kehadiran', to: '/hrd/attendances' },
-        ]
     }
 ];
+
 
 const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) => {
     const { user } = useAuth();

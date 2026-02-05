@@ -60,61 +60,11 @@ export const stockApi = {
     delete: (id: number) => api.delete(`/stocks/${id}`),
 };
 
-// Customers
-export const customerApi = {
-    getAll: (params?: any) => api.get('/customers', { params }),
-    getById: (id: number) => api.get(`/customers/${id}`),
-    create: (data: any) => api.post('/customers', data),
-    update: (id: number, data: any) => api.put(`/customers/${id}`, data),
-    delete: (id: number) => api.delete(`/customers/${id}`),
-};
-
-// Invoices
-export const invoiceApi = {
-    getAll: (params?: any) => api.get('/invoices', { params }),
-    getById: (id: number) => api.get(`/invoices/${id}`),
-    create: (data: any) => api.post('/invoices', data),
-    update: (id: number, data: any) => api.put(`/invoices/${id}`, data),
-    delete: (id: number) => api.delete(`/invoices/${id}`),
-};
-
-// Daily Expenses
-export const expenseApi = {
-    getAll: (params?: any) => api.get('/daily-expenses', { params }),
-    getById: (id: number) => api.get(`/daily-expenses/${id}`),
-    create: (data: any) => api.post('/daily-expenses', data),
-    update: (id: number, data: any) => api.put(`/daily-expenses/${id}`, data),
-    delete: (id: number) => api.delete(`/daily-expenses/${id}`),
-};
-
-// Expense Categories
-export const expenseCategoryApi = {
-    getAll: (params?: any) => api.get('/expense-categories', { params }),
-};
-
 // Product Types
 export const productTypeApi = {
     getAll: (params?: any) => api.get('/product-types', { params }),
     getById: (id: number) => api.get(`/product-types/${id}`),
     create: (data: any) => api.post('/product-types', data),
-};
-
-// Employees
-export const employeeApi = {
-    getAll: (params?: any) => api.get('/employees', { params }),
-    getById: (id: number) => api.get(`/employees/${id}`),
-    create: (data: any) => api.post('/employees', data),
-    update: (id: number, data: any) => api.put(`/employees/${id}`, data),
-    delete: (id: number) => api.delete(`/employees/${id}`),
-};
-
-// Attendance
-export const attendanceApi = {
-    getAll: (params?: any) => api.get('/attendances', { params }),
-    getById: (id: number) => api.get(`/attendances/${id}`),
-    create: (data: any) => api.post('/attendances', data),
-    update: (id: number, data: any) => api.put(`/attendances/${id}`, data),
-    delete: (id: number) => api.delete(`/attendances/${id}`),
 };
 
 // Suppliers
@@ -185,6 +135,15 @@ export const qualityAnalysisApi = {
 export const qcGabahApi = {
     analyze: (data: { image_base64: string; supplier?: string; lot?: string }) =>
         api.post('/analyze-grain', data),
+};
+
+// Employees (kept for operator selection in worksheets)
+export const employeeApi = {
+    getAll: (params?: any) => api.get('/employees', { params }),
+    getById: (id: number) => api.get(`/employees/${id}`),
+    create: (data: any) => api.post('/employees', data),
+    update: (id: number, data: any) => api.put(`/employees/${id}`, data),
+    delete: (id: number) => api.delete(`/employees/${id}`),
 };
 
 export default api;

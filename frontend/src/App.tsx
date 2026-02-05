@@ -8,8 +8,6 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
 import Settings from './pages/Settings';
 
-
-
 // Production Module
 import Worksheets from './pages/production/Worksheets';
 import WorksheetDetail from './pages/production/WorksheetDetail';
@@ -20,17 +18,6 @@ import Maintenance from './pages/production/Maintenance';
 import OEE from './pages/production/OEE';
 import RawMaterialReceipt from './pages/production/RawMaterialReceipt';
 import QCGabah from './pages/production/QCGabah';
-
-// Sales Module
-import Customers from './pages/sales/Customers';
-import Invoices from './pages/sales/Invoices';
-
-// Finance Module
-import Expenses from './pages/finance/Expenses';
-
-// HRD Module
-import Employees from './pages/hrd/Employees';
-import Attendances from './pages/hrd/Attendances';
 
 import './index.css';
 
@@ -94,34 +81,6 @@ const AppRoutes = () => {
         {/* Legacy routes - redirect to new paths */}
         <Route path="worksheets" element={<Navigate to="/production/worksheets" replace />} />
         <Route path="stocks" element={<Navigate to="/production/stocks" replace />} />
-
-        {/* Sales Module */}
-        <Route path="sales">
-          <Route path="customers" element={<Customers />} />
-          <Route path="invoices" element={<Invoices />} />
-        </Route>
-
-        {/* Legacy routes - redirect to new paths */}
-        <Route path="customers" element={<Navigate to="/sales/customers" replace />} />
-        <Route path="invoices" element={<Navigate to="/sales/invoices" replace />} />
-
-        {/* Finance Module */}
-        <Route path="finance">
-          <Route path="expenses" element={<Expenses />} />
-        </Route>
-
-        {/* Legacy routes - redirect to new paths */}
-        <Route path="expenses" element={<Navigate to="/finance/expenses" replace />} />
-
-        {/* HRD Module */}
-        <Route path="hrd">
-          <Route path="employees" element={<Employees />} />
-          <Route path="attendances" element={<Attendances />} />
-        </Route>
-
-        {/* Legacy routes - redirect to new paths */}
-        <Route path="employees" element={<Navigate to="/hrd/employees" replace />} />
-        <Route path="attendances" element={<Navigate to="/hrd/attendances" replace />} />
 
         {/* 404 fallback */}
         <Route path="*" element={
