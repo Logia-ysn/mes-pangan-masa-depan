@@ -2,10 +2,14 @@
   "name": "erp-pangan-masa-depan",
   "version": "1.1.0",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "typeorm": "typeorm-ts-node-commonjs",
     "generate-migration": "npm run typeorm migration:generate -- $1 -d ./data-source.ts",
     "migrate": "npm run typeorm migration:run -- -d ./data-source.ts",
+    "migrate:prod": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./dist/data-source.js",
     "codegen": "codegen-nodejs-typeorm -d design -o types",
     "codegen-init": "npx ts-node ./generate-initial-api.ts",
     "build": "rm -rf dist && tsc",
