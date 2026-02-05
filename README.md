@@ -43,20 +43,9 @@ Memberdayakan industri penggilingan padi dengan teknologi modern untuk meningkat
 - **Stock Movement History**: Riwayat lengkap pergerakan stok
 - **Multi-Product Type**: Dukungan GKP, GKG, PK, Glosor, Beras berbagai grade
 
-### 💰 Finance Management
-- **Daily Expenses**: Pencatatan pengeluaran harian
-- **COGM Analysis**: Analisis Cost of Goods Manufactured
-- **Expense Categories**: Kategorisasi pengeluaran terstruktur
-
-### 👥 HRD Management
-- **Attendance Tracking**: Pencatatan kehadiran karyawan
-- **Employee Database**: Manajemen data karyawan lengkap
-- **Demographics Report**: Laporan demografi karyawan
-
-### 📊 Sales & Customer Management
-- **Invoice Management**: Pembuatan dan manajemen faktur
-- **Customer Database**: Database pelanggan terintegrasi
-- **Payment Tracking**: Tracking pembayaran
+### 👥 Employee & Operator Management
+- **Employee Database**: Manajemen data karyawan untuk seleksi operator
+- **Operator Assignment**: Penugasan operator ke worksheet produksi
 
 ### 🔧 Advanced Features
 - **OEE Monitoring**: Overall Equipment Effectiveness tracking
@@ -277,10 +266,11 @@ npm run preview      # Preview production build
 
 ### Demo Accounts
 
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | admin | admin123 |
-| Operator | operator | operator123 |
+| Role | Email | Password |
+|------|-------|----------|
+| Superuser | root@pangan.com | root123 |
+
+> **Note**: Untuk membuat superuser, panggil endpoint `POST /seed-superuser` dengan body `{"secretKey": "P4ng4nM4s4D3p4nJ4y4!"}`
 
 ### API Authentication
 

@@ -1,18 +1,13 @@
 import { T_seedData } from "../types/api/T_seedData";
 import { Factory } from "../types/model/table/Factory";
-import { Customer } from "../types/model/table/Customer";
+import { User } from "../types/model/table/User";
+import { Worksheet } from "../types/model/table/Worksheet";
+import { StockMovement } from "../types/model/table/StockMovement";
+import { Maintenance } from "../types/model/table/Maintenance";
 import { Employee } from "../types/model/table/Employee";
 import { Machine } from "../types/model/table/Machine";
 import { Stock } from "../types/model/table/Stock";
-import { DailyExpense } from "../types/model/table/DailyExpense";
-import { ExpenseCategory } from "../types/model/table/ExpenseCategory";
 import { ProductType } from "../types/model/table/ProductType";
-import { User } from "../types/model/table/User";
-import { Worksheet } from "../types/model/table/Worksheet";
-import { Invoice } from "../types/model/table/Invoice";
-import { StockMovement } from "../types/model/table/StockMovement";
-import { Attendance } from "../types/model/table/Attendance";
-import { Maintenance } from "../types/model/table/Maintenance";
 import { RawMaterialCategory } from "../types/model/table/RawMaterialCategory";
 import { RawMaterialVariety } from "../types/model/table/RawMaterialVariety";
 import { Supplier } from "../types/model/table/Supplier";
@@ -24,11 +19,9 @@ import { MachineStatus } from "../types/model/enum/MachineStatus";
 import { WorkshiftType } from "../types/model/enum/WorkshiftType";
 import { WorksheetSideProduct } from "../types/model/table/WorksheetSideProduct";
 import { WorksheetInputBatch } from "../types/model/table/WorksheetInputBatch";
-import { InvoiceStatus } from "../types/model/enum/InvoiceStatus";
-import { MovementType } from "../types/model/enum/MovementType";
-import { AttendanceStatus } from "../types/model/enum/AttendanceStatus";
 import { MaintenanceType } from "../types/model/enum/MaintenanceType";
-import { dummyFactories, dummyCategories, dummyCustomers, dummyEmployees, dummyMachines, dummySuppliers } from "./data/dummyData";
+import { MovementType } from "../types/model/enum/MovementType";
+import { dummyFactories, dummyEmployees, dummyMachines, dummySuppliers } from "./data/dummyData";
 
 export const t_seedData: T_seedData = async (req, res) => {
     // 1. Factory - Create PMD 1 and PMD 2
@@ -103,32 +96,6 @@ export const t_seedData: T_seedData = async (req, res) => {
         const exists = await OutputProduct.findOne({ where: { id_factory: factoryId2, code: prod.code } });
         if (!exists) {
             await OutputProduct.save(OutputProduct.create({ ...prod, id_factory: factoryId2, is_active: true } as any));
-        }
-    }
-
-    // 4. Expense Category
-    for (let i = 0; i < dummyCategories.length; i++) {
-        const name = dummyCategories[i];
-        const exists = await ExpenseCategory.findOne({ where: { name } });
-        if (!exists) {
-            await ExpenseCategory.save(ExpenseCategory.create({
-                code: `EXP-${i + 1}`,
-                name: name,
-                description: `Kategori ${name}`
-            } as any));
-        }
-    }
-
-    // 5. Customers
-    for (let i = 0; i < dummyCustomers.length; i++) {
-        const c = dummyCustomers[i];
-        const code = `CUST-${i + 1}`;
-        if (!await Customer.findOne({ where: { code } })) {
-            await Customer.save(Customer.create({
-                ...c,
-                code,
-                is_active: true
-            } as any));
         }
     }
 
@@ -286,22 +253,6 @@ export const t_seedData: T_seedData = async (req, res) => {
 
     const stockRaw = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: pTypeRaw.id } });
 
-    // Daily Expense
-    const expenseCat = await ExpenseCategory.findOne({ where: { name: "Bahan Bakar" } });
-    if (expenseCat && user) {
-        const existingExpense = await DailyExpense.findOne({ where: { description: "Beli Solar Genset" } });
-        if (!existingExpense) {
-            await DailyExpense.save(DailyExpense.create({
-                amount: 500000,
-                expense_date: new Date(),
-                description: "Beli Solar Genset",
-                id_factory: factoryId1,
-                id_user: userId,
-                id_expense_category: expenseCat.id
-            } as any));
-        }
-    }
-
     // Worksheets - skip if exists
     if (await Worksheet.count() === 0) {
         // Find dependencies
@@ -374,25 +325,6 @@ export const t_seedData: T_seedData = async (req, res) => {
         } as any));
     }
 
-    // Invoices
-    const cust1 = await Customer.findOne({ where: { code: 'CUST-1' } });
-    if (cust1 && await Invoice.count() === 0) {
-        await Invoice.save(Invoice.create({
-            id_factory: factoryId1,
-            id_customer: cust1.id,
-            id_user: userId,
-            invoice_number: "INV/001/X/2023",
-            invoice_date: new Date(),
-            due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
-            subtotal: 10000000,
-            tax: 1100000,
-            discount: 0,
-            total: 11100000,
-            status: InvoiceStatus.PAID,
-            notes: "Pembayaran lunas"
-        } as any));
-    }
-
     // Stock Movement
     if (stockRaw && await StockMovement.count() === 0) {
         await StockMovement.save(StockMovement.create({
@@ -402,19 +334,6 @@ export const t_seedData: T_seedData = async (req, res) => {
             quantity: 5000,
             reference_type: "PURCHASE",
             notes: "Stok awal"
-        } as any));
-    }
-
-    // Attendance
-    const emp1 = await Employee.findOne({ where: { employee_code: 'EMP-1' } });
-    if (emp1 && await Attendance.count() === 0) {
-        await Attendance.save(Attendance.create({
-            id_employee: emp1.id,
-            id_user: userId,
-            attendance_date: new Date(),
-            check_in_time: new Date(),
-            status: AttendanceStatus.PRESENT,
-            notes: "Hadir tepat waktu"
         } as any));
     }
 

@@ -11,8 +11,6 @@
 import { worksheetRepository } from '../repositories/worksheet.repository';
 import { stockRepository } from '../repositories/stock.repository';
 import { factoryRepository } from '../repositories/factory.repository';
-import { Invoice } from '../../types/model/table/Invoice';
-import { DailyExpense } from '../../types/model/table/DailyExpense';
 import { Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 
 export interface DashboardStats {
@@ -108,41 +106,7 @@ class DashboardService {
      * Get financial statistics
      */
     private async getFinancialStats(factoryId?: number, startDate?: Date, endDate?: Date) {
-        // Build where clause for invoices
-        const invoiceWhere: any = {};
-        if (factoryId) {
-            invoiceWhere.id_factory = factoryId;
-        }
-        if (startDate && endDate) {
-            invoiceWhere.invoice_date = Between(startDate, endDate);
-        } else if (startDate) {
-            invoiceWhere.invoice_date = MoreThanOrEqual(startDate);
-        } else if (endDate) {
-            invoiceWhere.invoice_date = LessThanOrEqual(endDate);
-        }
-
-        // Get invoices
-        const invoices = await Invoice.find({ where: invoiceWhere });
-        const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
-
-        // Build where clause for expenses
-        const expenseWhere: any = {};
-        if (factoryId) {
-            expenseWhere.id_factory = factoryId;
-        }
-        if (startDate && endDate) {
-            expenseWhere.expense_date = Between(startDate, endDate);
-        } else if (startDate) {
-            expenseWhere.expense_date = MoreThanOrEqual(startDate);
-        } else if (endDate) {
-            expenseWhere.expense_date = LessThanOrEqual(endDate);
-        }
-
-        // Get expenses
-        const expenses = await DailyExpense.find({ where: expenseWhere });
-        const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-
-        return { totalRevenue, totalExpenses };
+        return { totalRevenue: 0, totalExpenses: 0 };
     }
 
     /**
@@ -186,8 +150,8 @@ class DashboardService {
 
         worksheets.forEach(ws => {
             // Handle both Date object and string from database
-            const wsDate = ws.worksheet_date instanceof Date 
-                ? ws.worksheet_date 
+            const wsDate = ws.worksheet_date instanceof Date
+                ? ws.worksheet_date
                 : new Date(ws.worksheet_date);
             const dateKey = wsDate.toISOString().split('T')[0];
             const existing = groupedData.get(dateKey) || {
