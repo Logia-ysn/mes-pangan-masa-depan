@@ -32,6 +32,10 @@ export const t_deleteStockMovement: T_deleteStockMovement = async (req, res) => 
             await transactionalEntityManager.save(Stock, stock);
         }
 
+        // Delete dependent Quality Analysis first to match FK constraints
+        const RawMaterialQualityAnalysis = await import("../types/model/table/RawMaterialQualityAnalysis").then(m => m.RawMaterialQualityAnalysis);
+        await transactionalEntityManager.delete(RawMaterialQualityAnalysis, { id_stock_movement: id });
+
         await transactionalEntityManager.remove(StockMovement, movement);
     });
 
