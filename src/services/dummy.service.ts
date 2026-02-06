@@ -66,7 +66,8 @@ export class DummyService {
             const stockBeras = await manager.findOne(Stock, { where: { id_factory: factory.id, id_product_type: ptBeras?.id } });
 
             const today = new Date();
-            for (let i = 6; i >= 0; i--) {
+            // Generate data for past 7 days AND next 3 days (Schedule)
+            for (let i = 6; i >= -3; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
 

@@ -216,7 +216,7 @@ class DashboardService {
                 target_today: dailyTarget,
                 actual_today: prodToday,
                 target_percent: dailyTarget > 0 ? Math.min(100, Math.round((prodToday / dailyTarget) * 100)) : 0,
-                schedule_today: []
+                schedule_today: await this.getScheduleToday(factoryId)
             },
             machines: machineData,
             inventory: stockData,
@@ -267,6 +267,33 @@ class DashboardService {
             total_downtime: Math.round(totalDowntime * 10) / 10,
             by_machine: [] // Would need machine relation in worksheet for detailed breakdown
         };
+    }
+
+    /**
+     * Get Today's Production Schedule
+     * Queries Worksheets for the current date
+     */
+    private async getScheduleToday(factoryId?: number): Promise<ProductionOverview['schedule_today']> {
+        const worksheetRepo = AppDataSource.getRepository(Worksheet);
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        const whereClause: any = {
+            worksheet_date: Between(startOfDay, endOfDay)
+        };
+        if (factoryId) whereClause.id_factory = factoryId;
+
+        const worksheets = await worksheetRepo.find({
+            where: whereClause,
+            relations: ['otm_id_machine', 'otm_id_output_product'] // Ensure relations are loaded
+        });
+
+        return worksheets.map(ws => ({
+            shift: ws.shift,
+            machine: ws.otm_id_machine?.name || 'Unknown Machine',
+            product: ws.otm_id_output_product?.name || 'Unknown Product'
+        }));
     }
 
     /**

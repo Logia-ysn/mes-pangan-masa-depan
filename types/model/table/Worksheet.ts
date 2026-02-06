@@ -29,6 +29,20 @@ export class Worksheet extends BaseEntity {
     nullable: false,
   })
   id_user!: number;
+
+  @ManyToOne("Machine", "id", { nullable: true })
+  @JoinColumn({ name: 'id_machine' })
+  otm_id_machine?: any;
+
+  @Column({ type: 'bigint', nullable: true })
+  id_machine?: number;
+
+  @ManyToOne("OutputProduct", "id", { nullable: true })
+  @JoinColumn({ name: 'id_output_product' })
+  otm_id_output_product?: any;
+
+  @Column({ type: 'bigint', nullable: true })
+  id_output_product?: number;
   @Column({
     type: 'date',
     nullable: false,
