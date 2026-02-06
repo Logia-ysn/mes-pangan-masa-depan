@@ -92,9 +92,10 @@ interface SideProduct {
 }
 
 const shiftConfig: { [key: string]: { label: string; class: string } } = {
-    SHIFT_1: { label: 'Pagi (06:00-14:00)', class: 'badge-info' },
-    SHIFT_2: { label: 'Siang (14:00-22:00)', class: 'badge-warning' },
-    SHIFT_3: { label: 'Malam (22:00-06:00)', class: 'badge-muted' }
+    SHIFT_1: { label: 'Shift 1', class: 'badge-info' },
+    SHIFT_2: { label: 'Shift 2', class: 'badge-warning' },
+    SHIFT_3: { label: 'Shift 3', class: 'badge-muted' },
+    SHIFT_4: { label: 'Shift 4', class: 'badge-success' }
 };
 
 const sideProductConfig: { PMD1: { code: string; name: string; defaultPercentage: number; isAuto?: boolean }[]; PMD2: { code: string; name: string; defaultPercentage: number; isAuto?: boolean }[] } = {
