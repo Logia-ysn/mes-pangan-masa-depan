@@ -7,6 +7,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [1.2.0] - 2026-02-06
+
+### Diubah
+- **Sidebar Navigation**: Mengubah desain navigasi sidebar menjadi *Flat Navigation*. Menghapus sistem collapsible/dropdown untuk akses module yang lebih cepat dan langsung.
+- **Modul Fokus**: Menghapus modul **HRD**, **Finance**, dan **Sales** untuk memfokuskan aplikasi pada **Produksi** dan **Inventory/Stock**.
+- **Database Config**: Mengaktifkan `synchronize: true` pada TypeORM untuk sinkronisasi schema database otomatis dengan perubahan kode.
+
+### Dihapus
+- Modul HRD (Employee Attendance, etc)
+- Modul Finance (Daily Expenses, etc)
+- Modul Sales (Invoices, Customers, etc)
+
 ## [1.1.0] - 2026-01-31
 
 ### Ditambahkan

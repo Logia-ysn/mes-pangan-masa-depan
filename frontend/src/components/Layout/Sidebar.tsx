@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/pmd_logo.png';
 import './Sidebar.css';
@@ -31,31 +30,7 @@ const navItems: NavItemConfig[] = [
 
 const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) => {
     const { user } = useAuth();
-    const location = useLocation();
-    const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
-
-    // Auto-expand group if child is active
-    useEffect(() => {
-        const activeGroup = navItems.find(item =>
-            item.children?.some(child => location.pathname.startsWith(child.to))
-        );
-        if (activeGroup && !expandedGroups.includes(activeGroup.label)) {
-            setExpandedGroups(prev => [...prev, activeGroup.label]);
-        }
-    }, [location.pathname]);
-
-    const toggleGroup = (label: string) => {
-        setExpandedGroups(prev =>
-            prev.includes(label)
-                ? prev.filter(g => g !== label)
-                : [...prev, label]
-        );
-    };
-
-    const isGroupActive = (item: NavItemConfig) => {
-        return item.children?.some(child => location.pathname.startsWith(child.to));
-    };
 
     return (
         <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
@@ -77,19 +52,16 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
                     <div key={item.label} className="nav-group-wrapper">
                         {item.children ? (
                             <>
-                                <button
-                                    className={`nav-item nav-parent ${isGroupActive(item) ? 'active-parent' : ''}`}
-                                    onClick={() => toggleGroup(item.label)}
-                                >
+                                {/* Section Header (Static) */}
+                                <div className="nav-group-label">
                                     <div className="nav-item-content">
                                         <span className="material-symbols-outlined">{item.icon}</span>
                                         <span>{item.label}</span>
                                     </div>
-                                    <span className={`material-symbols-outlined chevron ${expandedGroups.includes(item.label) ? 'expanded' : ''}`}>
-                                        expand_more
-                                    </span>
-                                </button>
-                                <div className={`nav-children ${expandedGroups.includes(item.label) ? 'show' : ''}`}>
+                                </div>
+
+                                {/* Flat Children List */}
+                                <div className="nav-children-flat">
                                     {item.children.map(child => (
                                         <NavLink
                                             key={child.to}
