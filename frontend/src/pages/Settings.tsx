@@ -109,11 +109,11 @@ const Settings = () => {
         closeModal();
         setLoading(true);
         try {
-            await api.post('/seed-data');
+            const res = await api.post('/admin/dummy/generate');
             setModalConfig({
                 isOpen: true,
                 title: 'Berhasil',
-                message: 'Data Dummy berhasil dibuat!',
+                message: `Data Dummy berhasil dibuat! Worksheets: ${res.data.created.worksheets}, Transaksi: ${res.data.created.transactions}`,
                 type: 'success',
                 showCancel: false,
                 onConfirm: closeModal
@@ -133,11 +133,11 @@ const Settings = () => {
         closeModal();
         setLoading(true);
         try {
-            await api.post('/reset-data');
+            const res = await api.delete('/admin/dummy/reset');
             setModalConfig({
                 isOpen: true,
                 title: 'Berhasil',
-                message: 'Semua data dummy berhasil dihapus.',
+                message: `Data transaksi berhasil dihapus. Item terhapus: ${res.data.deleted.transactions} transaksi, ${res.data.deleted.worksheets} worksheets.`,
                 type: 'success',
                 showCancel: false,
                 onConfirm: closeModal
@@ -146,6 +146,12 @@ const Settings = () => {
             setSuppliers([]);
             setCategories([]);
             setVarieties([]);
+            // Since we don't delete categories via resetAll() anymore (as per requirement to keep config), 
+            // actually we should probably re-fetch them instead of clearing local state if they are kept.
+            // But if resetAll() keeps them, we should fetch them.
+            fetchSuppliers(); // Assuming suppliers might be reset or kept (DummyService keeps master, so fetch)
+            fetchCategories();
+            fetchVarieties();
         } catch (error: any) {
             alert("Gagal menghapus data: " + (error.response?.data?.message || error.message));
         } finally {
