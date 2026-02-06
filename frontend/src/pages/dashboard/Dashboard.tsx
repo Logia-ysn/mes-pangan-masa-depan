@@ -107,7 +107,7 @@ const Dashboard = () => {
         tooltipBg: theme === 'dark' ? '#182430' : '#ffffff',
     };
 
-    // Prepare chart data with fallback
+    // Prepare chart data - NO MOCK DATA, real data only
     const chartData = useMemo(() => {
         if (data?.production?.trend_data && data.production.trend_data.length > 0) {
             return data.production.trend_data.map(item => ({
@@ -116,16 +116,8 @@ const Dashboard = () => {
                 beras: item.beras,
             }));
         }
-        // Mock data for visualization
-        return [
-            { date: '1 Feb', gabah: 5000, beras: 3200 },
-            { date: '2 Feb', gabah: 5500, beras: 3600 },
-            { date: '3 Feb', gabah: 4800, beras: 3100 },
-            { date: '4 Feb', gabah: 6000, beras: 3900 },
-            { date: '5 Feb', gabah: 5200, beras: 3400 },
-            { date: '6 Feb', gabah: 5800, beras: 3800 },
-            { date: '7 Feb', gabah: 6200, beras: 4100 },
-        ];
+        // Return empty array - no mock data in production
+        return [];
     }, [data]);
 
     if (loading) {
