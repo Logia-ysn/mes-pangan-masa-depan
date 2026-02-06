@@ -31,6 +31,8 @@ export const authApi = {
 export const dashboardApi = {
     getStats: (params?: { id_factory?: number; start_date?: string; end_date?: string }) =>
         api.get('/dashboard/stats', { params }),
+    getExecutive: (params?: { id_factory?: number }) =>
+        api.get('/dashboard/executive', { params }),
 };
 
 // Factory

@@ -9,10 +9,21 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [1.2.0] - 2026-02-06
 
+### Ditambahkan
+- **Executive Dashboard**: Redesign dashboard untuk level eksekutif dengan manufacturing KPIs:
+  - 8 KPI cards (OEE, Produksi, Rendemen, Downtime, Stok Gabah, Stok Beras, Maintenance, Target)
+  - Production Overview dengan chart trend 7/30 hari dan target progress bar
+  - Machine & OEE Panel dengan breakdown Availability/Performance/Quality
+  - Inventory Snapshot dengan stock level bars dan low stock alerts
+  - Maintenance Panel dengan jadwal upcoming dan overdue
+- **API Endpoint**: `GET /dashboard/executive` untuk data dashboard eksekutif
+- **Komponen Baru**: `KPICard`, `MachinePanel`, `InventoryPanel`, `MaintenancePanel`
+
 ### Diubah
 - **Sidebar Navigation**: Mengubah desain navigasi sidebar menjadi *Flat Navigation*. Menghapus sistem collapsible/dropdown untuk akses module yang lebih cepat dan langsung.
 - **Modul Fokus**: Menghapus modul **HRD**, **Finance**, dan **Sales** untuk memfokuskan aplikasi pada **Produksi** dan **Inventory/Stock**.
 - **Database Config**: Mengaktifkan `synchronize: true` pada TypeORM untuk sinkronisasi schema database otomatis dengan perubahan kode.
+- **Dashboard Service**: Extended dengan methods untuk OEE calculation, machine summary, inventory snapshot, dan maintenance aggregation.
 
 ### Dihapus
 - Modul HRD (Employee Attendance, etc)

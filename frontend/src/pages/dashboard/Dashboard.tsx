@@ -1,56 +1,88 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Header from '../../components/Layout/Header';
-import api, { dashboardApi } from '../../services/api';
+import { dashboardApi } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import KPICard from '../../components/Dashboard/KPICard';
+import MachinePanel from '../../components/Dashboard/MachinePanel';
+import InventoryPanel from '../../components/Dashboard/InventoryPanel';
+import MaintenancePanel from '../../components/Dashboard/MaintenancePanel';
+import './Dashboard.css';
 
-interface DashboardStats {
-    total_gabah_input: number;
-    total_beras_output: number;
-    average_rendemen: number;
-    total_revenue: number;
-    total_expenses: number;
-    total_employees: number;
+// Types for Executive Dashboard
+interface ExecutiveKPIs {
+    oee_score: number;
+    oee_status: 'good' | 'warning' | 'critical';
+    production_today: number;
+    production_trend: 'up' | 'down' | 'stable';
+    production_change_percent: number;
+    rendemen_avg: number;
+    rendemen_trend: 'up' | 'down' | 'stable';
+    downtime_hours: number;
+    downtime_trend: 'up' | 'down' | 'stable';
+    stock_gabah: number;
+    stock_gabah_status: 'good' | 'warning' | 'critical';
+    stock_beras: number;
+    stock_beras_status: 'good' | 'warning' | 'critical';
+    pending_maintenance: number;
+    maintenance_status: 'good' | 'warning' | 'critical';
 }
 
-interface Worksheet {
-    id: number;
-    worksheet_date: string;
-    shift: string;
-    gabah_input: number;
-    beras_output: number;
-    rendemen: number;
+interface ProductionOverview {
+    trend_data: { date: string; gabah: number; beras: number; rendemen: number }[];
+    target_today: number;
+    actual_today: number;
+    target_percent: number;
+    schedule_today: { shift: string; machine: string; product: string }[];
 }
 
-interface Machine {
-    id: number;
-    name: string;
-    status: string;
+interface MachinesSummary {
+    total: number;
+    active: number;
+    maintenance: number;
+    inactive: number;
+    top_downtime: { name: string; hours: number }[];
+    oee_breakdown: {
+        availability: number;
+        performance: number;
+        quality: number;
+    };
+}
+
+interface InventorySnapshot {
+    stocks: { name: string; quantity: number; max_capacity: number; unit: string; status: string }[];
+    low_stock_alerts: { product: string; current: number; minimum: number }[];
+    avg_stock_age_days: number;
+}
+
+interface MaintenancePanelData {
+    upcoming: { machine: string; due_date: string; type: string; days_until?: number }[];
+    overdue: { machine: string; due_date: string; type: string; days_overdue?: number }[];
+    tickets_this_month: number;
+}
+
+interface ExecutiveDashboardData {
+    kpis: ExecutiveKPIs;
+    production: ProductionOverview;
+    machines: MachinesSummary;
+    inventory: InventorySnapshot;
+    maintenance: MaintenancePanelData;
 }
 
 const Dashboard = () => {
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
-    const [machines, setMachines] = useState<Machine[]>([]);
+    const [data, setData] = useState<ExecutiveDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [dateRange, setDateRange] = useState<'7' | '30'>('7');
     const { theme } = useTheme();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsRes, worksheetsRes, machinesRes] = await Promise.all([
-                    dashboardApi.getStats(),
-                    api.get('/worksheets'),
-                    api.get('/machines')
-                ]);
-                setStats(statsRes.data);
-                // Handle both array and paginated response formats
-                const worksheetsData = worksheetsRes.data?.data || worksheetsRes.data || [];
-                setWorksheets(Array.isArray(worksheetsData) ? worksheetsData : []);
-                setMachines(machinesRes.data?.data || machinesRes.data || []);
+                const response = await dashboardApi.getExecutive();
+                setData(response.data);
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error('Error fetching executive dashboard:', error);
             } finally {
                 setLoading(false);
             }
@@ -61,76 +93,40 @@ const Dashboard = () => {
     const formatNumber = (num: number) =>
         new Intl.NumberFormat('id-ID').format(Number(num));
 
-    const formatCurrency = (num: number) =>
-        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
+    const formatWeight = (kg: number) => {
+        if (kg >= 1000) {
+            return `${(kg / 1000).toFixed(1)} ton`;
+        }
+        return `${formatNumber(kg)} kg`;
     };
 
-    // Calculate OEE (simplified)
-    const activeMachines = machines.filter(m => m.status === 'ACTIVE').length;
-    const oeeScore = machines.length > 0 ? Math.round((activeMachines / machines.length) * 100) : 0;
-
-    // Prepare Chart Data (Aggregate worksheets by date)
-    const productionTrend = useMemo(() => {
-        const grouped = worksheets.reduce((acc, curr) => {
-            const date = new Date(curr.worksheet_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-            if (!acc[date]) {
-                acc[date] = { date, input: 0, output: 0 };
-            }
-            acc[date].input += Number(curr.gabah_input || 0);
-            acc[date].output += Number(curr.beras_output || 0);
-            return acc;
-        }, {} as Record<string, { date: string, input: number, output: number }>);
-
-        // Sort by date (assuming worksheet_date string sorts correctly or needs proper sorting)
-        // For simplicity, converting object values to array. In real app, ensure date sorting.
-        let data = Object.values(grouped);
-
-        // Ensure accurate sorting
-        /* In a real scenario, sort by original date object/string before formatting */
-
-        // Mock data if empty for visualization
-        if (data.length === 0) {
-            data = [
-                { date: '1 Jan', input: 5000, output: 3200 },
-                { date: '2 Jan', input: 5500, output: 3600 },
-                { date: '3 Jan', input: 4800, output: 3100 },
-                { date: '4 Jan', input: 6000, output: 3900 },
-                { date: '5 Jan', input: 5200, output: 3400 },
-                { date: '6 Jan', input: 5800, output: 3800 },
-                { date: '7 Jan', input: 6200, output: 4100 },
-            ];
-        }
-
-        return data;
-    }, [worksheets]);
-
-    // Financial Chart Data (Mock vs Real)
-    // Since we only have total aggregated, we can't make a real trend without daily expense/revenue data.
-    // We'll use a mocked "Monthly Performance" chart or compare Categories if available.
-    // Let's create a "Revenue vs Expense" breakdown bar chart using the Totals as a single bar group, 
-    // or Mock a trend. Let's Mock a trend for "Last 6 Months" to look good.
-    const financialTrend = [
-        { month: 'Aug', revenue: 45000000, expenses: 32000000 },
-        { month: 'Sep', revenue: 48000000, expenses: 34000000 },
-        { month: 'Oct', revenue: 52000000, expenses: 35000000 },
-        { month: 'Nov', revenue: 51000000, expenses: 38000000 },
-        { month: 'Dec', revenue: 58000000, expenses: 40000000 },
-        { month: 'Jan', revenue: stats?.total_revenue || 60000000, expenses: stats?.total_expenses || 42000000 },
-    ];
-
+    // Chart colors based on theme
     const chartColors = {
         grid: theme === 'dark' ? '#233648' : '#e2e8f0',
         text: theme === 'dark' ? '#92adc9' : '#64748b',
         tooltipBg: theme === 'dark' ? '#182430' : '#ffffff',
     };
+
+    // Prepare chart data with fallback
+    const chartData = useMemo(() => {
+        if (data?.production?.trend_data && data.production.trend_data.length > 0) {
+            return data.production.trend_data.map(item => ({
+                date: new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+                gabah: item.gabah,
+                beras: item.beras,
+            }));
+        }
+        // Mock data for visualization
+        return [
+            { date: '1 Feb', gabah: 5000, beras: 3200 },
+            { date: '2 Feb', gabah: 5500, beras: 3600 },
+            { date: '3 Feb', gabah: 4800, beras: 3100 },
+            { date: '4 Feb', gabah: 6000, beras: 3900 },
+            { date: '5 Feb', gabah: 5200, beras: 3400 },
+            { date: '6 Feb', gabah: 5800, beras: 3800 },
+            { date: '7 Feb', gabah: 6200, beras: 4100 },
+        ];
+    }, [data]);
 
     if (loading) {
         return (
@@ -148,6 +144,59 @@ const Dashboard = () => {
         );
     }
 
+    const kpis = data?.kpis || {
+        oee_score: 0,
+        oee_status: 'warning' as const,
+        production_today: 0,
+        production_trend: 'stable' as const,
+        production_change_percent: 0,
+        rendemen_avg: 0,
+        rendemen_trend: 'stable' as const,
+        downtime_hours: 0,
+        downtime_trend: 'stable' as const,
+        stock_gabah: 0,
+        stock_gabah_status: 'warning' as const,
+        stock_beras: 0,
+        stock_beras_status: 'warning' as const,
+        pending_maintenance: 0,
+        maintenance_status: 'good' as const,
+    };
+
+    const production = data?.production || {
+        trend_data: [],
+        target_today: 15000,
+        actual_today: 0,
+        target_percent: 0,
+        schedule_today: [],
+    };
+
+    const machines = data?.machines || {
+        total: 0,
+        active: 0,
+        maintenance: 0,
+        inactive: 0,
+        top_downtime: [],
+        oee_breakdown: { availability: 0, performance: 0, quality: 0 },
+    };
+
+    const inventory = data?.inventory || {
+        stocks: [],
+        low_stock_alerts: [],
+        avg_stock_age_days: 0,
+    };
+
+    const maintenance = data?.maintenance || {
+        upcoming: [],
+        overdue: [],
+        tickets_this_month: 0,
+    };
+
+    const getOEEStatusLabel = (score: number) => {
+        if (score >= 85) return 'World Class';
+        if (score >= 60) return 'Good';
+        return 'Perlu Perbaikan';
+    };
+
     return (
         <>
             <Header title="Dashboard" subtitle="Selamat datang di ERP Pangan Masa Depan" />
@@ -160,9 +209,17 @@ const Dashboard = () => {
                         <p>Real-time manufacturing insights and performance metrics</p>
                     </div>
                     <div className="page-header-actions">
-                        <button className="btn btn-secondary">
-                            <span className="material-symbols-outlined icon-sm">calendar_today</span>
-                            Last 30 Days
+                        <button
+                            className={`btn ${dateRange === '7' ? 'btn-secondary' : 'btn-ghost'}`}
+                            onClick={() => setDateRange('7')}
+                        >
+                            7 Hari
+                        </button>
+                        <button
+                            className={`btn ${dateRange === '30' ? 'btn-secondary' : 'btn-ghost'}`}
+                            onClick={() => setDateRange('30')}
+                        >
+                            30 Hari
                         </button>
                         <button className="btn btn-primary">
                             <span className="material-symbols-outlined icon-sm">download</span>
@@ -171,107 +228,124 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    {/* OEE Score */}
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">OEE Score</span>
-                            <span className="material-symbols-outlined stat-card-icon">speed</span>
-                        </div>
-                        <div className="stat-card-value">{oeeScore}%</div>
-                        <span className={`stat-card-trend ${oeeScore >= 60 ? 'up' : 'down'}`}>
-                            <span className="material-symbols-outlined icon-sm">
-                                {oeeScore >= 60 ? 'trending_up' : 'trending_down'}
-                            </span>
-                            {oeeScore >= 85 ? 'World Class' : oeeScore >= 60 ? 'Average' : 'Perlu Perbaikan'}
-                        </span>
-                        <div className="stat-card-progress">
-                            <div className="stat-card-progress-bar" style={{ width: `${oeeScore}%` }} />
-                        </div>
-                    </div>
-
-                    {/* Production Output */}
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Produksi Beras</span>
-                            <span className="material-symbols-outlined stat-card-icon">grain</span>
-                        </div>
-                        <div className="stat-card-value">{formatNumber(stats?.total_beras_output || 0)}</div>
-                        <span className="stat-card-trend up">
-                            <span className="material-symbols-outlined icon-sm">trending_up</span>
-                            kg
-                        </span>
-                    </div>
-
-                    {/* Revenue */}
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Pendapatan</span>
-                            <span className="material-symbols-outlined stat-card-icon">payments</span>
-                        </div>
-                        <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(stats?.total_revenue || 0)}</div>
-                        <span className="stat-card-trend up">
-                            <span className="material-symbols-outlined icon-sm">trending_up</span>
-                            Bulan Ini
-                        </span>
-                    </div>
-
-                    {/* Employees */}
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total Karyawan</span>
-                            <span className="material-symbols-outlined stat-card-icon">group</span>
-                        </div>
-                        <div className="stat-card-value">{stats?.total_employees || 0}</div>
-                        <span className="badge badge-success">
-                            <span className="material-symbols-outlined icon-sm">check_circle</span>
-                            Aktif
-                        </span>
-                    </div>
+                {/* Section 1: KPI Cards */}
+                <div className="kpi-grid">
+                    <KPICard
+                        label="OEE Score"
+                        value={`${kpis.oee_score}%`}
+                        icon="speed"
+                        status={kpis.oee_status}
+                        statusLabel={getOEEStatusLabel(kpis.oee_score)}
+                        progress={kpis.oee_score}
+                    />
+                    <KPICard
+                        label="Produksi Hari Ini"
+                        value={formatWeight(kpis.production_today)}
+                        icon="grain"
+                        trend={kpis.production_trend}
+                        trendValue={kpis.production_change_percent !== 0 ? `${kpis.production_change_percent > 0 ? '+' : ''}${kpis.production_change_percent}%` : ''}
+                    />
+                    <KPICard
+                        label="Rendemen"
+                        value={`${kpis.rendemen_avg.toFixed(1)}%`}
+                        icon="percent"
+                        trend={kpis.rendemen_trend}
+                        status={kpis.rendemen_avg >= 60 ? 'good' : kpis.rendemen_avg >= 50 ? 'warning' : 'critical'}
+                    />
+                    <KPICard
+                        label="Downtime Mesin"
+                        value={`${kpis.downtime_hours.toFixed(1)}h`}
+                        icon="timer_off"
+                        trend={kpis.downtime_trend}
+                        status={kpis.downtime_hours <= 2 ? 'good' : kpis.downtime_hours <= 8 ? 'warning' : 'critical'}
+                    />
+                    <KPICard
+                        label="Stok Gabah"
+                        value={formatWeight(kpis.stock_gabah)}
+                        icon="warehouse"
+                        status={kpis.stock_gabah_status}
+                    />
+                    <KPICard
+                        label="Stok Beras"
+                        value={formatWeight(kpis.stock_beras)}
+                        icon="inventory_2"
+                        status={kpis.stock_beras_status}
+                    />
+                    <KPICard
+                        label="Pending Maintenance"
+                        value={kpis.pending_maintenance}
+                        icon="build"
+                        status={kpis.maintenance_status}
+                        statusLabel={kpis.pending_maintenance === 0 ? 'Semua OK' : `${kpis.pending_maintenance} tiket`}
+                    />
+                    <KPICard
+                        label="Target Harian"
+                        value={`${production.target_percent}%`}
+                        icon="flag"
+                        status={production.target_percent >= 80 ? 'good' : production.target_percent >= 50 ? 'warning' : 'critical'}
+                        progress={production.target_percent}
+                    />
                 </div>
 
-                {/* Main Content Grid */}
-                <div className="grid grid-2-1" style={{ marginTop: 24 }}>
-                    {/* Production Summary & Trend */}
+                {/* Section 2 & 3: Production Overview + Machine Panel */}
+                <div className="dashboard-grid">
+                    {/* Production Overview */}
                     <div className="card">
                         <div className="card-header">
                             <div>
                                 <h3 className="card-title">Ringkasan Produksi</h3>
-                                <p className="card-subtitle">Output Gabah & Beras (7 Hari Terakhir)</p>
+                                <p className="card-subtitle">Output Gabah & Beras ({dateRange} Hari Terakhir)</p>
                             </div>
-                            <Link to="/production/oee" className="btn btn-ghost btn-sm">
+                            <Link to="/production/worksheets" className="btn btn-ghost btn-sm">
                                 Lihat Detail
                                 <span className="material-symbols-outlined icon-sm">arrow_forward</span>
                             </Link>
                         </div>
 
-                        {/* Summary Numbers */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
-                            <div style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 12 }}>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Gabah Input</p>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{formatNumber(stats?.total_gabah_input || 0)} kg</h3>
+                        {/* Summary Stats */}
+                        <div className="summary-stats">
+                            <div className="summary-stat">
+                                <span className="summary-stat-label">Total Gabah Input</span>
+                                <span className="summary-stat-value">{formatWeight(chartData.reduce((sum, d) => sum + d.gabah, 0))}</span>
                             </div>
-                            <div style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 12 }}>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Beras Output</p>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{formatNumber(stats?.total_beras_output || 0)} kg</h3>
+                            <div className="summary-stat">
+                                <span className="summary-stat-label">Total Beras Output</span>
+                                <span className="summary-stat-value">{formatWeight(chartData.reduce((sum, d) => sum + d.beras, 0))}</span>
                             </div>
-                            <div style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 12 }}>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Avg Rendemen</p>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--success)' }}>{(stats?.average_rendemen || 0).toFixed(2)}%</h3>
+                            <div className="summary-stat">
+                                <span className="summary-stat-label">Avg Rendemen</span>
+                                <span className="summary-stat-value success">{kpis.rendemen_avg.toFixed(1)}%</span>
+                            </div>
+                        </div>
+
+                        {/* Target Progress */}
+                        <div className="target-progress">
+                            <div className="target-header">
+                                <span className="target-label">Target Produksi Hari Ini</span>
+                                <span className="target-percent">{production.target_percent}%</span>
+                            </div>
+                            <div className="target-bar">
+                                <div
+                                    className="target-bar-fill"
+                                    style={{ width: `${Math.min(100, production.target_percent)}%` }}
+                                />
+                            </div>
+                            <div className="target-values">
+                                <span>{formatWeight(production.actual_today)}</span>
+                                <span>Target: {formatWeight(production.target_today)}</span>
                             </div>
                         </div>
 
                         {/* Chart */}
-                        <div style={{ height: 300, width: '100%' }}>
+                        <div style={{ height: 280, width: '100%', marginTop: 20 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={productionTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorInput" x1="0" y1="0" x2="0" y2="1">
+                                        <linearGradient id="colorGabah" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
                                             <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                                         </linearGradient>
-                                        <linearGradient id="colorOutput" x1="0" y1="0" x2="0" y2="1">
+                                        <linearGradient id="colorBeras" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
                                             <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
                                         </linearGradient>
@@ -300,18 +374,18 @@ const Dashboard = () => {
                                     />
                                     <Area
                                         type="monotone"
-                                        dataKey="input"
+                                        dataKey="gabah"
                                         stroke="var(--primary)"
                                         fillOpacity={1}
-                                        fill="url(#colorInput)"
+                                        fill="url(#colorGabah)"
                                         name="Gabah Input (kg)"
                                     />
                                     <Area
                                         type="monotone"
-                                        dataKey="output"
+                                        dataKey="beras"
                                         stroke="var(--success)"
                                         fillOpacity={1}
-                                        fill="url(#colorOutput)"
+                                        fill="url(#colorBeras)"
                                         name="Beras Output (kg)"
                                     />
                                 </AreaChart>
@@ -319,141 +393,14 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* Right Column: Financial & Machine Status */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        {/* Financial Chart */}
-                        <div className="card">
-                            <div className="card-header">
-                                <h3 className="card-title">Performa Keuangan</h3>
-                            </div>
-                            <div style={{ height: 200 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={financialTrend}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
-                                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: chartColors.text, fontSize: 10 }} />
-                                        <Tooltip
-                                            cursor={{ fill: 'transparent' }}
-                                            contentStyle={{
-                                                backgroundColor: chartColors.tooltipBg,
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: 8
-                                            }}
-                                        />
-                                        <Bar dataKey="revenue" fill="var(--success)" radius={[4, 4, 0, 0]} name="Pemasukan" />
-                                        <Bar dataKey="expenses" fill="var(--error)" radius={[4, 4, 0, 0]} name="Pengeluaran" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Machine Status List */}
-                        <div className="card" style={{ flex: 1 }}>
-                            <div className="card-header">
-                                <h3 className="card-title">Status Mesin</h3>
-                                <Link to="/production/machines" className="btn btn-ghost btn-sm">
-                                    <span className="material-symbols-outlined icon-sm">arrow_forward</span>
-                                </Link>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {machines.slice(0, 4).map((machine) => (
-                                    <div key={machine.id} style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: '8px 0',
-                                        borderBottom: '1px solid var(--border-subtle)'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div style={{
-                                                width: 8,
-                                                height: 8,
-                                                borderRadius: '50%',
-                                                background: machine.status === 'ACTIVE' ? 'var(--success)' :
-                                                    machine.status === 'MAINTENANCE' ? 'var(--warning)' : 'var(--error)'
-                                            }} />
-                                            <span className="font-medium" style={{ fontSize: '0.875rem' }}>{machine.name}</span>
-                                        </div>
-                                        <span className={`badge ${machine.status === 'ACTIVE' ? 'badge-success' :
-                                            machine.status === 'MAINTENANCE' ? 'badge-warning' : 'badge-error'
-                                            }`} style={{ fontSize: '0.7rem' }}>
-                                            {machine.status === 'ACTIVE' ? 'Aktif' :
-                                                machine.status === 'MAINTENANCE' ? 'Maint.' : 'Off'}
-                                        </span>
-                                    </div>
-                                ))}
-                                {machines.length === 0 && (
-                                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                        Belum ada mesin
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    {/* Machine & OEE Panel */}
+                    <MachinePanel data={machines} />
                 </div>
 
-                {/* Recent Worksheets */}
-                <div className="card" style={{ marginTop: 24 }}>
-                    <div className="card-header">
-                        <div>
-                            <h3 className="card-title">Worksheet Terbaru</h3>
-                            <p className="card-subtitle">5 produksi terakhir</p>
-                        </div>
-                        <Link to="/production/worksheets" className="btn btn-ghost btn-sm">
-                            Lihat Semua
-                            <span className="material-symbols-outlined icon-sm">arrow_forward</span>
-                        </Link>
-                    </div>
-                    {worksheets.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined">assignment</span>
-                            </div>
-                            <h3>Belum ada worksheet</h3>
-                        </div>
-                    ) : (
-                        <div className="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Tanggal</th>
-                                        <th>Shift</th>
-                                        <th>Gabah Input</th>
-                                        <th>Beras Output</th>
-                                        <th>Rendemen</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {worksheets.slice(0, 5).map((ws) => (
-                                        <tr key={ws.id}>
-                                            <td>{formatDate(ws.worksheet_date)}</td>
-                                            <td>
-                                                <span className="badge badge-muted">
-                                                    {ws.shift === 'SHIFT_1' ? 'Pagi' : ws.shift === 'SHIFT_2' ? 'Siang' : 'Malam'}
-                                                </span>
-                                            </td>
-                                            <td className="font-mono">{formatNumber(ws.gabah_input)} kg</td>
-                                            <td className="font-mono">{formatNumber(ws.beras_output)} kg</td>
-                                            <td>
-                                                <span style={{
-                                                    color: (ws.rendemen || 0) >= 60 ? 'var(--success)' : 'var(--warning)',
-                                                    fontWeight: 600
-                                                }}>
-                                                    {Number(ws.rendemen || 0).toFixed(1)}%
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className="badge badge-success">
-                                                    <span className="material-symbols-outlined icon-sm">check_circle</span>
-                                                    Selesai
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                {/* Section 4 & 5: Inventory + Maintenance */}
+                <div className="dashboard-grid-half">
+                    <InventoryPanel data={inventory} />
+                    <MaintenancePanel data={maintenance} />
                 </div>
             </div>
         </>

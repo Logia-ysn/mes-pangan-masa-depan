@@ -1,0 +1,626 @@
+/* Executive Dashboard Styles */
+
+/* ===== KPI Cards Grid ===== */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1280px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== KPI Card ===== */
+.kpi-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.kpi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.kpi-card-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.kpi-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+}
+
+.kpi-card-icon .material-symbols-outlined {
+    font-size: 22px;
+    color: var(--primary);
+}
+
+.kpi-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.kpi-card-unit {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.kpi-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.kpi-card-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.trend-up .kpi-card-trend {
+    color: var(--success);
+}
+
+.trend-down .kpi-card-trend {
+    color: var(--error);
+}
+
+.trend-stable .kpi-card-trend {
+    color: var(--text-muted);
+}
+
+.kpi-status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.kpi-status-badge.status-good {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+}
+
+.kpi-status-badge.status-warning {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--warning);
+}
+
+.kpi-status-badge.status-critical {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+}
+
+.kpi-card-progress {
+    height: 4px;
+    background: var(--bg-elevated);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+.kpi-card-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light, #4da6ff));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+/* ===== Dashboard Grid Layout ===== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-grid-half {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid-half {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Dashboard Panel (Shared) ===== */
+.dashboard-panel {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.panel-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.panel-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 4px 0 0 0;
+}
+
+.panel-section {
+    margin-bottom: 20px;
+}
+
+.panel-section:last-child {
+    margin-bottom: 0;
+}
+
+.panel-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.panel-section-header h4,
+.panel-section h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+}
+
+.panel-section-header h4 {
+    margin: 0;
+}
+
+/* ===== Machine Panel ===== */
+.machine-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.machine-stat {
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.machine-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+}
+
+.machine-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.machine-stat.active .machine-stat-value {
+    color: var(--success);
+}
+
+.machine-stat.maintenance .machine-stat-value {
+    color: var(--warning);
+}
+
+.machine-stat.inactive .machine-stat-value {
+    color: var(--error);
+}
+
+/* OEE Breakdown */
+.oee-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oee-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oee-metric-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+.oee-metric-header span:first-child {
+    color: var(--text-secondary);
+}
+
+.oee-metric-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.oee-progress-bar {
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.oee-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.oee-progress-fill.availability {
+    background: linear-gradient(90deg, #06b6d4, #22d3ee);
+}
+
+.oee-progress-fill.performance {
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+.oee-progress-fill.quality {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+/* Downtime List */
+.downtime-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.downtime-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.downtime-machine {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.downtime-hours {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--error);
+}
+
+/* ===== Inventory Panel ===== */
+.stock-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.stock-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stock-bar-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.stock-name {
+    color: var(--text-secondary);
+}
+
+.stock-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stock-bar-track {
+    height: 8px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stock-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.stock-bar-fill.stock-good {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.stock-bar-fill.stock-warning {
+    background: linear-gradient(90deg, #eab308, #facc15);
+}
+
+.stock-bar-fill.stock-critical {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.low-stock-alerts {
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.alert-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--error);
+    margin-bottom: 8px;
+}
+
+.alert-header .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 4px 0;
+}
+
+.alert-product {
+    color: var(--text-secondary);
+}
+
+.alert-qty {
+    color: var(--error);
+    font-weight: 500;
+}
+
+.stock-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* ===== Maintenance Panel ===== */
+.maintenance-section {
+    margin-bottom: 16px;
+}
+
+.maintenance-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-header .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.maintenance-section.overdue .section-header {
+    color: var(--error);
+}
+
+.maintenance-section.upcoming .section-header {
+    color: var(--text-secondary);
+}
+
+.maintenance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.maintenance-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.maintenance-item.overdue {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.maintenance-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.maintenance-machine {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.maintenance-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.days-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--bg-card);
+}
+
+.days-badge.overdue {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+}
+
+.days-badge.soon {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--warning);
+}
+
+.empty-message {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 16px;
+}
+
+/* ===== Production Summary Card ===== */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summary-stat {
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.summary-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.summary-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.summary-stat-value.success {
+    color: var(--success);
+}
+
+/* ===== Target Progress ===== */
+.target-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 12px;
+}
+
+.target-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.target-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.target-percent {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.target-bar {
+    height: 10px;
+    background: var(--bg-card);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.target-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #4da6ff);
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.target-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
