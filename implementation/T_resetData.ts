@@ -20,19 +20,14 @@ export const t_resetData: T_resetData = async (req, res) => {
         await WorksheetSideProduct.createQueryBuilder().delete().execute();
         await WorksheetInputBatch.createQueryBuilder().delete().execute();
         await Worksheet.createQueryBuilder().delete().execute();
-
         await Maintenance.createQueryBuilder().delete().execute();
 
-        // Master Data
-        await Stock.createQueryBuilder().delete().execute();
-        await Employee.createQueryBuilder().delete().execute();
-        await Machine.createQueryBuilder().delete().execute();
-        await Supplier.createQueryBuilder().delete().execute();
-        await RawMaterialCategory.createQueryBuilder().delete().execute();
-        await RawMaterialVariety.createQueryBuilder().delete().execute();
-        await ProductType.createQueryBuilder().delete().execute();
+        // Reset Stocks to 0 instead of deleting
+        await Stock.createQueryBuilder().update().set({ quantity: 0 }).execute();
 
-        return { message: "Semua data dummy berhasil dihapus." };
+        // NOTE: Master Data is PRESERVED (User, Employee, Machine, ProductType, etc)
+
+        return { message: "Data transaksi berhasil dihapus. Master data tersimpan." };
     } catch (error) {
         console.error("Reset Error:", error);
         res.status(500);

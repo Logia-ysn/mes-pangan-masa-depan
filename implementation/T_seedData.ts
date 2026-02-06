@@ -253,102 +253,160 @@ export const t_seedData: T_seedData = async (req, res) => {
 
     const stockRaw = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: pTypeRaw.id } });
 
-    // Worksheets - skip if exists
+    // --- RICH DUMMY DATA GENERATION (30 Days) ---
+
+    // Stats counter
+    const stats = {
+        worksheets: 0,
+        movements: 0,
+        maintenance: 0,
+        days_covered: 30
+    };
+
+    // Only generate if no worksheets exist (to avoid duplication on multiple runs without clear)
     if (await Worksheet.count() === 0) {
-        // Find dependencies
-        const machine = await Machine.findOne({ where: { code: 'MSN-001' } }); // Husker
-        const outputProduct = await OutputProduct.findOne({ where: { code: 'PK', id_factory: factoryId1 } });
-        const stockGabah = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: (await ProductType.findOne({ where: { code: 'GKP' } }))?.id } });
+        console.log("Generating 30 days of dummy data...");
 
-        // Setup Worksheet
-        const wsData: any = {
-            id_factory: factoryId1,
-            id_user: userId,
-            worksheet_date: new Date(),
-            shift: WorkshiftType.SHIFT_1,
-            gabah_input: 1000,
-            beras_output: 600,
-            menir_output: 50,
-            dedak_output: 100,
-            sekam_output: 200,
-            rendemen: 60.0,
-            machine_hours: 8,
-            downtime_hours: 0,
-            notes: "Produksi lancar - PMD 1",
-            // New Fields
-            id_machine: machine?.id,
-            id_output_product: outputProduct?.id,
-            batch_code: `BATCH-${new Date().getTime()}`,
-            production_cost: 500000,
-            raw_material_cost: 6000000,
-            side_product_revenue: 150000,
-            hpp: 6350000,
-            hpp_per_kg: 10583.33
-        };
-        const ws = await Worksheet.save(Worksheet.create(wsData));
+        const machineHusker = await Machine.findOne({ where: { code: 'MSN-001' } });
+        const machinePolisher = await Machine.findOne({ where: { code: 'MSN-003' } }); // Assuming 003 is Polisher
+        const outputProductPmd1 = await OutputProduct.findOne({ where: { code: 'PK', id_factory: factoryId1 } });
 
-        // 1. Input Batch
-        if (stockGabah) {
-            await WorksheetInputBatch.save(WorksheetInputBatch.create({
-                id_worksheet: ws.id,
-                id_stock: stockGabah.id,
-                quantity: 1000,
-                unit_price: 6000,
-                total_cost: 6000000,
-                batch_code: "IN-BATCH-001"
-            } as any));
+        // Product Types for Stock Movement
+        const ptGabah = await ProductType.findOne({ where: { code: 'GKP' } });
+        const ptBeras = await ProductType.findOne({ where: { code: 'BRS-P' } });
+        const ptSekam = await ProductType.findOne({ where: { code: 'SKM' } });
+        const ptDedak = await ProductType.findOne({ where: { code: 'DDK' } });
+
+        // Get Stocks objects
+        const stockGabah = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: ptGabah?.id } });
+        const stockBeras = await Stock.findOne({ where: { id_factory: factoryId1, id_product_type: ptBeras?.id } });
+
+        const today = new Date();
+
+        // Loop last 30 days
+        for (let i = 30; i >= 0; i--) {
+            const currentDate = new Date(today);
+            currentDate.setDate(today.getDate() - i);
+
+            // Skip Sundays for realism
+            if (currentDate.getDay() === 0) continue;
+
+            // Random 1-3 shifts per day
+            const shifts = Math.floor(Math.random() * 3) + 1;
+
+            for (let s = 1; s <= shifts; s++) {
+                // Random Input: 5 to 15 tons
+                const inputQty = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
+
+                // Random Rendemen: 58% - 64%
+                const rendemen = 58 + Math.random() * 6;
+                const outputQty = Math.round(inputQty * (rendemen / 100));
+
+                // Byproducts approx
+                const sekamQty = Math.round(inputQty * 0.20);
+                const dedakQty = Math.round(inputQty * 0.10);
+                const menirQty = Math.round(inputQty * 0.05);
+
+                const shiftName = s === 1 ? WorkshiftType.SHIFT_1 : s === 2 ? WorkshiftType.SHIFT_2 : WorkshiftType.SHIFT_3;
+
+                // Create Worksheet
+                const ws = await Worksheet.save(Worksheet.create({
+                    id_factory: factoryId1,
+                    id_user: userId,
+                    worksheet_date: currentDate,
+                    shift: shiftName,
+                    id_machine: machineHusker?.id,
+                    id_output_product: outputProductPmd1?.id,
+                    batch_code: `BATCH-${currentDate.getFullYear()}${currentDate.getMonth()}${currentDate.getDate()}-${s}`,
+
+                    gabah_input: inputQty,
+                    beras_output: outputQty,
+                    menir_output: menirQty,
+                    dedak_output: dedakQty,
+                    sekam_output: sekamQty,
+                    rendemen: parseFloat(rendemen.toFixed(2)),
+
+                    machine_hours: 7 + Math.random(), // 7-8 hours
+                    downtime_hours: Math.random() > 0.8 ? Math.random() * 2 : 0, // 20% chance of downtime
+                    notes: `Auto-generated production data`,
+
+                    production_cost: inputQty * 100, // Dummy calc
+                    raw_material_cost: inputQty * 6000,
+                    side_product_revenue: (sekamQty * 200) + (dedakQty * 1500),
+                    hpp: (inputQty * 6000) + (inputQty * 100) - ((sekamQty * 200) + (dedakQty * 1500)),
+                    hpp_per_kg: 0 // Calc later
+                } as any));
+
+                stats.worksheets++;
+
+                // Input Batch
+                if (stockGabah) {
+                    await WorksheetInputBatch.save(WorksheetInputBatch.create({
+                        id_worksheet: ws.id,
+                        id_stock: stockGabah.id,
+                        quantity: inputQty,
+                        unit_price: 6000,
+                        total_cost: inputQty * 6000,
+                        batch_code: `IN-${ws.batch_code}`
+                    } as any));
+
+                    // STOCK MOVEMENT OUT (Raw Material)
+                    await StockMovement.save(StockMovement.create({
+                        id_stock: stockGabah.id,
+                        id_user: userId,
+                        movement_type: MovementType.OUT,
+                        quantity: inputQty,
+                        reference_type: "PRODUCTION_INPUT",
+                        reference_id: ws.id,
+                        created_at: currentDate
+                    } as any));
+                    stats.movements++;
+                }
+
+                // STOCK MOVEMENT IN (Finished Good)
+                if (stockBeras) {
+                    await StockMovement.save(StockMovement.create({
+                        id_stock: stockBeras.id,
+                        id_user: userId,
+                        movement_type: MovementType.IN,
+                        quantity: outputQty,
+                        reference_type: "PRODUCTION_OUTPUT",
+                        reference_id: ws.id,
+                        created_at: currentDate
+                    } as any));
+                    stats.movements++;
+                }
+
+                // Random Maintenance Log (5% chance per shift)
+                if (Math.random() < 0.05 && machineHusker) {
+                    await Maintenance.save(Maintenance.create({
+                        id_machine: machineHusker.id,
+                        id_user: userId,
+                        maintenance_type: Math.random() > 0.5 ? MaintenanceType.PREVENTIVE : MaintenanceType.CORRECTIVE,
+                        maintenance_date: currentDate,
+                        cost: 150000 + Math.floor(Math.random() * 500000),
+                        description: "Routine maintenance / minor repair",
+                        status: "COMPLETED"
+                    } as any));
+                    stats.maintenance++;
+                }
+            }
         }
 
-        // 2. Side Products (Manual creation since no cascade)
-        // Sekam
-        await WorksheetSideProduct.save(WorksheetSideProduct.create({
-            id_worksheet: ws.id,
-            product_code: 'SKM',
-            product_name: 'Sekam',
-            quantity: 200,
-            is_auto_calculated: true,
-            auto_percentage: 20,
-            product_price: 200, // Assuming price
-            total_value: 40000
-        } as any));
-
-        // Dedak
-        await WorksheetSideProduct.save(WorksheetSideProduct.create({
-            id_worksheet: ws.id,
-            product_code: 'DDK',
-            product_name: 'Dedak',
-            quantity: 100,
-            is_auto_calculated: true,
-            auto_percentage: 10,
-            product_price: 1500,
-            total_value: 150000
-        } as any));
+        // Update Final Stock Levels to realistic values
+        // Instead of calculating net movement, we just set a "current stock" that makes sense for the dashboard
+        if (stockGabah) {
+            stockGabah.quantity = 25000 + Math.floor(Math.random() * 10000); // 25-35 tons
+            await stockGabah.save();
+        }
+        if (stockBeras) {
+            stockBeras.quantity = 10000 + Math.floor(Math.random() * 5000); // 10-15 tons
+            await stockBeras.save();
+        }
     }
 
-    // Stock Movement
-    if (stockRaw && await StockMovement.count() === 0) {
-        await StockMovement.save(StockMovement.create({
-            id_stock: stockRaw.id,
-            id_user: userId,
-            movement_type: MovementType.IN,
-            quantity: 5000,
-            reference_type: "PURCHASE",
-            notes: "Stok awal"
-        } as any));
-    }
-
-    // Maintenance
-    const mach1 = await Machine.findOne({ where: { code: 'MSN-001' } });
-    if (mach1 && await Maintenance.count() === 0) {
-        await Maintenance.save(Maintenance.create({
-            id_machine: mach1.id,
-            id_user: userId,
-            maintenance_type: MaintenanceType.PREVENTIVE,
-            maintenance_date: new Date(),
-            cost: 150000,
-            description: "Ganti oli dan cleaning filter"
-        } as any));
-    }
-
-    return { message: "Dummy data generated successfully with Process Categories and Output Products" };
+    return {
+        message: "Rich dummy data generated successfully",
+        stats: stats
+    };
 }
