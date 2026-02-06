@@ -174,11 +174,19 @@ class DashboardService {
         const prodTrend = prodChange > 5 ? 'up' : prodChange < -5 ? 'down' : 'stable';
 
         // Stock status calculation
-        const gabahStock = stockData.stocks.find(s =>
-            s.name.toLowerCase().includes('gabah') || s.name.toLowerCase().includes('gkp')
-        )?.quantity || 0;
+        // FIX: Use reduce() for Gabah to sum ALL variants (Kering, Basah, etc), not just find() first one
+        const gabahStock = stockData.stocks
+            .filter(s => {
+                const name = (s.name || '').toLowerCase();
+                return name.includes('gabah') || name.includes('gkp') || name.includes('gkg');
+            })
+            .reduce((sum, s) => sum + s.quantity, 0);
+
         const berasStock = stockData.stocks
-            .filter(s => s.name.toLowerCase().includes('beras'))
+            .filter(s => {
+                const name = (s.name || '').toLowerCase();
+                return name.includes('beras');
+            })
             .reduce((sum, s) => sum + s.quantity, 0);
 
         // Dynamic stock status based on relative levels
@@ -408,7 +416,7 @@ class DashboardService {
         if (factoryId) {
             stocks = await stockRepository.findByFactory(factoryId);
         } else {
-            const result = await stockRepository.findWithFilters({ limit: 100 });
+            const result = await stockRepository.findWithFilters({ limit: 1000 });
             stocks = result.stocks;
         }
 
@@ -597,7 +605,7 @@ class DashboardService {
         if (factoryId) {
             stocks = await stockRepository.findByFactory(factoryId);
         } else {
-            const result = await stockRepository.findWithFilters({ limit: 100 });
+            const result = await stockRepository.findWithFilters({ limit: 1000 });
             stocks = result.stocks;
         }
 
