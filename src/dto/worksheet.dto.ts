@@ -31,6 +31,126 @@ export interface CreateWorksheetDTO {
     input_category_code?: string;
     process_step?: ProcessStep;
     production_cost?: number;
+    // Extended fields
+    id_output_product?: number;
+    process_steps?: string;
+    batch_code?: string;
+    raw_material_cost?: number;
+    side_product_revenue?: number;
+    hpp?: number;
+    hpp_per_kg?: number;
+    input_batches?: any[];
+    side_products?: any[];
+    id_machine?: number; // Added missing field
+    id_user: number; // Added missing field
+}
+
+import { IsNumber, IsString, IsDateString, IsOptional, IsEnum, ValidateNested, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CreateWorksheetSchema implements CreateWorksheetDTO {
+    @IsNumber()
+    id_factory!: number;
+
+    @IsNumber()
+    id_user!: number;
+
+    @IsDateString()
+    worksheet_date!: string;
+
+    @IsEnum(WorkshiftType)
+    shift!: WorkshiftType;
+
+    @IsNumber()
+    gabah_input!: number;
+
+    @IsNumber()
+    beras_output!: number;
+
+    @IsOptional()
+    @IsNumber()
+    menir_output?: number;
+
+    @IsOptional()
+    @IsNumber()
+    dedak_output?: number;
+
+    @IsOptional()
+    @IsNumber()
+    sekam_output?: number;
+
+    @IsOptional()
+    @IsNumber()
+    machine_hours?: number;
+
+    @IsOptional()
+    @IsNumber()
+    downtime_hours?: number;
+
+    @IsOptional()
+    @IsString()
+    downtime_reason?: string;
+
+    @IsOptional()
+    @IsString()
+    notes?: string;
+
+    // Extended fields
+    @IsOptional()
+    @IsNumber()
+    input_batch_id?: number;
+
+    @IsOptional()
+    @IsString()
+    input_category_code?: string;
+
+    @IsOptional()
+    @IsString()
+    process_step?: ProcessStep;
+
+    @IsOptional()
+    @IsNumber()
+    production_cost?: number;
+
+    @IsOptional()
+    @IsNumber()
+    id_output_product?: number;
+
+    @IsOptional()
+    @IsString()
+    process_steps?: string;
+
+    @IsOptional()
+    @IsString()
+    batch_code?: string;
+
+    @IsOptional()
+    @IsNumber()
+    raw_material_cost?: number;
+
+    @IsOptional()
+    @IsNumber()
+    side_product_revenue?: number;
+
+    @IsOptional()
+    @IsNumber()
+    hpp?: number;
+
+    @IsOptional()
+    @IsNumber()
+    hpp_per_kg?: number;
+
+    @IsOptional()
+    @IsArray()
+    input_batches?: any[]; // Simplified for now
+
+    @IsOptional()
+    @IsArray()
+    side_products?: any[]; // Simplified for now
+
+    @IsOptional()
+    @IsNumber()
+    id_machine?: number;
 }
 
 export interface UpdateWorksheetDTO extends Partial<CreateWorksheetDTO> {

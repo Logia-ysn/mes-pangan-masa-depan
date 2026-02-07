@@ -17,6 +17,8 @@ import { worksheetRepository, ProductionStats } from '../repositories/worksheet.
 import { stockRepository } from '../repositories/stock.repository';
 import { stockMovementRepository } from '../repositories/stock-movement.repository';
 import { stockService } from './stock.service';
+import { AppDataSource } from '../../data-source';
+import { EntityManager } from 'typeorm';
 import { WorkshiftType } from '../../types/model/enum/WorkshiftType';
 import { MovementType } from '../../types/model/enum/MovementType';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
@@ -85,8 +87,56 @@ class WorksheetService {
      * Create new worksheet and update stock
      */
     async createWorksheet(dto: CreateWorksheetDTO): Promise<Worksheet> {
-        // Create worksheet entity
-        const worksheet = new Worksheet() as any; // Type assertion for extended properties
+        return await AppDataSource.transaction(async (manager: EntityManager) => {
+            // 1. Create and Save Worksheet
+            const worksheet = new Worksheet() as any;
+            this.mapDtoToWorksheet(worksheet, dto);
+            worksheet.rendemen = this.calculateRendemen(dto.gabah_input, dto.beras_output);
+
+            const savedWorksheet = await manager.save(Worksheet, worksheet);
+
+            // 2. Handle Input Batches
+            if (dto.input_batches && dto.input_batches.length > 0) {
+                await this.handleInputBatches(manager, savedWorksheet, dto.input_batches, dto.id_user, dto.id_factory);
+            } else {
+                // Legacy fallback
+                // Note: We need to use service method but strictly it should use manager. 
+                // For now, let's keep it simple or implement the logic here using manager to be safe.
+                // Re-implementation of updateStockFromProduction using manager would be best, 
+                // but stockService.updateStock manages its own repository calls. 
+                // Ideally stockService SHOULD accept a transaction manager. 
+                // For this refactor, I will assume stockService.updateStock is safe enough OR 
+                // I will replicate the logic to use the transaction manager. A safer bet is to use the manager.
+
+                await this.updateStockFromProductionTransactional(manager, savedWorksheet, dto.id_user);
+            }
+
+            // 3. Handle Side Products
+            const savedSideProducts: WorksheetSideProduct[] = [];
+            if (dto.side_products && dto.side_products.length > 0) {
+                for (const spDto of dto.side_products) {
+                    const sp = new WorksheetSideProduct();
+                    sp.id_worksheet = savedWorksheet.id;
+                    sp.product_code = spDto.product_code;
+                    sp.product_name = spDto.product_name;
+                    sp.quantity = spDto.quantity;
+                    sp.unit_price = spDto.unit_price;
+                    sp.total_value = spDto.quantity * (spDto.unit_price || 0);
+                    sp.is_auto_calculated = spDto.is_auto_calculated;
+                    sp.auto_percentage = spDto.auto_percentage;
+                    await manager.save(WorksheetSideProduct, sp);
+                    savedSideProducts.push(sp);
+                }
+            }
+
+            // 4. Handle Output Stocks
+            await this.addOutputStocksTransactional(manager, savedWorksheet, dto.id_user, savedSideProducts);
+
+            return savedWorksheet;
+        });
+    }
+
+    private mapDtoToWorksheet(worksheet: any, dto: CreateWorksheetDTO) {
         worksheet.id_factory = dto.id_factory;
         worksheet.id_user = dto.id_user;
         worksheet.worksheet_date = new Date(dto.worksheet_date);
@@ -101,14 +151,12 @@ class WorksheetService {
         worksheet.downtime_reason = dto.downtime_reason;
         worksheet.notes = dto.notes;
 
-        // New PMD 1 fields
+        // Extended fields
         worksheet.input_batch_id = dto.input_batch_id;
         worksheet.id_machine = dto.id_machine;
         worksheet.input_category_code = dto.input_category_code;
         worksheet.process_step = dto.process_step;
         worksheet.production_cost = dto.production_cost || 0;
-
-        // Enhancement fields (HPP Calculation)
         worksheet.id_output_product = dto.id_output_product;
         worksheet.process_steps = dto.process_steps;
         worksheet.batch_code = dto.batch_code;
@@ -116,71 +164,220 @@ class WorksheetService {
         worksheet.side_product_revenue = dto.side_product_revenue || 0;
         worksheet.hpp = dto.hpp || 0;
         worksheet.hpp_per_kg = dto.hpp_per_kg || 0;
+    }
 
-        // Calculate rendemen (yield percentage)
-        worksheet.rendemen = this.calculateRendemen(dto.gabah_input, dto.beras_output);
+    private async handleInputBatches(
+        manager: EntityManager,
+        worksheet: any,
+        batches: InputBatchDTO[],
+        userId: number,
+        factoryId: number
+    ) {
+        for (const batchDto of batches) {
+            const batch = new WorksheetInputBatch();
+            batch.id_worksheet = worksheet.id;
+            batch.id_stock = batchDto.id_stock;
+            batch.quantity = batchDto.quantity;
+            batch.unit_price = batchDto.unit_price || 0;
+            batch.total_cost = (batchDto.quantity) * (batchDto.unit_price || 0);
+            await manager.save(WorksheetInputBatch, batch);
 
-        // Save worksheet
-        await worksheet.save();
+            // Deduct stock
+            // Note: We need to use stockService logic but within transaction.
+            // Since stockService doesn't expose transactional methods yet, 
+            // we'll implement the critical movement creation here manually to ensure atomicity.
+            // TODO: Refactor StockService to accept TransactionManager
 
-        // Handle Input Batches
-        if (dto.input_batches && dto.input_batches.length > 0) {
-            for (const batchDto of dto.input_batches) {
-                const batch = new WorksheetInputBatch();
-                batch.id_worksheet = worksheet.id;
-                batch.id_stock = batchDto.id_stock;
-                batch.quantity = batchDto.quantity;
-                batch.unit_price = batchDto.unit_price || 0;
-                batch.total_cost = (batchDto.quantity) * (batchDto.unit_price || 0);
-                await batch.save();
+            // For now, we unfortunately have to risk calling the non-transactional stock service 
+            // OR revert to manual movement creation.
+            // Let's use manual creation for safety within this transaction block.
 
-                // Deduct stock for this specific batch
-                const stock = await stockRepository.findById(batchDto.id_stock);
-                if (stock && stock.otm_id_product_type) {
-                    await stockService.updateStock({
-                        factoryId: dto.id_factory,
+            const stock = await stockRepository.findById(batchDto.id_stock); // This uses default repo, acceptable for read
+            if (stock && stock.otm_id_product_type) {
+                await this.createStockMovementTransactional(
+                    manager,
+                    stock.id,
+                    userId,
+                    MovementType.OUT,
+                    batchDto.quantity,
+                    'WORKSHEET',
+                    worksheet.id,
+                    JSON.stringify({
+                        type: 'PRODUCTION_INPUT_BATCH',
                         productCode: stock.otm_id_product_type.code,
-                        quantity: batchDto.quantity,
-                        movementType: MovementType.OUT,
-                        userId: dto.id_user,
-                        referenceType: 'WORKSHEET',
-                        referenceId: worksheet.id,
-                        notes: JSON.stringify({
-                            type: 'PRODUCTION_INPUT_BATCH',
-                            productCode: stock.otm_id_product_type.code,
-                            batch_id: batch.id,
+                        batch_id: batch.id,
+                        batch_code: worksheet.batch_code
+                    })
+                );
+            }
+        }
+    }
+
+    // Helper to create movement within transaction
+    private async createStockMovementTransactional(
+        manager: EntityManager,
+        stockId: number,
+        userId: number,
+        type: MovementType,
+        qty: number,
+        refType: string,
+        refId: number,
+        notes: string
+    ) {
+        const movement = new StockMovement();
+        movement.id_stock = stockId;
+        movement.id_user = userId;
+        movement.movement_type = type;
+        movement.quantity = qty;
+        movement.reference_type = refType;
+        movement.reference_id = refId;
+        movement.notes = notes;
+        await manager.save(StockMovement, movement);
+
+        // Update Stock Quantity
+        // We must fetch STOCK using MANAGER to ensure we lock/update correctly within transaction
+        const StockModel = require('../../types/model/table/Stock').Stock;
+        const stockEntity = await manager.findOne(StockModel, { where: { id: stockId } }) as any;
+
+        if (stockEntity) {
+            if (type === MovementType.IN) {
+                stockEntity.quantity = Number(stockEntity.quantity) + Number(qty);
+            } else {
+                stockEntity.quantity = Number(stockEntity.quantity) - Number(qty);
+            }
+            await manager.save(StockModel, stockEntity);
+        }
+    }
+
+    private async updateStockFromProductionTransactional(manager: EntityManager, worksheet: any, userId: number) {
+        const inputProductCode = worksheet.input_category_code || 'GKP';
+
+        const StockModel = require('../../types/model/table/Stock').Stock;
+        const ProductTypeModel = require('../../types/model/table/ProductType').ProductType;
+
+        const productType = await manager.findOne(ProductTypeModel, { where: { code: inputProductCode } });
+        if (!productType) return;
+
+        // Correctly use findOne with where clause and cast relation IDs if needed
+        const stock = await manager.findOne(StockModel, {
+            where: {
+                id_factory: worksheet.id_factory,
+                id_product_type: (productType as any).id
+            }
+        });
+
+        if (stock) {
+            await this.createStockMovementTransactional(
+                manager,
+                (stock as any).id,
+                userId,
+                MovementType.OUT,
+                worksheet.gabah_input,
+                'WORKSHEET',
+                worksheet.id,
+                JSON.stringify({
+                    type: 'PRODUCTION_INPUT',
+                    productCode: inputProductCode,
+                    process_step: worksheet.process_step
+                })
+            );
+        }
+    }
+
+    private async addOutputStocksTransactional(manager: EntityManager, worksheet: any, userId: number, sideProducts: WorksheetSideProduct[]) {
+        const StockModel = require('../../types/model/table/Stock').Stock;
+        const OutputProductModel = require('../../types/model/table/OutputProduct').OutputProduct;
+        const ProductTypeModel = require('../../types/model/table/ProductType').ProductType;
+
+        // 1. Main Output
+        let outputCode = '';
+        if (worksheet.id_output_product && worksheet.beras_output > 0) {
+            const op = await manager.findOne(OutputProductModel, { where: { id: worksheet.id_output_product } });
+            if (op) outputCode = (op as any).code;
+        } else if (worksheet.beras_output > 0) {
+            outputCode = worksheet.process_step === PROCESS_STEPS.DRYING ? 'GKG' :
+                worksheet.process_step === PROCESS_STEPS.HUSKING ? 'PK' :
+                    worksheet.process_step === PROCESS_STEPS.STONE_POLISHING ? 'GLOSOR' : 'BRS-P';
+        }
+
+        if (outputCode) {
+            const pt = await manager.findOne(ProductTypeModel, { where: { code: outputCode } });
+            if (pt) {
+                const ptId = (pt as any).id;
+                let stock = await manager.findOne(StockModel, {
+                    where: {
+                        id_factory: worksheet.id_factory,
+                        id_product_type: ptId
+                    }
+                });
+
+                if (!stock) {
+                    const newStock = new StockModel();
+                    newStock.id_factory = worksheet.id_factory;
+                    newStock.id_product_type = ptId;
+                    newStock.quantity = 0;
+                    newStock.unit = (pt as any).unit;
+                    stock = await manager.save(StockModel, newStock);
+                }
+
+                await this.createStockMovementTransactional(
+                    manager,
+                    (stock as any).id,
+                    userId,
+                    MovementType.IN,
+                    worksheet.beras_output,
+                    'WORKSHEET',
+                    worksheet.id,
+                    JSON.stringify({
+                        type: 'PRODUCTION_OUTPUT',
+                        productCode: outputCode,
+                        output_type: 'main',
+                        batch_code: worksheet.batch_code
+                    })
+                );
+            }
+        }
+
+        // 2. Side Products
+        for (const sp of sideProducts) {
+            if (sp.quantity > 0) {
+                const pt = await manager.findOne(ProductTypeModel, { where: { code: sp.product_code } });
+                if (pt) {
+                    const ptId = (pt as any).id;
+                    let stock = await manager.findOne(StockModel, {
+                        where: {
+                            id_factory: worksheet.id_factory,
+                            id_product_type: ptId
+                        }
+                    });
+
+                    if (!stock) {
+                        const newStock = new StockModel();
+                        newStock.id_factory = worksheet.id_factory;
+                        newStock.id_product_type = ptId;
+                        newStock.quantity = 0;
+                        newStock.unit = (pt as any).unit;
+                        stock = await manager.save(StockModel, newStock);
+                    }
+
+                    await this.createStockMovementTransactional(
+                        manager,
+                        (stock as any).id,
+                        userId,
+                        MovementType.IN,
+                        sp.quantity,
+                        'WORKSHEET',
+                        worksheet.id,
+                        JSON.stringify({
+                            type: 'PRODUCTION_OUTPUT',
+                            productCode: sp.product_code,
+                            output_type: 'side_product',
                             batch_code: worksheet.batch_code
                         })
-                    });
+                    );
                 }
             }
-        } else {
-            // Fallback to old logic if no input_batches provided (backward compatibility)
-            await this.updateStockFromProduction(worksheet, dto.id_user);
         }
-
-        // Handle Side Products
-        const savedSideProducts: WorksheetSideProduct[] = [];
-        if (dto.side_products && dto.side_products.length > 0) {
-            for (const spDto of dto.side_products) {
-                const sp = new WorksheetSideProduct();
-                sp.id_worksheet = worksheet.id;
-                sp.product_code = spDto.product_code;
-                sp.product_name = spDto.product_name;
-                sp.quantity = spDto.quantity;
-                sp.unit_price = spDto.unit_price;
-                sp.total_value = spDto.quantity * (spDto.unit_price || 0);
-                sp.is_auto_calculated = spDto.is_auto_calculated;
-                sp.auto_percentage = spDto.auto_percentage;
-                await sp.save();
-                savedSideProducts.push(sp);
-            }
-        }
-
-        // Add output stocks based on configured Output Product and Side Products
-        await this.addOutputStocks(worksheet, dto.id_user, savedSideProducts);
-
-        return worksheet;
     }
 
     /**

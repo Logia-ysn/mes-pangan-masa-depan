@@ -183,10 +183,15 @@ def detect(image_path):
         return {"error": str(e)}
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "No image path provided"}))
+    try:
+        if len(sys.argv) < 2:
+            print(json.dumps({"error": "No image path provided"}))
+            sys.exit(1)
+        
+        path = sys.argv[1]
+        result = detect(path)
+        print(json.dumps(result))
+    except Exception as e:
+        # Catch-all to ensure we always print JSON
+        print(json.dumps({"error": f"Unhandled ML Error: {str(e)}"}))
         sys.exit(1)
-    
-    path = sys.argv[1]
-    result = detect(path)
-    print(json.dumps(result))

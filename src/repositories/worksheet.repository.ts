@@ -129,46 +129,30 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
      * Get production statistics for a factory
      */
     async getProductionStats(id_factory: number, start_date?: Date, end_date?: Date): Promise<ProductionStats> {
-        const where: any = { id_factory };
+        const query = this.entity.createQueryBuilder('worksheet')
+            .select('COALESCE(SUM(worksheet.gabah_input), 0)', 'total_input')
+            .addSelect('COALESCE(SUM(worksheet.beras_output), 0)', 'total_output')
+            .addSelect('COALESCE(SUM(worksheet.menir_output), 0)', 'total_menir')
+            .addSelect('COALESCE(SUM(worksheet.dedak_output), 0)', 'total_dedak')
+            .addSelect('COALESCE(SUM(worksheet.sekam_output), 0)', 'total_sekam')
+            .addSelect('COALESCE(AVG(NULLIF(worksheet.rendemen, 0)), 0)', 'avg_rendemen')
+            .addSelect('COUNT(worksheet.id)', 'worksheet_count')
+            .where('worksheet.id_factory = :id_factory', { id_factory });
 
         if (start_date && end_date) {
-            where.worksheet_date = Between(start_date, end_date);
+            query.andWhere('worksheet.worksheet_date BETWEEN :start_date AND :end_date', { start_date, end_date });
         }
 
-        const worksheets = await Worksheet.find({ where });
-
-        if (worksheets.length === 0) {
-            return {
-                total_input: 0,
-                total_output: 0,
-                total_menir: 0,
-                total_dedak: 0,
-                total_sekam: 0,
-                avg_rendemen: 0,
-                worksheet_count: 0
-            };
-        }
-
-        const stats = worksheets.reduce((acc, ws) => ({
-            total_input: acc.total_input + Number(ws.gabah_input),
-            total_output: acc.total_output + Number(ws.beras_output),
-            total_menir: acc.total_menir + Number(ws.menir_output),
-            total_dedak: acc.total_dedak + Number(ws.dedak_output),
-            total_sekam: acc.total_sekam + Number(ws.sekam_output),
-            total_rendemen: acc.total_rendemen + (ws.rendemen ? Number(ws.rendemen) : 0)
-        }), {
-            total_input: 0,
-            total_output: 0,
-            total_menir: 0,
-            total_dedak: 0,
-            total_sekam: 0,
-            total_rendemen: 0
-        });
+        const result = await query.getRawOne();
 
         return {
-            ...stats,
-            avg_rendemen: stats.total_rendemen / worksheets.length,
-            worksheet_count: worksheets.length
+            total_input: parseFloat(result.total_input),
+            total_output: parseFloat(result.total_output),
+            total_menir: parseFloat(result.total_menir),
+            total_dedak: parseFloat(result.total_dedak),
+            total_sekam: parseFloat(result.total_sekam),
+            avg_rendemen: parseFloat(result.avg_rendemen),
+            worksheet_count: parseInt(result.worksheet_count, 10)
         };
     }
 
