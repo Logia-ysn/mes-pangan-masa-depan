@@ -55,9 +55,7 @@ interface RawMaterialVariety {
 }
 
 const RawMaterialReceipt = () => {
-    const navigate = useNavigate();
     const { showSuccess, showError, showWarning } = useToast();
-    const [theme] = useState('dark');
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [batches, setBatches] = useState<RawMaterialBatch[]>([]);

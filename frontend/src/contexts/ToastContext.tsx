@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import toast, { Toaster, ToastOptions } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface ToastContextType {
-    showSuccess: (title: string, message?: string) => void;
-    showError: (title: string, message?: string) => void;
-    showWarning: (title: string, message?: string) => void;
-    showInfo: (title: string, message?: string) => void;
+    showSuccess: (title: string, message: string) => void;
+    showError: (title: string, message: string) => void;
+    showWarning: (title: string, message: string) => void;
+    showInfo: (title: string, message: string) => void;
     // Add generic toast method if needed
     toast: typeof toast;
 }

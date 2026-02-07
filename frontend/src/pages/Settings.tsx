@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import Header from '../components/Layout/Header';
 import api, { supplierApi, rawMaterialCategoryApi, rawMaterialVarietyApi } from '../services/api';
