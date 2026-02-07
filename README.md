@@ -52,6 +52,8 @@ Memberdayakan industri penggilingan padi dengan teknologi modern untuk meningkat
 - **Machine Maintenance**: Penjadwalan dan tracking maintenance mesin
 - **Export & Print**: Export data ke CSV dan cetak laporan
 - **Dark/Light Theme**: UI modern dengan dukungan tema gelap/terang
+- **Interactive Feedback**: Sistem notifikasi global (Toast) untuk status aksi user
+- **Error Handling**: Proteksi aplikasi dengan Error Boundaries untuk stabilitas maksimal
 
 ---
 

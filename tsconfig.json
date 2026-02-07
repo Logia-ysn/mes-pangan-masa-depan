@@ -11,6 +11,8 @@
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
     // Recommended Options
     "strict": false,
     "jsx": "react-jsx",

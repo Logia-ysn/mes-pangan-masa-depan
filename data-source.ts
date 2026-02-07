@@ -8,7 +8,8 @@ const config: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'secretpassword',
   database: process.env.DB_NAME || 'mydb',
-  synchronize: true,
+  synchronize: process.env.NODE_ENV !== 'production', // CRITICAL: Disable in production
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // Required for Railway/Heroku
   logging: false,
   migrations: [
     __dirname + '/migration/**.ts'
