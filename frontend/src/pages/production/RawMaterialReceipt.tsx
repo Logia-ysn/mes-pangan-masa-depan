@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Layout/Header';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
 import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi } from '../../services/api';
@@ -236,7 +235,7 @@ const RawMaterialReceipt = () => {
 
     const handleSave = async () => {
         if (!formData.batchId || !formData.netWeight || !formData.categoryId) {
-            alert("Harap lengkapi field yang wajib (Batch ID, Kategori, Berat Netto)");
+            showError("Validasi", "Harap lengkapi field yang wajib (Batch ID, Kategori, Berat Netto)");
             return;
         }
 
@@ -324,11 +323,11 @@ const RawMaterialReceipt = () => {
             if (editingId) {
                 // UPDATE
                 stockRes = await api.put(`/stock-movements/${editingId}`, payload);
-                alert("Penerimaan Bahan Baku berhasil diperbarui!");
+                showSuccess("Berhasil", "Penerimaan Bahan Baku berhasil diperbarui!");
             } else {
                 // CREATE
                 stockRes = await api.post('/stock-movements', payload);
-                alert("Penerimaan Bahan Baku berhasil disimpan!");
+                showSuccess("Berhasil", "Penerimaan Bahan Baku berhasil disimpan!");
             }
 
             // Save/Update Quality Analysis (Optional: logic to link QA to Stock Movement stays same)
@@ -369,7 +368,7 @@ const RawMaterialReceipt = () => {
 
         } catch (error: any) {
             console.error(error);
-            alert("Gagal menyimpan: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -382,7 +381,7 @@ const RawMaterialReceipt = () => {
             fetchData();
         } catch (error: any) {
             console.error(error);
-            alert("Gagal menghapus: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         }
     };
 
@@ -415,7 +414,7 @@ const RawMaterialReceipt = () => {
 
     const handleSaveNewSupplier = async () => {
         if (!newSupplier.code || !newSupplier.name) {
-            alert("Kode dan Nama Supplier wajib diisi");
+            showError("Validasi", "Kode dan Nama Supplier wajib diisi");
             return;
         }
         setLoading(true);
@@ -426,11 +425,11 @@ const RawMaterialReceipt = () => {
                 setFormData({ ...formData, supplierId: String(response.data.id) });
                 setShowAddSupplierModal(false);
                 setNewSupplier({ code: '', name: '', contact_person: '', phone: '' });
-                alert("Supplier berhasil ditambahkan!");
+                showSuccess("Berhasil", "Supplier berhasil ditambahkan!");
             }
         } catch (error: any) {
             console.error(error);
-            alert("Gagal menyimpan supplier: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -438,7 +437,7 @@ const RawMaterialReceipt = () => {
 
     const handleSaveNewCategory = async () => {
         if (!newCategory.code || !newCategory.name) {
-            alert("Kode dan Nama Kategori wajib diisi");
+            showError("Validasi", "Kode dan Nama Kategori wajib diisi");
             return;
         }
         setLoading(true);
@@ -449,11 +448,11 @@ const RawMaterialReceipt = () => {
                 setFormData({ ...formData, categoryId: String(response.data.id) });
                 setShowAddCategoryModal(false);
                 setNewCategory({ code: '', name: '', description: '' });
-                alert("Kategori berhasil ditambahkan!");
+                showSuccess("Berhasil", "Kategori berhasil ditambahkan!");
             }
         } catch (error: any) {
             console.error(error);
-            alert("Gagal menyimpan kategori: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -461,7 +460,7 @@ const RawMaterialReceipt = () => {
 
     const handleSaveNewVariety = async () => {
         if (!newVariety.code || !newVariety.name) {
-            alert("Kode dan Nama Varietas wajib diisi");
+            showError("Validasi", "Kode dan Nama Varietas wajib diisi");
             return;
         }
         setLoading(true);
@@ -472,11 +471,11 @@ const RawMaterialReceipt = () => {
                 setFormData({ ...formData, varietyId: String(response.data.id) });
                 setShowAddVarietyModal(false);
                 setNewVariety({ code: '', name: '', description: '' });
-                alert("Varietas berhasil ditambahkan!");
+                showSuccess("Berhasil", "Varietas berhasil ditambahkan!");
             }
         } catch (error: any) {
             console.error(error);
-            alert("Gagal menyimpan varietas: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -624,7 +623,7 @@ const RawMaterialReceipt = () => {
                                         style={{ width: '100%', border: '1px dashed var(--border-color)', height: 44, justifyContent: 'center' }}
                                         onClick={() => {
                                             if (!formData.varietyId) {
-                                                alert("Please select a Variety first");
+                                                showWarning("Perhatian", "Pilih Varietas terlebih dahulu");
                                                 return;
                                             }
                                             setShowAnalysisModal(true);
