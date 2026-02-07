@@ -1,53 +1,66 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import Toast, { type ToastType } from '../components/UI/Toast';
-
-interface ToastData {
-    id: string;
-    type: ToastType;
-    title: string;
-    message?: string;
-    duration?: number;
-}
+import React, { createContext, useContext, useCallback } from 'react';
+import toast, { Toaster, ToastOptions } from 'react-hot-toast';
 
 interface ToastContextType {
-    addToast: (type: ToastType, title: string, message?: string, duration?: number) => void;
     showSuccess: (title: string, message?: string) => void;
     showError: (title: string, message?: string) => void;
     showWarning: (title: string, message?: string) => void;
     showInfo: (title: string, message?: string) => void;
+    // Add generic toast method if needed
+    toast: typeof toast;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [toasts, setToasts] = useState<ToastData[]>([]);
 
-    const addToast = useCallback((type: ToastType, title: string, message?: string, duration = 5000) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setToasts(prev => [...prev, { id, type, title, message, duration }]);
+    const showSuccess = useCallback((title: string, message?: string) => {
+        toast.success(message ? `${title}: ${message}` : title);
     }, []);
 
-    const removeToast = useCallback((id: string) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+    const showError = useCallback((title: string, message?: string) => {
+        toast.error(message ? `${title}: ${message}` : title, { duration: 5000 });
     }, []);
 
-    const showSuccess = useCallback((title: string, message?: string) => addToast('success', title, message), [addToast]);
-    const showError = useCallback((title: string, message?: string) => addToast('error', title, message), [addToast]);
-    const showWarning = useCallback((title: string, message?: string) => addToast('warning', title, message), [addToast]);
-    const showInfo = useCallback((title: string, message?: string) => addToast('info', title, message), [addToast]);
+    const showWarning = useCallback((title: string, message?: string) => {
+        toast(message ? `${title}: ${message}` : title, {
+            icon: '⚠️',
+            style: {
+                background: '#FFF3CD',
+                color: '#856404',
+            }
+        });
+    }, []);
+
+    const showInfo = useCallback((title: string, message?: string) => {
+        toast(message ? `${title}: ${message}` : title, {
+            icon: 'ℹ️',
+        });
+    }, []);
 
     return (
-        <ToastContext.Provider value={{ addToast, showSuccess, showError, showWarning, showInfo }}>
+        <ToastContext.Provider value={{ showSuccess, showError, showWarning, showInfo, toast }}>
             {children}
-            <div className="toast-container">
-                {toasts.map(toast => (
-                    <Toast
-                        key={toast.id}
-                        {...toast}
-                        onClose={removeToast}
-                    />
-                ))}
-            </div>
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    style: {
+                        background: '#333',
+                        color: '#fff',
+                        zIndex: 9999,
+                    },
+                    success: {
+                        style: {
+                            background: '#155724',
+                        }
+                    },
+                    error: {
+                        style: {
+                            background: '#721c24',
+                        }
+                    }
+                }}
+            />
         </ToastContext.Provider>
     );
 };

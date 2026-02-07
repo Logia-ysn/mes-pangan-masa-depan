@@ -490,11 +490,14 @@ class WorksheetService {
     /**
      * Revert all output stocks for a worksheet (used during Edit)
      */
-    private async revertOutputStocks(worksheetId: number): Promise<void> {
+    /**
+     * Revert all output stocks for a worksheet (used during Edit) - Transactional
+     */
+    private async revertOutputStocksTransactional(manager: EntityManager, worksheetId: number): Promise<void> {
+        const StockModel = require('../../types/model/table/Stock').Stock;
+
         // Find all movements created by this worksheet for OUTPUTS
-        // We look for movements where reference_id = worksheetId AND movement_type = IN
-        // Ideally checking notes for 'PRODUCTION_OUTPUT' is safer but IN + WORKSHEET Ref is sufficient for now
-        const movements = await StockMovement.find({
+        const movements = await manager.find(StockMovement, {
             where: {
                 reference_type: 'WORKSHEET',
                 reference_id: worksheetId,
@@ -504,14 +507,13 @@ class WorksheetService {
 
         for (const move of movements) {
             // Reverse the stock impact: Deduct the quantity back
-            // We need to fetch the Stock entity to update it
-            const stock = await stockRepository.findById(move.id_stock);
+            const stock = await manager.findOne(StockModel, { where: { id: move.id_stock } }) as any;
             if (stock) {
                 // Decrease quantity (revert IN)
                 stock.quantity = Number(stock.quantity) - Number(move.quantity);
-                await stock.save();
+                await manager.save(StockModel, stock);
                 // Delete the movement record
-                await move.remove();
+                await manager.remove(StockMovement, move);
             }
         }
     }
@@ -519,71 +521,76 @@ class WorksheetService {
     /**
      * Update existing worksheet
      */
+    /**
+     * Update existing worksheet
+     */
     async updateWorksheet(dto: UpdateWorksheetDTO): Promise<Worksheet> {
-        const worksheet = await worksheetRepository.findById(dto.id) as any;
+        return await AppDataSource.transaction(async (manager: EntityManager) => {
+            const worksheet = await manager.findOne(Worksheet, { where: { id: dto.id } }) as any;
 
-        if (!worksheet) {
-            throw new NotFoundError('Worksheet', dto.id);
-        }
-
-        // Update fields if provided
-        if (dto.worksheet_date) worksheet.worksheet_date = new Date(dto.worksheet_date);
-        if (dto.shift) worksheet.shift = dto.shift;
-        if (dto.gabah_input !== undefined) worksheet.gabah_input = dto.gabah_input;
-        if (dto.beras_output !== undefined) worksheet.beras_output = dto.beras_output;
-        if (dto.menir_output !== undefined) worksheet.menir_output = dto.menir_output;
-        if (dto.dedak_output !== undefined) worksheet.dedak_output = dto.dedak_output;
-        if (dto.sekam_output !== undefined) worksheet.sekam_output = dto.sekam_output;
-        if (dto.machine_hours !== undefined) worksheet.machine_hours = dto.machine_hours;
-        if (dto.downtime_hours !== undefined) worksheet.downtime_hours = dto.downtime_hours;
-        if (dto.downtime_reason !== undefined) worksheet.downtime_reason = dto.downtime_reason;
-        if (dto.notes !== undefined) worksheet.notes = dto.notes;
-
-        // Extended fields
-        if (dto.id_machine !== undefined) worksheet.id_machine = dto.id_machine;
-        if (dto.id_output_product !== undefined) worksheet.id_output_product = dto.id_output_product;
-        if (dto.batch_code !== undefined) worksheet.batch_code = dto.batch_code;
-        if (dto.raw_material_cost !== undefined) worksheet.raw_material_cost = dto.raw_material_cost;
-        if (dto.side_product_revenue !== undefined) worksheet.side_product_revenue = dto.side_product_revenue;
-        if (dto.hpp !== undefined) worksheet.hpp = dto.hpp;
-        if (dto.hpp_per_kg !== undefined) worksheet.hpp_per_kg = dto.hpp_per_kg;
-
-        // Recalculate rendemen
-        worksheet.rendemen = this.calculateRendemen(worksheet.gabah_input, worksheet.beras_output);
-        worksheet.updated_at = new Date();
-
-        await worksheet.save();
-
-        // Handle Side Products Update (Replace and Re-sync Stock)
-        if (dto.side_products) {
-            // 1. Revert previous output stocks
-            await this.revertOutputStocks(worksheet.id);
-
-            // 2. Delete existing detailed records
-            await WorksheetSideProduct.delete({ id_worksheet: worksheet.id });
-
-            // 3. Create new detailed records
-            const savedSideProducts: WorksheetSideProduct[] = [];
-            for (const spDto of dto.side_products) {
-                const sp = new WorksheetSideProduct();
-                sp.id_worksheet = worksheet.id;
-                sp.product_code = spDto.product_code;
-                sp.product_name = spDto.product_name;
-                sp.quantity = spDto.quantity;
-                sp.unit_price = spDto.unit_price;
-                sp.total_value = spDto.quantity * (spDto.unit_price || 0);
-                sp.is_auto_calculated = spDto.is_auto_calculated;
-                sp.auto_percentage = spDto.auto_percentage;
-                await sp.save();
-                savedSideProducts.push(sp);
+            if (!worksheet) {
+                throw new NotFoundError('Worksheet', dto.id);
             }
 
-            // 4. Apply new output stocks
-            // Note: We use the *updated* worksheet data (from memory entity)
-            await this.addOutputStocks(worksheet, worksheet.id_user, savedSideProducts);
-        }
+            // Update fields if provided
+            if (dto.worksheet_date) worksheet.worksheet_date = new Date(dto.worksheet_date);
+            if (dto.shift) worksheet.shift = dto.shift;
+            if (dto.gabah_input !== undefined) worksheet.gabah_input = dto.gabah_input;
+            if (dto.beras_output !== undefined) worksheet.beras_output = dto.beras_output;
+            if (dto.menir_output !== undefined) worksheet.menir_output = dto.menir_output;
+            if (dto.dedak_output !== undefined) worksheet.dedak_output = dto.dedak_output;
+            if (dto.sekam_output !== undefined) worksheet.sekam_output = dto.sekam_output;
+            if (dto.machine_hours !== undefined) worksheet.machine_hours = dto.machine_hours;
+            if (dto.downtime_hours !== undefined) worksheet.downtime_hours = dto.downtime_hours;
+            if (dto.downtime_reason !== undefined) worksheet.downtime_reason = dto.downtime_reason;
+            if (dto.notes !== undefined) worksheet.notes = dto.notes;
 
-        return worksheet;
+            // Extended fields
+            if (dto.id_machine !== undefined) worksheet.id_machine = dto.id_machine;
+            if (dto.id_output_product !== undefined) worksheet.id_output_product = dto.id_output_product;
+            if (dto.batch_code !== undefined) worksheet.batch_code = dto.batch_code;
+            if (dto.raw_material_cost !== undefined) worksheet.raw_material_cost = dto.raw_material_cost;
+            if (dto.side_product_revenue !== undefined) worksheet.side_product_revenue = dto.side_product_revenue;
+            if (dto.hpp !== undefined) worksheet.hpp = dto.hpp;
+            if (dto.hpp_per_kg !== undefined) worksheet.hpp_per_kg = dto.hpp_per_kg;
+
+            // Recalculate rendemen
+            worksheet.rendemen = this.calculateRendemen(worksheet.gabah_input, worksheet.beras_output);
+            worksheet.updated_at = new Date();
+
+            await manager.save(Worksheet, worksheet);
+
+            // Handle Side Products Update (Replace and Re-sync Stock)
+            if (dto.side_products) {
+                // 1. Revert previous output stocks
+                await this.revertOutputStocksTransactional(manager, worksheet.id);
+
+                // 2. Delete existing detailed records
+                await manager.delete(WorksheetSideProduct, { id_worksheet: worksheet.id });
+
+                // 3. Create new detailed records
+                const savedSideProducts: WorksheetSideProduct[] = [];
+                for (const spDto of dto.side_products) {
+                    const sp = new WorksheetSideProduct();
+                    sp.id_worksheet = worksheet.id;
+                    sp.product_code = spDto.product_code;
+                    sp.product_name = spDto.product_name;
+                    sp.quantity = spDto.quantity;
+                    sp.unit_price = spDto.unit_price;
+                    sp.total_value = spDto.quantity * (spDto.unit_price || 0);
+                    sp.is_auto_calculated = spDto.is_auto_calculated;
+                    sp.auto_percentage = spDto.auto_percentage;
+                    await manager.save(WorksheetSideProduct, sp);
+                    savedSideProducts.push(sp);
+                }
+
+                // 4. Apply new output stocks
+                // Note: We use the *updated* worksheet data (from memory entity)
+                await this.addOutputStocksTransactional(manager, worksheet, worksheet.id_user, savedSideProducts);
+            }
+
+            return worksheet;
+        });
     }
 
     /**

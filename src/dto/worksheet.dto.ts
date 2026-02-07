@@ -48,6 +48,43 @@ export interface CreateWorksheetDTO {
 import { IsNumber, IsString, IsDateString, IsOptional, IsEnum, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
+// DTO Classes for Nested Validation
+export class InputBatchDTO {
+    @IsNumber()
+    id_stock!: number;
+
+    @IsNumber()
+    quantity!: number;
+
+    @IsOptional()
+    @IsNumber()
+    unit_price?: number;
+}
+
+export class SideProductDTO {
+    @IsString()
+    product_code!: string;
+
+    @IsString()
+    product_name!: string;
+
+    @IsNumber()
+    quantity!: number;
+
+    @IsNumber()
+    unit_price!: number;
+
+    @IsNumber()
+    total_value!: number;
+
+    @IsOptional()
+    is_auto_calculated!: boolean;
+
+    @IsOptional()
+    @IsNumber()
+    auto_percentage?: number;
+}
+
 export class CreateWorksheetSchema implements CreateWorksheetDTO {
     @IsNumber()
     id_factory!: number;
@@ -142,11 +179,15 @@ export class CreateWorksheetSchema implements CreateWorksheetDTO {
 
     @IsOptional()
     @IsArray()
-    input_batches?: any[]; // Simplified for now
+    @ValidateNested({ each: true })
+    @Type(() => InputBatchDTO)
+    input_batches?: InputBatchDTO[];
 
     @IsOptional()
     @IsArray()
-    side_products?: any[]; // Simplified for now
+    @ValidateNested({ each: true })
+    @Type(() => SideProductDTO)
+    side_products?: SideProductDTO[];
 
     @IsOptional()
     @IsNumber()

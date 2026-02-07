@@ -3,5 +3,6 @@
  * Exports all utility functions
  */
 
-export * from './errors';
 export * from './response';
+export * from './errors';
+export * from './apiWrapper';

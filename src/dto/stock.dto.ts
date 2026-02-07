@@ -1,42 +1,84 @@
-/**
- * Stock DTOs
- * Data Transfer Objects for Stock operations
- */
-
+import { IsNumber, IsString, IsOptional, IsEnum } from 'class-validator';
 import { MovementType } from '../../types/model/enum/MovementType';
 
-export interface CreateStockDTO {
-    id_factory: number;
-    id_product_type: number;
-    quantity: number;
-    unit: string;
+export class CreateStockDTO {
+    @IsNumber()
+    id_factory!: number;
+
+    @IsNumber()
+    id_product_type!: number;
+
+    @IsNumber()
+    quantity!: number;
+
+    @IsString()
+    unit!: string;
 }
 
-export interface UpdateStockDTO {
+export class UpdateStockDTO {
+    @IsOptional()
+    @IsNumber()
     quantity?: number;
+
+    @IsOptional()
+    @IsString()
     unit?: string;
 }
 
-export interface StockMovementDTO {
-    factoryId: number;
-    productCode: string;
-    quantity: number;
-    movementType: MovementType;
+export class StockMovementDTO {
+    @IsNumber()
+    factoryId!: number;
+
+    @IsString()
+    productCode!: string;
+
+    @IsNumber()
+    quantity!: number;
+
+    @IsEnum(MovementType)
+    movementType!: MovementType;
+
+    @IsOptional()
+    @IsString()
     referenceType?: string;
+
+    @IsOptional()
+    @IsNumber()
     referenceId?: number;
+
+    @IsOptional()
+    @IsString()
     notes?: string;
 }
 
-export interface StockTransferDTO {
-    fromFactoryId: number;
-    toFactoryId: number;
-    productCode: string;
-    quantity: number;
+export class StockTransferDTO {
+    @IsNumber()
+    fromFactoryId!: number;
+
+    @IsNumber()
+    toFactoryId!: number;
+
+    @IsString()
+    productCode!: string;
+
+    @IsNumber()
+    quantity!: number;
 }
 
-export interface StockFilterDTO {
+export class StockFilterDTO {
+    @IsOptional()
+    @IsNumber()
     limit?: number;
+
+    @IsOptional()
+    @IsNumber()
     offset?: number;
+
+    @IsOptional()
+    @IsNumber()
     id_factory?: number;
+
+    @IsOptional()
+    @IsNumber()
     id_product_type?: number;
 }

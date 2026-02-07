@@ -17,15 +17,31 @@ import { T_createWorksheet } from "../types/api/T_createWorksheet";
 import { authService } from "../src/services/auth.service";
 import { worksheetService } from "../src/services/worksheet.service";
 import { WorkshiftType } from "../types/model/enum/WorkshiftType";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { CreateWorksheetSchema } from "../src/dto/worksheet.dto";
+import { validate } from "class-validator";
+import { plainToInstance } from "class-transformer";
+import { ValidationError } from "../src/utils/errors";
 
-export const t_createWorksheet: T_createWorksheet = async (req, res) => {
+export const t_createWorksheet: T_createWorksheet = apiWrapper(async (req, res) => {
   console.log('Creating worksheet:', req.body);
 
   // 1. Get authenticated user
   const user = await authService.getUserFromToken(req.headers.authorization!);
 
-  // 2. Extract data from request
-  const body = req.body as any; // Type assertion for extended properties
+  // 2. Validate Request Body
+  const body = req.body as any;
+  const dto = plainToInstance(CreateWorksheetSchema, body);
+  const errors = await validate(dto);
+
+  if (errors.length > 0) {
+    const constraints: Record<string, string[]> = {};
+    errors.forEach(err => {
+      constraints[err.property] = Object.values(err.constraints || {});
+    });
+    throw new ValidationError('Validation failed', constraints);
+  }
+
   const {
     id_factory,
     worksheet_date,
@@ -52,7 +68,8 @@ export const t_createWorksheet: T_createWorksheet = async (req, res) => {
     side_product_revenue,
     hpp,
     hpp_per_kg,
-    input_batches
+    input_batches,
+    side_products
   } = body;
 
   // 3. Call service (all business logic is there)
@@ -83,9 +100,10 @@ export const t_createWorksheet: T_createWorksheet = async (req, res) => {
     side_product_revenue,
     hpp,
     hpp_per_kg,
-    input_batches
+    input_batches,
+    side_products
   });
 
   // 4. Return response
   return worksheet;
-}
+});

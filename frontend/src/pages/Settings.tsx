@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 import Header from '../components/Layout/Header';
 import api, { supplierApi, rawMaterialCategoryApi, rawMaterialVarietyApi } from '../services/api';
 import QualityConfig from '../components/Settings/QualityConfig';
@@ -31,6 +33,7 @@ interface Variety {
 type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'quality';
 
 const Settings = () => {
+    const { showSuccess, showError } = useToast();
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('data');
 
@@ -110,20 +113,13 @@ const Settings = () => {
         setLoading(true);
         try {
             const res = await api.post('/admin/dummy/generate');
-            setModalConfig({
-                isOpen: true,
-                title: 'Berhasil',
-                message: `Data Dummy berhasil dibuat! Worksheets: ${res.data.created.worksheets}, Transaksi: ${res.data.created.transactions}`,
-                type: 'success',
-                showCancel: false,
-                onConfirm: closeModal
-            });
+            showSuccess("Berhasil", `Data Dummy berhasil dibuat! Worksheets: ${res.data.created.worksheets}, Transaksi: ${res.data.created.transactions}`);
             // Refresh lists
             fetchSuppliers();
             fetchCategories();
             fetchVarieties();
         } catch (error: any) {
-            alert("Gagal membuat data dummy: " + (error.response?.data?.message || error.message));
+            showError("Gagal membuat data dummy", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -134,14 +130,7 @@ const Settings = () => {
         setLoading(true);
         try {
             const res = await api.delete('/admin/dummy/reset');
-            setModalConfig({
-                isOpen: true,
-                title: 'Berhasil',
-                message: `Data transaksi berhasil dihapus. Item terhapus: ${res.data.deleted.transactions} transaksi, ${res.data.deleted.worksheets} worksheets.`,
-                type: 'success',
-                showCancel: false,
-                onConfirm: closeModal
-            });
+            showSuccess("Berhasil", `Data transaksi berhasil dihapus. Item terhapus: ${res.data.deleted.transactions} transaksi, ${res.data.deleted.worksheets} worksheets.`);
             // Clear lists
             setSuppliers([]);
             setCategories([]);
@@ -153,7 +142,7 @@ const Settings = () => {
             fetchCategories();
             fetchVarieties();
         } catch (error: any) {
-            alert("Gagal menghapus data: " + (error.response?.data?.message || error.message));
+            showError("Gagal menghapus data", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -162,7 +151,7 @@ const Settings = () => {
     // === SUPPLIER CRUD ===
     const handleAddSupplier = async () => {
         if (!newSupplier.code || !newSupplier.name) {
-            alert('Kode dan Nama wajib diisi');
+            showError("Validasi", "Kode dan Nama wajib diisi");
             return;
         }
         setLoading(true);
@@ -170,8 +159,9 @@ const Settings = () => {
             await supplierApi.create(newSupplier);
             setNewSupplier({ code: '', name: '', contact_person: '', phone: '' });
             fetchSuppliers();
+            showSuccess("Berhasil", "Supplier berhasil ditambahkan");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -182,15 +172,16 @@ const Settings = () => {
         try {
             await supplierApi.delete(id);
             fetchSuppliers();
+            showSuccess("Berhasil", "Supplier berhasil dihapus");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         }
     };
 
     // === CATEGORY CRUD ===
     const handleAddCategory = async () => {
         if (!newCategory.code || !newCategory.name) {
-            alert('Kode dan Nama wajib diisi');
+            showError("Validasi", "Kode dan Nama wajib diisi");
             return;
         }
         setLoading(true);
@@ -198,8 +189,9 @@ const Settings = () => {
             await rawMaterialCategoryApi.create(newCategory);
             setNewCategory({ code: '', name: '', description: '' });
             fetchCategories();
+            showSuccess("Berhasil", "Kategori berhasil ditambahkan");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -210,15 +202,16 @@ const Settings = () => {
         try {
             await api.delete(`/raw-material-categories/${id}`);
             fetchCategories();
+            showSuccess("Berhasil", "Kategori berhasil dihapus");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         }
     };
 
     // === VARIETY CRUD ===
     const handleAddVariety = async () => {
         if (!newVariety.code || !newVariety.name) {
-            alert('Kode dan Nama wajib diisi');
+            showError("Validasi", "Kode dan Nama wajib diisi");
             return;
         }
         setLoading(true);
@@ -226,8 +219,9 @@ const Settings = () => {
             await rawMaterialVarietyApi.create(newVariety);
             setNewVariety({ code: '', name: '', description: '' });
             fetchVarieties();
+            showSuccess("Berhasil", "Varietas berhasil ditambahkan");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -238,8 +232,9 @@ const Settings = () => {
         try {
             await api.delete(`/raw-material-varieties/${id}`);
             fetchVarieties();
+            showSuccess("Berhasil", "Varietas berhasil dihapus");
         } catch (error: any) {
-            alert("Gagal: " + (error.response?.data?.message || error.message));
+            showError("Gagal", error.response?.data?.message || error.message);
         }
     };
 

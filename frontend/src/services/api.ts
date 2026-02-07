@@ -20,6 +20,23 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Add response interceptor for global error handling
+import toast from 'react-hot-toast';
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const message = error.response?.data?.message || error.message || 'Terjadi kesalahan sistem';
+
+        // Prevent toast for 401 (Unauthorized) as it might just redirect
+        if (error.response?.status !== 401) {
+            toast.error(message);
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 // Auth
 export const authApi = {
     login: (data: { email: string; password: string }) => api.post('/auth/login', data),

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Layout/Header';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
 import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi } from '../../services/api';
 import { formatDate, formatNumber } from '../../utils/formatUtils';
@@ -53,6 +55,9 @@ interface RawMaterialVariety {
 }
 
 const RawMaterialReceipt = () => {
+    const navigate = useNavigate();
+    const { showSuccess, showError, showWarning } = useToast();
+    const [theme] = useState('dark');
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [batches, setBatches] = useState<RawMaterialBatch[]>([]);

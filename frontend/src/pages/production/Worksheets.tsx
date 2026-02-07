@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
 import Header from '../../components/Layout/Header';
 import { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
 import { exportToCSV } from '../../utils/exportUtils';
@@ -114,6 +115,7 @@ const sideProductConfig: { PMD1: { code: string; name: string; defaultPercentage
 
 const Worksheets = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
     const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
     const [factories, setFactories] = useState<Factory[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
@@ -418,10 +420,10 @@ const Worksheets = () => {
 
             if (editingId) {
                 await worksheetApi.update(editingId, payload);
-                alert('Worksheet berhasil diperbarui!');
+                showSuccess('Berhasil', 'Worksheet berhasil diperbarui!');
             } else {
                 await worksheetApi.create(payload);
-                alert('Worksheet berhasil disimpan!');
+                showSuccess('Berhasil', 'Worksheet berhasil disimpan!');
             }
 
             fetchWorksheets();
@@ -430,7 +432,7 @@ const Worksheets = () => {
             resetForm();
         } catch (error) {
             console.error('Error saving worksheet:', error);
-            alert('Gagal menyimpan worksheet');
+            showError('Gagal', 'Gagal menyimpan worksheet');
         }
     };
 
@@ -456,9 +458,11 @@ const Worksheets = () => {
         if (window.confirm('Hapus worksheet ini?')) {
             try {
                 await worksheetApi.delete(id);
+                showSuccess('Berhasil', 'Worksheet berhasil dihapus');
                 fetchWorksheets();
             } catch (error) {
                 console.error('Error deleting worksheet:', error);
+                showError('Gagal', 'Gagal menghapus worksheet');
             }
         }
     };
@@ -478,10 +482,10 @@ const Worksheets = () => {
             fetchEmployees();
             setShowAddOperatorModal(false);
             setNewOperator({ fullname: '', position: 'Operator', phone: '' });
-            alert('Operator berhasil ditambahkan!');
+            showSuccess('Berhasil', 'Operator berhasil ditambahkan!');
         } catch (error) {
             console.error('Error adding operator:', error);
-            alert('Gagal menambah operator');
+            showError('Gagal', 'Gagal menambah operator');
         }
     };
 
