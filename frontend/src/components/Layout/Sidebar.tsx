@@ -17,7 +17,6 @@ const navItems: NavItemConfig[] = [
         icon: 'factory',
         children: [
             { label: 'Worksheet', to: '/production/worksheets' },
-            { label: 'Jadwal Produksi', to: '/production/schedule' },
             { label: 'Penerimaan Bahan', to: '/production/raw-materials' },
             { label: 'Stok & Inventory', to: '/production/stocks' },
             { label: 'Mesin', to: '/production/machines' },

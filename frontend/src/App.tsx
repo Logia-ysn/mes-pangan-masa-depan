@@ -13,7 +13,6 @@ import Settings from './pages/Settings';
 // Production Module
 import Worksheets from './pages/production/Worksheets';
 import WorksheetDetail from './pages/production/WorksheetDetail';
-import Scheduling from './pages/production/Scheduling';
 import Stocks from './pages/production/Stocks';
 import Machines from './pages/production/Machines';
 import Maintenance from './pages/production/Maintenance';
@@ -76,7 +75,6 @@ const AppRoutes = () => {
           <Route path="machines" element={<Machines />} />
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="oee" element={<OEE />} />
-          <Route path="schedule" element={<Scheduling />} />
           <Route path="qc-gabah" element={<QCGabah />} />
         </Route>
 

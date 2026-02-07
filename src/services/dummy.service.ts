@@ -35,7 +35,6 @@ export class DummyService {
                 products: 0,
                 inventory: 0,
                 worksheets: 0,
-                schedules: 0,
                 transactions: 0,
                 machine_logs: 0
             };
@@ -155,7 +154,6 @@ export class DummyService {
             const stats = {
                 inventory: 0,
                 worksheets: 0,
-                schedules: 0, // Placeholder
                 transactions: 0,
                 logs: 0
             };
