@@ -1,8 +1,16 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 13 Complete — Premium UI & Mobile Excellence
+## 🟢 Status: Phase 13.5 Complete — Critical Hotfixes (Production)
 **Date**: Feb 13, 2026
-**Current Version**: 2.4.0
+**Current Version**: 2.4.1
+
+### ✅ Phase 13.5: Critical Hotfixes (Feb 13, 2026)
+Emergency fixes deployed to address production stability issues encountered during initial deployment to Vercel/Railway.
+
+1.  **BigInt Serialization** — Patched Node.js `JSON.stringify` prototype to automatically convert Prisma `BigInt` fields to `Number`. This resolved random 500 Errors on Stock Movement endpoints.
+2.  **Stock Data Integrity** — Fixed a critical race condition in `RawMaterialReceipt` where the system would attempt to re-create existing stocks due to a mismatch in API response handling (`{ data: [] }` vs `[]`).
+3.  **Automatic Seeding Fix** — Resolved a 500 Error when initializing a fresh database. The automatic factory creation logic was missing a mandatory `code` field.
+4.  **Role Adjustment** — Lowered the permission requirement for `createStockMovement` from `SUPERVISOR` to `OPERATOR` to allow field staff to submit receipts.
 
 ### ✅ Phase 13: Premium UI & Mobile Excellence (Feb 13, 2026)
 Significant overhaul of the design system and framework alignment to ensure a state-of-the-art mobile experience and production stability.

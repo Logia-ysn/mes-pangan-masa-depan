@@ -255,12 +255,12 @@ const RawMaterialReceipt = () => {
 
                 if (!rawMaterialType) {
                     // Create a basic product type for raw material
-                    const newTypeResponse = await productTypeApi.create({
+                    const newTypeRes = await productTypeApi.create({
                         code: 'GKP',
                         name: 'Gabah Kering Panen',
                         unit: 'kg'
                     });
-                    rawMaterialType = newTypeResponse.data;
+                    rawMaterialType = newTypeRes.data?.data || newTypeRes.data;
                 }
 
                 // Get factory (assume first one or create if needed)
@@ -269,22 +269,23 @@ const RawMaterialReceipt = () => {
 
                 if (!factory) {
                     // Create a basic factory
-                    const newFactoryResponse = await api.post('/factories', {
+                    const newFactoryRes = await api.post('/factories', {
+                        code: 'F001',
                         name: 'Pabrik Utama',
                         address: 'Alamat Pabrik',
                         phone: '000000'
                     });
-                    factory = newFactoryResponse.data;
+                    factory = newFactoryRes.data?.data || newFactoryRes.data;
                 }
 
                 // Create new stock
-                const newStockResponse = await api.post('/stocks', {
+                const newStockRes = await api.post('/stocks', {
                     id_factory: factory.id,
                     id_product_type: rawMaterialType.id,
                     quantity: 0,
                     unit: 'kg'
                 });
-                targetStock = newStockResponse.data;
+                targetStock = newStockRes.data?.data || newStockRes.data;
             }
 
             // 2. Prepare payload

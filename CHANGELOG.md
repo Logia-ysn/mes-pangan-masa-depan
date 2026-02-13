@@ -7,6 +7,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.4.1] - 2026-02-13
+
+### Perbaikan Kritis (Hotfix)
+- **BigInt Serialization**: Patch global pada `index.ts` untuk mengatasi error `TypeError: Do not know how to serialize a BigInt` saat mengirim respon JSON dari Prisma.
+- **Stock Movement Integrity**: Perbaikan pada `T_createStockMovement` untuk mengkonversi `reference_id` ke BigInt secara eksplisit dan menurunkan hak akses ke `OPERATOR`.
+- **Automatic Factory Creation**: Perbaikan bug pada `RawMaterialReceipt` dimana otomatisasi pembuatan Pabrik gagal karena kurangnya field wajib `code`.
+- **Stock Response Handling**: Peningkatan logika di frontend untuk menangani variasi format respon API (`array` vs `{data: array}`) yang menyebabkan duplikasi stok.
+
 ## [2.4.0] - 2026-02-13
 
 ### Ditambahkan (Premium UI & Mobile Excellence)

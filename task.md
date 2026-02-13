@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.4.0
+> **Current Version**: 2.4.1
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -168,9 +168,12 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
 ---
 
-## Technical Debt & Fixes (v2.4.0)
+## Technical Debt & Fixes (v2.4.0 - v2.4.1)
 
 - [x] **Framework**: Perbaikan registrasi endpoint NAIV (case-sensitive method & T_ prefix alias).
 - [x] **Framework**: Implementasi `apiWrapper` return pattern pada modul User Management untuk mencegah header collision.
 - [x] **Frontend**: Robust error handling untuk ekstraksi pesan error dari backend Railway.
 - [x] **UI/UX**: Implementasi premium design system (Glassmorphism, animations, vibrant palette).
+- [x] **BigInt**: Patch serialization BigInt ke JSON untuk mencegah Error 500 (v2.4.1).
+- [x] **Stock Logic**: Fix duplikasi stok pada RawMaterialReceipt akibat format respon API (v2.4.1).
+- [x] **Auto-Seed**: Fix missing `code` saat auto-create Factory/ProductType di input pertama (v2.4.1).
