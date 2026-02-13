@@ -3,7 +3,7 @@
 # Configuration
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_ROOT="backups"
-BACKUP_NAME="backup_v2.1.0_sales_ml_prisma_$TIMESTAMP"
+BACKUP_NAME="full_v2.3.0_mobile_ready_$TIMESTAMP"
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_NAME"
 
 # Create backup directory

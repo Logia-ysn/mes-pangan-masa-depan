@@ -29,6 +29,7 @@ const ProductionReport = React.lazy(() => import('./pages/reports/ProductionRepo
 const SalesReport = React.lazy(() => import('./pages/reports/SalesReport'));
 const COGMReport = React.lazy(() => import('./pages/reports/COGMReport'));
 const StockReport = React.lazy(() => import('./pages/reports/StockReport'));
+const Users = React.lazy(() => import('./pages/admin/Users'));
 
 const PageLoader = () => (
   <div style={{
@@ -120,6 +121,11 @@ const AppRoutes = () => {
             <Route path="sales" element={<SalesReport />} />
             <Route path="cogm" element={<COGMReport />} />
             <Route path="stock" element={<StockReport />} />
+          </Route>
+
+          {/* Admin Module */}
+          <Route path="admin">
+            <Route path="users" element={<Users />} />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}

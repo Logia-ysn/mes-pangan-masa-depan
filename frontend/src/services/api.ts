@@ -250,4 +250,20 @@ export const notificationApi = {
     check: () => api.post('/notifications/check'),
 };
 
+// User Management (Admin)
+export const userApi = {
+    getAll: (params?: { limit?: number; offset?: number; search?: string; role?: string }) =>
+        api.get('/users', { params }),
+    getById: (id: number) =>
+        api.get(`/users/${id}`),
+    create: (data: { email: string; password: string; fullname: string; role?: string; id_factory?: number }) =>
+        api.post('/users', data),
+    update: (id: number, data: { email?: string; fullname?: string; role?: string; is_active?: boolean; id_factory?: number }) =>
+        api.put(`/users/${id}`, data),
+    delete: (id: number) =>
+        api.delete(`/users/${id}`),
+    resetPassword: (id: number, data: { new_password: string }) =>
+        api.put(`/users/${id}/reset-password`, data),
+};
+
 export default api;

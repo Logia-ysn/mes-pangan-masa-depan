@@ -152,7 +152,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | User Management | `[ ]` Belum | Ya | 0% | 0% | - |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
-| Mobile/PWA | `[~]` Progress | - | - | 80% | v2.3.0 |
+| Mobile/PWA | `[x]` Selesai | - | - | 100% | v2.3.0 |
 | ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 | ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 

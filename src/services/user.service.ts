@@ -13,6 +13,7 @@ export interface CreateUserDTO {
     password: string;
     fullname: string;
     role?: string;
+    id_factory?: number;
     is_active?: boolean;
 }
 
@@ -21,6 +22,7 @@ export interface UpdateUserDTO {
     email?: string;
     fullname?: string;
     role?: string;
+    id_factory?: number;
     is_active?: boolean;
 }
 
@@ -71,6 +73,7 @@ class UserService {
             password_hash: passwordHash,
             fullname: dto.fullname,
             role: (dto.role || 'OPERATOR') as User_role_enum,
+            id_factory: dto.id_factory,
             is_active: dto.is_active !== undefined ? dto.is_active : true
         });
     }
@@ -96,6 +99,7 @@ class UserService {
 
         if (dto.fullname) data.fullname = dto.fullname;
         if (dto.role) data.role = dto.role as User_role_enum;
+        if (dto.id_factory !== undefined) data.id_factory = dto.id_factory;
         if (dto.is_active !== undefined) data.is_active = dto.is_active;
         data.updated_at = new Date();
 

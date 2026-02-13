@@ -10,51 +10,57 @@ interface NavItemConfig {
     children?: { label: string; to: string; icon?: string }[];
 }
 
-const navItems: NavItemConfig[] = [
-    { label: 'Dashboard', icon: 'dashboard', to: '/' },
-    {
-        label: 'Produksi',
-        icon: 'factory',
-        children: [
-            { label: 'Worksheet', to: '/production/worksheets' },
-            { label: 'Penerimaan Bahan', to: '/production/raw-materials' },
-            { label: 'Stok & Inventory', to: '/production/stocks' },
-            { label: 'Mesin', to: '/production/machines' },
-            { label: 'Maintenance', to: '/production/maintenance' },
-            { label: 'OEE Monitor', to: '/production/oee' },
-        ]
-    },
-    {
-        label: 'Penjualan',
-        icon: 'point_of_sale',
-        children: [
-            { label: 'Pelanggan', to: '/sales/customers' },
-            { label: 'Invoice', to: '/sales/invoices' },
-        ]
-    },
-    {
-        label: 'Pembelian',
-        icon: 'shopping_cart',
-        children: [
-            { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
-        ]
-    },
-    {
-        label: 'Laporan',
-        icon: 'assessment',
-        children: [
-            { label: 'Laporan Produksi', to: '/reports/production' },
-            { label: 'Laporan Penjualan', to: '/reports/sales' },
-            { label: 'HPP (COGM)', to: '/reports/cogm' },
-            { label: 'Laporan Stok', to: '/reports/stock' },
-        ]
-    }
-];
-
-
 const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) => {
     const { user } = useAuth();
 
+    const navItems: NavItemConfig[] = [
+        { label: 'Dashboard', icon: 'dashboard', to: '/' },
+        {
+            label: 'Produksi',
+            icon: 'factory',
+            children: [
+                { label: 'Worksheet', to: '/production/worksheets' },
+                { label: 'Penerimaan Bahan', to: '/production/raw-materials' },
+                { label: 'Stok & Inventory', to: '/production/stocks' },
+                { label: 'Mesin', to: '/production/machines' },
+                { label: 'Maintenance', to: '/production/maintenance' },
+                { label: 'OEE Monitor', to: '/production/oee' },
+            ]
+        },
+        {
+            label: 'Penjualan',
+            icon: 'point_of_sale',
+            children: [
+                { label: 'Pelanggan', to: '/sales/customers' },
+                { label: 'Invoice', to: '/sales/invoices' },
+            ]
+        },
+        {
+            label: 'Pembelian',
+            icon: 'shopping_cart',
+            children: [
+                { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
+            ]
+        },
+        {
+            label: 'Laporan',
+            icon: 'assessment',
+            children: [
+                { label: 'Laporan Produksi', to: '/reports/production' },
+                { label: 'Laporan Penjualan', to: '/reports/sales' },
+                { label: 'HPP (COGM)', to: '/reports/cogm' },
+                { label: 'Laporan Stok', to: '/reports/stock' },
+            ]
+        },
+        // Admin Section (Conditional)
+        ...(user && ['ADMIN', 'SUPERUSER'].includes(user.role) ? [{
+            label: 'Admin Panel',
+            icon: 'admin_panel_settings',
+            children: [
+                { label: 'Manajemen User', to: '/admin/users' },
+            ]
+        }] : [])
+    ];
 
     return (
         <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
