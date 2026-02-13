@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger';
 interface BreakdownItem {
     category: string;
     amount: number;
+    [key: string]: string | number;
 }
 
 interface COGMData {
@@ -121,14 +122,7 @@ const COGMReport = () => {
         innerRadius,
         outerRadius,
         percent,
-    }: {
-        cx: number;
-        cy: number;
-        midAngle: number;
-        innerRadius: number;
-        outerRadius: number;
-        percent: number;
-    }) => {
+    }: any) => {
         const RADIAN = Math.PI / 180;
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -437,7 +431,7 @@ const COGMReport = () => {
                                                             key={`cell-${index}`}
                                                             fill={
                                                                 PIE_COLORS[
-                                                                    index % PIE_COLORS.length
+                                                                index % PIE_COLORS.length
                                                                 ]
                                                             }
                                                         />
@@ -453,8 +447,8 @@ const COGMReport = () => {
                                                     itemStyle={{
                                                         color: 'var(--text-primary)',
                                                     }}
-                                                    formatter={(value: number) =>
-                                                        formatCurrency(value)
+                                                    formatter={(value: any) =>
+                                                        formatCurrency(Number(value))
                                                     }
                                                 />
                                                 <Legend
@@ -525,8 +519,8 @@ const COGMReport = () => {
                                                                             borderRadius: 3,
                                                                             backgroundColor:
                                                                                 PIE_COLORS[
-                                                                                    index %
-                                                                                        PIE_COLORS.length
+                                                                                index %
+                                                                                PIE_COLORS.length
                                                                                 ],
                                                                         }}
                                                                     />

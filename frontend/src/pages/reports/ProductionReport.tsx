@@ -153,40 +153,40 @@ const ProductionReport = () => {
 
     const chartData = summary
         ? [
-              { name: 'Beras', value: Number(summary.total_beras_output) || 0 },
-              { name: 'Menir', value: Number(summary.total_menir_output) || 0 },
-              { name: 'Dedak', value: Number(summary.total_dedak_output) || 0 },
-              { name: 'Sekam', value: Number(summary.total_sekam_output) || 0 },
-          ]
+            { name: 'Beras', value: Number(summary.total_beras_output) || 0 },
+            { name: 'Menir', value: Number(summary.total_menir_output) || 0 },
+            { name: 'Dedak', value: Number(summary.total_dedak_output) || 0 },
+            { name: 'Sekam', value: Number(summary.total_sekam_output) || 0 },
+        ]
         : [];
 
     const kpiCards = summary
         ? [
-              {
-                  title: 'Total Gabah Input',
-                  value: `${formatNumber(summary.total_gabah_input)} kg`,
-                  icon: 'inventory_2',
-                  color: '#3b82f6',
-              },
-              {
-                  title: 'Beras Output',
-                  value: `${formatNumber(summary.total_beras_output)} kg`,
-                  icon: 'rice_bowl',
-                  color: '#10b981',
-              },
-              {
-                  title: 'Avg Rendemen',
-                  value: formatPercent(summary.average_rendemen),
-                  icon: 'percent',
-                  color: '#f59e0b',
-              },
-              {
-                  title: 'OEE',
-                  value: formatPercent(summary.oee),
-                  icon: 'speed',
-                  color: '#8b5cf6',
-              },
-          ]
+            {
+                title: 'Total Gabah Input',
+                value: `${formatNumber(summary.total_gabah_input)} kg`,
+                icon: 'inventory_2',
+                color: '#3b82f6',
+            },
+            {
+                title: 'Beras Output',
+                value: `${formatNumber(summary.total_beras_output)} kg`,
+                icon: 'rice_bowl',
+                color: '#10b981',
+            },
+            {
+                title: 'Avg Rendemen',
+                value: formatPercent(summary.average_rendemen),
+                icon: 'percent',
+                color: '#f59e0b',
+            },
+            {
+                title: 'OEE',
+                value: formatPercent(summary.oee),
+                icon: 'speed',
+                color: '#8b5cf6',
+            },
+        ]
         : [];
 
     return (
@@ -347,7 +347,7 @@ const ProductionReport = () => {
                                                 tick={{ fill: chartColors.text, fontSize: 12 }}
                                                 axisLine={{ stroke: chartColors.grid }}
                                                 tickLine={{ stroke: chartColors.grid }}
-                                                tickFormatter={(val) => formatNumber(val)}
+                                                tickFormatter={(val: any) => formatNumber(Number(val))}
                                             />
                                             <Tooltip
                                                 contentStyle={{
@@ -356,7 +356,7 @@ const ProductionReport = () => {
                                                     borderRadius: '8px',
                                                     color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
                                                 }}
-                                                formatter={(value: number) => [`${formatNumber(value)} kg`, 'Jumlah']}
+                                                formatter={(value: any) => [`${formatNumber(Number(value))} kg`, 'Jumlah']}
                                             />
                                             <Legend />
                                             <Bar

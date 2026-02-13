@@ -248,7 +248,7 @@ const StockReport = () => {
                                                     boxShadow: 'var(--shadow-lg)',
                                                 }}
                                                 itemStyle={{ color: 'var(--text-primary)' }}
-                                                formatter={(value: number) => formatWeight(value)}
+                                                formatter={(value: any) => formatWeight(Number(value))}
                                             />
                                             <Legend />
                                             <Bar dataKey="Masuk" fill="#2E7D32" radius={[4, 4, 0, 0]} />

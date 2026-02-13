@@ -242,8 +242,8 @@ const SalesReport = () => {
                                             labelLine={false}
                                             outerRadius={110}
                                             dataKey="value"
-                                            label={({ name, percent }) =>
-                                                `${name} (${(percent * 100).toFixed(0)}%)`
+                                            label={({ name, percent }: any) =>
+                                                `${name} (${((percent || 0) * 100).toFixed(0)}%)`
                                             }
                                         >
                                             {pieData.map((_entry, index) => (
@@ -260,7 +260,7 @@ const SalesReport = () => {
                                                 borderRadius: '8px',
                                                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                             }}
-                                            formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                                            formatter={(value: any) => [formatCurrency(Number(value)), 'Revenue']}
                                         />
                                         <Legend />
                                     </PieChart>
