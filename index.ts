@@ -12,6 +12,12 @@ import { worksheetRepository } from './src/repositories/worksheet.repository';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+// --- BigInt Serialization Patch ---
+// Prevent "Do not know how to serialize a BigInt" error in JSON.stringify
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
 const server = new Server({ noCors: true });
 
 // Trust proxy for secure cookies in production (Railway/Vercel)
