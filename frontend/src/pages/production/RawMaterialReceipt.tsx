@@ -244,9 +244,8 @@ const RawMaterialReceipt = () => {
         try {
             // 1. Try to find an existing stock, or create a generic one for raw materials
             const stocksResponse = await stockApi.getAll();
-            let targetStock = stocksResponse.data && stocksResponse.data.length > 0
-                ? stocksResponse.data[0]
-                : null;
+            const stocks = Array.isArray(stocksResponse.data) ? stocksResponse.data : stocksResponse.data?.data || [];
+            let targetStock = stocks.length > 0 ? stocks[0] : null;
 
             // If no stock exists, create a generic one for raw material receipt
             if (!targetStock) {

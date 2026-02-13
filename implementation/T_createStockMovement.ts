@@ -7,8 +7,8 @@ import { prisma } from "../src/libs/prisma";
 import { BusinessRuleError } from "../src/utils/errors";
 
 export const t_createStockMovement: T_createStockMovement = apiWrapper(async (req, res) => {
-  const user = await requireAuth(req, 'SUPERVISOR');
-  const { id_stock, movement_type, quantity, reference_type, reference_id, notes } = req.body;
+  const user = await requireAuth(req, 'OPERATOR');
+  let { id_stock, movement_type, quantity, reference_type, reference_id, notes } = req.body;
 
   const qty = Number(quantity);
   if (qty <= 0) throw new BusinessRuleError('Quantity must be positive');
@@ -43,7 +43,7 @@ export const t_createStockMovement: T_createStockMovement = apiWrapper(async (re
         movement_type: movement_type as StockMovement_movement_type_enum,
         quantity: qty,
         reference_type,
-        reference_id,
+        reference_id: reference_id !== undefined ? BigInt(reference_id) : null,
         notes
       }
     });
