@@ -203,4 +203,24 @@ export const employeeApi = {
     delete: (id: number) => api.delete(`/employees/${id}`),
 };
 
+// Purchase Orders
+export const purchaseOrderApi = {
+    getAll: (params?: Record<string, any>) => api.get('/purchase-orders', { params }),
+    getById: (id: number) => api.get(`/purchase-orders/${id}`),
+    create: (data: Record<string, any>) => api.post('/purchase-orders', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/purchase-orders/${id}`, data),
+    delete: (id: number) => api.delete(`/purchase-orders/${id}`),
+    approve: (id: number) => api.post(`/purchase-orders/${id}/approve`),
+    cancel: (id: number) => api.post(`/purchase-orders/${id}/cancel`),
+    getStats: (params?: Record<string, any>) => api.get('/purchase-orders/stats', { params }),
+};
+
+// Goods Receipts
+export const goodsReceiptApi = {
+    getAll: (params?: Record<string, any>) => api.get('/goods-receipts', { params }),
+    getById: (id: number) => api.get(`/goods-receipts/${id}`),
+    create: (data: Record<string, any>) => api.post('/goods-receipts', data),
+    delete: (id: number) => api.delete(`/goods-receipts/${id}`),
+};
+
 export default api;

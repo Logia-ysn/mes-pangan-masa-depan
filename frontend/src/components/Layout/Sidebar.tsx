@@ -31,6 +31,13 @@ const navItems: NavItemConfig[] = [
             { label: 'Pelanggan', to: '/sales/customers' },
             { label: 'Invoice', to: '/sales/invoices' },
         ]
+    },
+    {
+        label: 'Pembelian',
+        icon: 'shopping_cart',
+        children: [
+            { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
+        ]
     }
 ];
 

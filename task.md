@@ -17,6 +17,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [x] **Authentication** — Login, Register, Role-based Access (5 level)
 - [x] **Multi-Factory** — Support PMD-1 & PMD-2
 - [x] **Settings** — Supplier, Product Type, Quality Config
+- [x] **Modul Pembelian (v2.2.0)** — Purchase Order, Goods Receipt, Stock Integration
 
 ---
 
@@ -41,19 +42,19 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [-] Dibatalkan — semua task
 
 ### 1.4 Modul Pembelian (Purchase Order)
-> Belum ada schema DB. Perlu migration baru.
+> Schema DB baru: `PurchaseOrder`, `PurchaseOrderItem`, `GoodsReceipt`, `GoodsReceiptItem`
 
-- [ ] Database: Design schema — `PurchaseOrder`, `PurchaseOrderItem`, `GoodsReceipt`
-- [ ] Database: Prisma migration
-- [ ] Backend: Repository `purchase-order.repository.ts`
-- [ ] Backend: Service `purchase-order.service.ts` — create PO, receive goods → auto stock IN
-- [ ] Backend: API types (8-10 files) — PO CRUD, approve, receive, cancel
-- [ ] Backend: API implementations
-- [ ] Frontend: `api.ts` — tambah `purchaseOrderApi`
-- [ ] Frontend: `App.tsx` — route `/purchasing/orders`, `/purchasing/orders/:id`
-- [ ] Frontend: `Sidebar.tsx` — tambah section "Pembelian"
-- [ ] Frontend: `pages/purchasing/PurchaseOrders.tsx` — list + create modal
-- [ ] Frontend: `pages/purchasing/PurchaseOrderDetail.tsx` — detail + goods receipt
+- [x] Database: Design schema — 4 model + enum `PurchaseOrder_status_enum`
+- [x] Database: Prisma migration `add_purchase_order`
+- [x] Backend: Repository `purchase-order.repository.ts`, `goods-receipt.repository.ts`
+- [x] Backend: Service `purchase-order.service.ts` — create PO, approve, cancel, receive goods → auto stock IN, delete receipt → stock reversal
+- [x] Backend: API types (12 files) — PO CRUD, approve, cancel, GoodsReceipt CRUD, stats
+- [x] Backend: API implementations (12 files)
+- [x] Frontend: `api.ts` — tambah `purchaseOrderApi`, `goodsReceiptApi`
+- [x] Frontend: `App.tsx` — route `/purchasing/purchase-orders`, `/purchasing/purchase-orders/:id`
+- [x] Frontend: `Sidebar.tsx` — tambah section "Pembelian"
+- [x] Frontend: `pages/purchasing/PurchaseOrders.tsx` — list + create modal + stats
+- [x] Frontend: `pages/purchasing/PurchaseOrderDetail.tsx` — detail + goods receipt + receive modal
 
 ---
 
@@ -134,7 +135,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope (Keuangan) |
 | Export PDF Invoice | `[x]` Selesai | - | 100% | 100% | - |
 | ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope (HRD) |
-| Purchase Order | `[ ]` Belum | Belum | 0% | 0% | - |
+| Purchase Order | `[x]` Selesai | Ya | 100% | 100% | - |
 | Halaman Laporan | `[ ]` Belum | Sebagian | 0% | 0% | - |
 | Notifikasi | `[ ]` Belum | Belum | 0% | 0% | - |
 | Export Excel | `[ ]` Belum | - | 0% | 0% | - |

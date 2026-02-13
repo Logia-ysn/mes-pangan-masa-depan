@@ -23,6 +23,8 @@ const QCGabah = React.lazy(() => import('./pages/production/QCGabah'));
 const Customers = React.lazy(() => import('./pages/sales/Customers'));
 const Invoices = React.lazy(() => import('./pages/sales/Invoices'));
 const InvoiceDetail = React.lazy(() => import('./pages/sales/InvoiceDetail'));
+const PurchaseOrders = React.lazy(() => import('./pages/purchasing/PurchaseOrders'));
+const PurchaseOrderDetail = React.lazy(() => import('./pages/purchasing/PurchaseOrderDetail'));
 
 const PageLoader = () => (
   <div style={{
@@ -100,6 +102,12 @@ const AppRoutes = () => {
             <Route path="customers" element={<Customers />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="invoices/:id" element={<InvoiceDetail />} />
+          </Route>
+
+          {/* Purchasing Module */}
+          <Route path="purchasing">
+            <Route path="purchase-orders" element={<PurchaseOrders />} />
+            <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}

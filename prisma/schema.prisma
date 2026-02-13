@@ -110,6 +110,7 @@ model Factory {
   Invoice       Invoice[]
   Machine       Machine[]
   OutputProduct OutputProduct[]
+  PurchaseOrder PurchaseOrder[]
   Stock         Stock[]
   User          User[]
   Worksheet     Worksheet[]
@@ -232,9 +233,10 @@ model ProductType {
   name        String        @db.VarChar(100)
   description String?
   unit        String        @default("kg") @db.VarChar(20)
-  InvoiceItem InvoiceItem[]
-  Stock       Stock[]
-  Worksheet   Worksheet[]
+  InvoiceItem       InvoiceItem[]
+  PurchaseOrderItem PurchaseOrderItem[]
+  Stock             Stock[]
+  Worksheet         Worksheet[]
 }
 
 model QCGabah {
@@ -343,15 +345,16 @@ model StockMovement {
 }
 
 model Supplier {
-  id             Int      @id(map: "PK_03ea59de9d1ab05d7d6e5d3e953") @default(autoincrement())
-  code           String   @unique @db.VarChar(20)
-  name           String   @db.VarChar(200)
-  contact_person String?  @db.VarChar(200)
-  phone          String?  @db.VarChar(20)
-  email          String?  @db.VarChar(100)
+  id             Int             @id(map: "PK_03ea59de9d1ab05d7d6e5d3e953") @default(autoincrement())
+  code           String          @unique @db.VarChar(20)
+  name           String          @db.VarChar(200)
+  contact_person String?         @db.VarChar(200)
+  phone          String?         @db.VarChar(20)
+  email          String?         @db.VarChar(100)
   address        String?
-  is_active      Boolean  @default(true)
-  created_at     DateTime @default(now()) @db.Timestamp(6)
+  is_active      Boolean         @default(true)
+  created_at     DateTime        @default(now()) @db.Timestamp(6)
+  PurchaseOrder  PurchaseOrder[]
 }
 
 model User {
@@ -367,9 +370,11 @@ model User {
   Attendance    Attendance[]
   DailyExpense  DailyExpense[]
   Employee      Employee[]
+  GoodsReceipt  GoodsReceipt[]
   Invoice       Invoice[]
   Maintenance   Maintenance[]
   Payment       Payment[]
+  PurchaseOrder PurchaseOrder[]
   StockMovement StockMovement[]
   Factory       Factory?        @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
   Worksheet     Worksheet[]
@@ -445,6 +450,79 @@ model migrations {
   id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
   timestamp BigInt
   name      String @db.VarChar
+}
+
+model PurchaseOrder {
+  id                Int                          @id @default(autoincrement())
+  id_factory        Int
+  id_supplier       Int
+  id_user           Int
+  po_number         String                       @unique @db.VarChar(50)
+  order_date        DateTime                     @db.Date
+  expected_date     DateTime?                    @db.Date
+  subtotal          Decimal                      @default(0) @db.Decimal(15, 2)
+  tax               Decimal                      @default(0) @db.Decimal(15, 2)
+  discount          Decimal                      @default(0) @db.Decimal(15, 2)
+  total             Decimal                      @default(0) @db.Decimal(15, 2)
+  status            PurchaseOrder_status_enum     @default(DRAFT)
+  notes             String?
+  created_at        DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                     @updatedAt @db.Timestamp(6)
+  Factory           Factory                      @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Supplier          Supplier                     @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User              User                         @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  PurchaseOrderItem PurchaseOrderItem[]
+  GoodsReceipt      GoodsReceipt[]
+
+  @@index([id_factory])
+  @@index([id_supplier])
+  @@index([order_date])
+}
+
+model PurchaseOrderItem {
+  id                 Int                @id @default(autoincrement())
+  id_purchase_order  Int
+  id_product_type    Int
+  quantity           Decimal            @db.Decimal(15, 2)
+  received_quantity  Decimal            @default(0) @db.Decimal(15, 2)
+  unit_price         Decimal            @db.Decimal(15, 2)
+  subtotal           Decimal            @db.Decimal(15, 2)
+  PurchaseOrder      PurchaseOrder      @relation(fields: [id_purchase_order], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ProductType        ProductType        @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  GoodsReceiptItem   GoodsReceiptItem[]
+}
+
+model GoodsReceipt {
+  id                Int                @id @default(autoincrement())
+  id_purchase_order Int
+  id_user           Int
+  receipt_number    String             @unique @db.VarChar(50)
+  receipt_date      DateTime           @db.Date
+  notes             String?
+  created_at        DateTime           @default(now()) @db.Timestamp(6)
+  PurchaseOrder     PurchaseOrder      @relation(fields: [id_purchase_order], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User              User               @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  GoodsReceiptItem  GoodsReceiptItem[]
+
+  @@index([id_purchase_order])
+}
+
+model GoodsReceiptItem {
+  id                     Int               @id @default(autoincrement())
+  id_goods_receipt       Int
+  id_purchase_order_item Int
+  quantity_received      Decimal           @db.Decimal(15, 2)
+  GoodsReceipt           GoodsReceipt      @relation(fields: [id_goods_receipt], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  PurchaseOrderItem      PurchaseOrderItem @relation(fields: [id_purchase_order_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum PurchaseOrder_status_enum {
+  DRAFT
+  APPROVED
+  SENT
+  PARTIAL_RECEIVED
+  RECEIVED
+  CANCELLED
 }
 
 enum Attendance_status_enum {
