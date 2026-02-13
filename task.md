@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.3.1
+> **Current Version**: 2.4.0
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -135,7 +135,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [x] Frontend: Responsive CSS untuk semua halaman (Invoices, Customers, Worksheets, Stocks, PO, Machines, etc)
 - [ ] Frontend: PWA manifest + service worker
 - [ ] Frontend: Offline-capable input worksheet
-- [x] Testing: Test di berbagai ukuran layar (480px, 768px, 1024px)
+- [x] Testing: Test di berbagai ukuran layar (480px, 768px, 1024px) - **100% Mobile Ready**
 
 ---
 
@@ -149,10 +149,10 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | Halaman Laporan | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Notifikasi | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Export Excel | `[x]` Selesai | - | 100% | 100% | v2.2.0 |
-| User Management | `[x]` Selesai | Ya | 100% | 100% | v2.3.1 |
+| User Management | `[x]` Selesai | Ya | 100% | 100% | v2.4.0 |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
-| Mobile/PWA | `[x]` Selesai | - | - | 100% | v2.3.0 |
+| Mobile/PWA | `[x]` Selesai | - | - | 100% | v2.4.0 |
 | ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 | ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 
@@ -168,10 +168,9 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
 ---
 
-## Technical Debt & Fixes (v2.2.1)
+## Technical Debt & Fixes (v2.4.0)
 
-- [x] **Infrastruktur**: Sinkronisasi VITE_API_URL pada Vercel dan env local (-7abe suffix)
-- [x] **Integritas Data**: Implementasi stock reversal pada penghapusan Worksheet (Input & Output)
-- [x] **Integritas Data**: Implementasi stock reversal pada pembatalan Invoice (CANCELLED status)
-- [x] **Audit Log**: Perbaikan manual stock update agar melalui `StockService` (StockMovement audit)
-- [x] **Frontend**: Robustness check untuk API URL di production
+- [x] **Framework**: Perbaikan registrasi endpoint NAIV (case-sensitive method & T_ prefix alias).
+- [x] **Framework**: Implementasi `apiWrapper` return pattern pada modul User Management untuk mencegah header collision.
+- [x] **Frontend**: Robust error handling untuk ekstraksi pesan error dari backend Railway.
+- [x] **UI/UX**: Implementasi premium design system (Glassmorphism, animations, vibrant palette).

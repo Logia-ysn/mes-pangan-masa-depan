@@ -7,6 +7,20 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.4.0] - 2026-02-13
+
+### Ditambahkan (Premium UI & Mobile Excellence)
+- **Glassmorphism Design**: Implementasi efek blur transparan pada Header dan Sidebar (Mobile) untuk tampilan state-of-the-art.
+- **Premium Stats Cards**: Redesign kartu statistik dengan gaya *glass-card* dan ikon berwarna cerah.
+- **Micro-Animations**: Penambahan animasi transisi `fade-up` pada semua halaman dan komponen KPI untuk pengalaman pengguna yang lebih halus.
+- **Vibrant Design System**: Pembaruan sistem warna status (Success, Error, Warning, Info) dengan palet warna modern yang lebih kontras dan indah.
+
+### Diperbaiki (Stabilitas & Framework)
+- **NAIV Framework Alignment**: Sinkronisasi penamaan alias (prefix `T_`) dan case method (huruf kecil) pada endpoint User Management agar terdaftar dengan benar di Railway.
+- **Robust Error Handling**: Peningkatan logika ekstraksi pesan error di frontend agar dapat menampilkan pesan asli dari backend (seperti "Email sudah digunakan") secara akurat.
+- **Mobile Navigation Polish**: Perbaikan z-index dan backdrop blur pada sidebar drawer agar lebih responsif di browser mobile.
+- **Responsive Header**: Redesign header halaman untuk mengatasi tumpang tindih tombol pada resolusi layar sempit.
+
 ## [2.3.1] - 2026-02-13
 
 ### Ditambahkan (User Management System)
