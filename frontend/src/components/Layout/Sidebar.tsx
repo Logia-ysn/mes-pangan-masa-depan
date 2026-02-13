@@ -38,6 +38,16 @@ const navItems: NavItemConfig[] = [
         children: [
             { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
         ]
+    },
+    {
+        label: 'Laporan',
+        icon: 'assessment',
+        children: [
+            { label: 'Laporan Produksi', to: '/reports/production' },
+            { label: 'Laporan Penjualan', to: '/reports/sales' },
+            { label: 'HPP (COGM)', to: '/reports/cogm' },
+            { label: 'Laporan Stok', to: '/reports/stock' },
+        ]
     }
 ];
 

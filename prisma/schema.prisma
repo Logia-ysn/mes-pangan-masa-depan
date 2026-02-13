@@ -376,6 +376,7 @@ model User {
   Payment       Payment[]
   PurchaseOrder PurchaseOrder[]
   StockMovement StockMovement[]
+  Notification  Notification[]
   Factory       Factory?        @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
   Worksheet     Worksheet[]
 }
@@ -590,4 +591,34 @@ enum Worksheet_shift_enum {
   SHIFT_1
   SHIFT_2
   SHIFT_3
+}
+
+model Notification {
+  id          Int                       @id @default(autoincrement())
+  id_user     Int
+  type        Notification_type_enum
+  severity    Notification_severity_enum @default(INFO)
+  title       String                    @db.VarChar(200)
+  message     String
+  is_read     Boolean                   @default(false)
+  reference_type String?                @db.VarChar(50)
+  reference_id   Int?
+  created_at  DateTime                  @default(now()) @db.Timestamp(6)
+  User        User                      @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_user, is_read])
+  @@index([created_at])
+}
+
+enum Notification_type_enum {
+  LOW_STOCK
+  OVERDUE_INVOICE
+  OVERDUE_MAINTENANCE
+  SYSTEM
+}
+
+enum Notification_severity_enum {
+  INFO
+  WARNING
+  CRITICAL
 }

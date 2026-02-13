@@ -223,4 +223,31 @@ export const goodsReceiptApi = {
     delete: (id: number) => api.delete(`/goods-receipts/${id}`),
 };
 
+// Reports
+export const reportApi = {
+    getProductionSummary: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/production-summary', { params }),
+    getSalesSummary: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/sales-summary', { params }),
+    getCOGMReport: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/cogm', { params }),
+    getStockReport: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/stock-report', { params }),
+    downloadProductionExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/production-summary/excel', { params, responseType: 'blob' }),
+    downloadSalesExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/sales-summary/excel', { params, responseType: 'blob' }),
+    downloadStockExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/stock-report/excel', { params, responseType: 'blob' }),
+};
+
+// Notifications
+export const notificationApi = {
+    getAll: (params?: { limit?: number; offset?: number }) => api.get('/notifications', { params }),
+    getCount: () => api.get('/notifications/count'),
+    markAsRead: (id: number) => api.post(`/notifications/${id}/read`),
+    markAllAsRead: () => api.post('/notifications/read-all'),
+    check: () => api.post('/notifications/check'),
+};
+
 export default api;

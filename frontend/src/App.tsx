@@ -25,6 +25,10 @@ const Invoices = React.lazy(() => import('./pages/sales/Invoices'));
 const InvoiceDetail = React.lazy(() => import('./pages/sales/InvoiceDetail'));
 const PurchaseOrders = React.lazy(() => import('./pages/purchasing/PurchaseOrders'));
 const PurchaseOrderDetail = React.lazy(() => import('./pages/purchasing/PurchaseOrderDetail'));
+const ProductionReport = React.lazy(() => import('./pages/reports/ProductionReport'));
+const SalesReport = React.lazy(() => import('./pages/reports/SalesReport'));
+const COGMReport = React.lazy(() => import('./pages/reports/COGMReport'));
+const StockReport = React.lazy(() => import('./pages/reports/StockReport'));
 
 const PageLoader = () => (
   <div style={{
@@ -108,6 +112,14 @@ const AppRoutes = () => {
           <Route path="purchasing">
             <Route path="purchase-orders" element={<PurchaseOrders />} />
             <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
+          </Route>
+
+          {/* Reports Module */}
+          <Route path="reports">
+            <Route path="production" element={<ProductionReport />} />
+            <Route path="sales" element={<SalesReport />} />
+            <Route path="cogm" element={<COGMReport />} />
+            <Route path="stock" element={<StockReport />} />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}
