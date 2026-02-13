@@ -1,8 +1,34 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 8 Complete — Cloud Deployment
+## 🟢 Status: Phase 9 Complete — Operational Excellence
 **Date**: Feb 13, 2026
-**Current Version**: 2.1.1
+**Current Version**: 2.2.0
+
+### ✅ Phase 9: Operational Excellence — Reports, Notifications & Excel Export (Feb 13, 2026)
+Full implementation of Prioritas 2: integrated report pages, notification system, and Excel export capabilities.
+
+1. **Report Backend** — Implemented 3 missing API endpoints:
+   - `T_getSalesSummary` — query invoices by date range + factory, aggregate totals, group by customer
+   - `T_getCOGMReport` — query worksheets, aggregate production costs with breakdown (bahan baku, biaya produksi, produk samping)
+   - `T_getStockReport` (new type + implementation) — stock movements aggregated by type and product
+2. **Excel Export** — Installed `exceljs`, created generic `excel.service.ts` with styled workbook generation. 3 direct Express routes:
+   - `GET /reports/production-summary/excel` — detailed worksheet data with shift, factory, all outputs
+   - `GET /reports/sales-summary/excel` — invoice list with customer, amounts, payment status
+   - `GET /reports/stock-report/excel` — stock movements with product, type, user, notes
+3. **4 Report Pages** — Each with filter bar (date range + factory), KPI cards, recharts visualization, data table, CSV + Excel export:
+   - `ProductionReport.tsx` — BarChart output breakdown (beras, menir, dedak, sekam), 4 KPIs
+   - `SalesReport.tsx` — PieChart revenue by customer, 4 KPIs (invoices, revenue, paid, outstanding)
+   - `COGMReport.tsx` — PieChart cost breakdown, 3 KPIs (total cost, output, HPP/kg)
+   - `StockReport.tsx` — BarChart IN vs OUT by product, 3 KPIs (in, out, net change)
+4. **Sidebar & Routes** — "Laporan" section with `assessment` icon, 4 links. App.tsx with 4 lazy imports and `/reports/*` route block.
+5. **Notification System** — Full persistent notification infrastructure:
+   - Database: `Notification` model with `type` (LOW_STOCK, OVERDUE_INVOICE, OVERDUE_MAINTENANCE, SYSTEM) and `severity` (INFO, WARNING, CRITICAL)
+   - Backend: `notification.repository.ts` (CRUD + duplicate check), `notification.service.ts` (alert generation with smart thresholds)
+   - 5 API endpoints: list, count, mark read, mark all read, check & create alerts
+   - Frontend: `Header.tsx` upgraded with notification bell + badge counter, dropdown panel with severity-colored items, 60s polling, mark read/all read
+6. **Build Verification** — `tsc --noEmit` (0 errors backend + frontend), `vite build` (success in 1.89s)
+
+Dependencies added: `exceljs` (backend)
 
 ### ✅ Phase 8: Cloud Deployment — Railway & Vercel (Feb 13, 2026)
 Successfully deployed the full stack online with high-availability configuration and cross-platform communication.
@@ -92,14 +118,14 @@ We have successfully migrated the entire data layer from TypeORM to Prisma. This
 - **ML Service**: Rewritten to v2.0.0 with multi-color support. In-memory calibration resets on restart (no persistence yet).
 
 ### 🚀 Recent Changes
-- Completed **Cloud Deployment** to Railway (Backend/ML) and Vercel (Frontend).
-- Refined `package.json` scripts (`build`, `prebuild`, `postinstall`) for cloud compatibility.
-- Fixed **ML Service** build by isolating it into a Docker-based subfolder deployment on Railway.
-- Implemented **Purchasing Module** (PO & Goods Receipt) with full stock integration.
+- Completed **Operational Excellence** (Prioritas 2): Report pages, Notifications, Excel export.
+- 4 report pages with charts, KPI cards, and export functionality.
+- Full notification system with persistent alerts and header dropdown.
+- Excel export using ExcelJS with styled workbooks.
 
 ### 🛠 Active Workstream
+- **Prioritas 3**: User Management Page, Quality Trending/SPC, Audit Log, Mobile/PWA.
 - **Production Testing**: Verifying cross-domain cookie authentication and session persistence on Vercel/Railway.
-- **Reporting Extension**: Planning for COGM (Cost of Goods Manufactured) report implementation.
 - **Optimization**: Monitoring Railway resource usage (Memory/CPU) for the ML Service.
 
 ---

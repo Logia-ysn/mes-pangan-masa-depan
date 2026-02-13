@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.1.1
+> **Current Version**: 2.2.0
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -19,6 +19,9 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [x] **Authentication** — Login, Register, Role-based Access (5 level)
 - [x] **Multi-Factory** — Support PMD-1 & PMD-2
 - [x] **Settings** — Supplier, Product Type, Quality Config
+- [x] **Halaman Laporan (v2.2.0)** — Production, Sales, COGM, Stock Report + Charts + Export
+- [x] **Notifikasi & Alert (v2.2.0)** — Low Stock, Overdue Invoice, Overdue Maintenance + UI Dropdown
+- [x] **Export Excel (v2.2.0)** — Excel download untuk Production, Sales, Stock Report
 
 ---
 
@@ -61,35 +64,42 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
 ## Prioritas 2 — Operational Excellence
 
-### 2.1 Halaman Laporan Terpadu
-> Endpoint report sudah ada: `production-summary`, `sales-summary`, `cogm`. Belum ada halaman.
+### 2.1 Halaman Laporan Terpadu (v2.2.0)
+> 4 halaman report lengkap dengan chart, KPI, dan export.
 
-- [ ] Frontend: `pages/reports/ProductionReport.tsx` — laporan produksi harian/mingguan/bulanan
-- [ ] Frontend: `pages/reports/SalesReport.tsx` — penjualan per customer/produk/periode
-- [ ] Frontend: `pages/reports/COGMReport.tsx` — HPP per batch/produk
-- [ ] Frontend: `pages/reports/StockReport.tsx` — rekap stok masuk/keluar per periode
+- [x] Backend: Implementasi `T_getSalesSummary` — query invoices, aggregate by customer
+- [x] Backend: Implementasi `T_getCOGMReport` — query worksheets, aggregate production costs
+- [x] Backend: Tipe + implementasi `T_getStockReport` — stock movements by type & product
+- [x] Frontend: `pages/reports/ProductionReport.tsx` — KPI, BarChart output breakdown, CSV + Excel
+- [x] Frontend: `pages/reports/SalesReport.tsx` — KPI, PieChart revenue by customer, CSV + Excel
+- [x] Frontend: `pages/reports/COGMReport.tsx` — KPI (biaya, output, HPP/kg), PieChart breakdown, CSV
+- [x] Frontend: `pages/reports/StockReport.tsx` — KPI (IN/OUT/net), BarChart by product, CSV + Excel
 - [-] ~~Frontend: `pages/reports/ExpenseReport.tsx`~~ — dibatalkan (keuangan di luar scope)
-- [ ] Frontend: `App.tsx` — route `/reports/*`
-- [ ] Frontend: `Sidebar.tsx` — tambah section "Laporan"
-- [ ] Export Excel (semua laporan) — install `xlsx` atau `exceljs`
+- [x] Frontend: `App.tsx` — route `/reports/*` (4 lazy imports)
+- [x] Frontend: `Sidebar.tsx` — tambah section "Laporan" dengan 4 menu
+- [x] Frontend: `api.ts` — tambah `reportApi` (7 methods: 4 JSON + 3 Excel download)
 
-### 2.2 Notifikasi & Alert System
-> Trigger: stok rendah, invoice jatuh tempo, maintenance terlewat.
+### 2.2 Notifikasi & Alert System (v2.2.0)
+> Persistent notifications dengan UI dropdown di header.
 
-- [ ] Backend: Service `notification.service.ts` — check thresholds
-- [ ] Backend: API `GET /notifications` — list notifikasi aktif
-- [ ] Frontend: Badge counter di sidebar/header
-- [ ] Frontend: Dropdown/panel notifikasi
-- [ ] Rules: Stok < threshold → warning, Invoice overdue → alert, Maintenance overdue → alert
+- [x] Database: Model `Notification` + enum `Notification_type_enum` + `Notification_severity_enum`
+- [x] Database: Prisma migration `add_notification`
+- [x] Backend: Repository `notification.repository.ts` — CRUD, unread count, duplicate check
+- [x] Backend: Service `notification.service.ts` — `checkAndCreateAlerts()` (low stock, overdue invoice, overdue maintenance)
+- [x] Backend: 5 API endpoints — `T_getNotifications`, `T_getNotificationCount`, `T_markNotificationRead`, `T_markAllNotificationsRead`, `T_checkNotifications`
+- [x] Frontend: `Header.tsx` — notification bell dengan badge counter, dropdown panel, polling 60s
+- [x] Frontend: `api.ts` — tambah `notificationApi` (5 methods)
+- [x] Rules: Stok < 30% avg → warning/critical, Invoice overdue → warning/critical, Maintenance overdue → warning/critical
 
-### 2.3 Export Excel untuk Laporan
-> Bisa digabung dengan 2.1 atau standalone.
+### 2.3 Export Excel untuk Laporan (v2.2.0)
+> Digabung dengan 2.1 — Excel export di halaman laporan.
 
-- [ ] Backend: Install `exceljs`
-- [ ] Backend: Endpoint `GET /reports/production-summary/excel`
-- [ ] Backend: Endpoint `GET /reports/sales-summary/excel`
-- [ ] Backend: Endpoint `GET /reports/stock-movements/excel`
-- [ ] Frontend: Tombol "Export Excel" di setiap halaman laporan
+- [x] Backend: Install `exceljs`
+- [x] Backend: Service `excel.service.ts` — generic `createWorkbook()` helper
+- [x] Backend: Endpoint `GET /reports/production-summary/excel`
+- [x] Backend: Endpoint `GET /reports/sales-summary/excel`
+- [x] Backend: Endpoint `GET /reports/stock-report/excel`
+- [x] Frontend: Tombol "Export Excel" di setiap halaman laporan (Production, Sales, Stock)
 
 ---
 
@@ -136,9 +146,9 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | Cloud Deployment | `[x]` Selesai | - | 100% | 100% | v2.1.1 |
 | Purchase Order | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Export PDF Invoice | `[x]` Selesai | - | 100% | 100% | v2.1.0 |
-| Halaman Laporan | `[ ]` Belum | Sebagian | 0% | 0% | - |
-| Notifikasi | `[ ]` Belum | Belum | 0% | 0% | - |
-| Export Excel | `[ ]` Belum | - | 0% | 0% | - |
+| Halaman Laporan | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
+| Notifikasi | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
+| Export Excel | `[x]` Selesai | - | 100% | 100% | v2.2.0 |
 | User Management | `[ ]` Belum | Ya | 0% | 0% | - |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |

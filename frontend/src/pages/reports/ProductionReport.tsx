@@ -363,12 +363,11 @@ const ProductionReport = () => {
                                                 dataKey="value"
                                                 name="Output (kg)"
                                                 radius={[6, 6, 0, 0]}
-                                                fill={barColors.beras}
                                             >
-                                                {chartData.map((entry, index) => {
+                                                {chartData.map((_entry, index) => {
                                                     const colors = [barColors.beras, barColors.menir, barColors.dedak, barColors.sekam];
                                                     return (
-                                                        <rect key={`cell-${index}`} fill={colors[index % colors.length]} />
+                                                        <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                                                     );
                                                 })}
                                             </Bar>

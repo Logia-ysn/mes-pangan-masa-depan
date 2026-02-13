@@ -7,6 +7,47 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.2.0] - 2026-02-13
+
+### Ditambahkan
+- **Halaman Laporan Terpadu**: 4 halaman report baru dengan filter, KPI cards, chart, dan tabel data
+  - **Laporan Produksi** (`/reports/production`): BarChart breakdown output (beras, menir, dedak, sekam), 4 KPI cards, export CSV + Excel
+  - **Laporan Penjualan** (`/reports/sales`): PieChart revenue per customer, 4 KPI cards (invoice, revenue, paid, outstanding), export CSV + Excel
+  - **HPP / COGM** (`/reports/cogm`): PieChart breakdown biaya produksi, 3 KPI cards (total biaya, output beras, HPP/kg), export CSV
+  - **Laporan Stok** (`/reports/stock`): BarChart IN vs OUT per produk, 3 KPI cards (masuk, keluar, selisih), export CSV + Excel
+- **Backend Report API**: Implementasi 2 endpoint yang sebelumnya hanya type-only
+  - `GET /reports/sales-summary` — aggregasi invoice per customer dengan total paid/outstanding
+  - `GET /reports/cogm` — aggregasi biaya produksi worksheet dengan breakdown kategori
+- **Stock Report Endpoint**: Type + implementasi baru `GET /reports/stock-report` — aggregasi stock movements per tipe dan produk
+- **Excel Export System**: 3 endpoint export Excel menggunakan library `exceljs`
+  - `GET /reports/production-summary/excel` — data worksheet detail (shift, pabrik, semua output)
+  - `GET /reports/sales-summary/excel` — daftar invoice dengan customer, nominal, status
+  - `GET /reports/stock-report/excel` — daftar stock movements dengan produk, tipe, user
+  - Service generic `excel.service.ts` dengan styled workbook (header hijau, zebra-striping, border)
+- **Sistem Notifikasi**: Infrastruktur notifikasi persistent lengkap
+  - Model database `Notification` dengan enum `Notification_type_enum` (LOW_STOCK, OVERDUE_INVOICE, OVERDUE_MAINTENANCE, SYSTEM) dan `Notification_severity_enum` (INFO, WARNING, CRITICAL)
+  - Repository + Service untuk CRUD notifikasi dan pembuatan alert otomatis
+  - 5 API endpoint: list notifikasi, hitung unread, tandai dibaca, tandai semua dibaca, cek & buat alert
+  - Smart duplicate check — tidak membuat alert duplikat dalam 24 jam
+  - Threshold otomatis: stok < 30% rata-rata → warning/critical, invoice overdue → warning/critical (>14 hari = critical), maintenance overdue → warning/critical (>7 hari = critical)
+- **Header Notification UI**: Dropdown notifikasi di header dengan badge counter
+  - Badge merah dengan jumlah unread (max 99+)
+  - Dropdown panel dengan ikon per tipe (inventory, receipt_long, build), warna per severity
+  - Timestamp relatif ("Baru saja", "5 menit lalu", "2 hari lalu")
+  - Aksi: tandai dibaca per item, tandai semua dibaca
+  - Auto-polling setiap 60 detik, auto-check alert pada mount
+- **Navigasi**: Section "Laporan" baru di sidebar dengan ikon `assessment` dan 4 submenu
+- **Frontend API**: `reportApi` (7 methods) dan `notificationApi` (5 methods) di `api.ts`
+
+### Diubah
+- **`Sidebar.tsx`**: Menambahkan section "Laporan" setelah "Pembelian"
+- **`App.tsx`**: Menambahkan 4 lazy import dan route block `/reports/*`
+- **`Header.tsx`**: Upgrade dari placeholder button menjadi full notification dropdown dengan state management
+- **`index.ts`**: Menambahkan 3 direct Express route untuk Excel export (mengikuti pattern PDF invoice)
+- **`prisma/schema.prisma`**: Menambahkan model `Notification` dan 2 enum baru, relasi pada `User`
+
+---
+
 ## [2.1.0] - 2026-02-13
 
 ### Ditambahkan
