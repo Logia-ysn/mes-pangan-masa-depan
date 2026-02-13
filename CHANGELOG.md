@@ -7,6 +7,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.2.1] - 2026-02-13
+
+### Diperbaiki (Stabilitas Produksi & Integritas Data)
+- **Integritas Stok (Worksheet Deletion)**: Implementasi rollback stok otomatis saat penghapusan Worksheet. Menghapus worksheet kini mengembalikan stok bahan baku (Input Batches) dan menarik kembali stok produk jadi yang dihasilkan.
+- **Integritas Stok (Invoice Cancellation)**: Penambahan fitur pembatalan stok saat invoice diubah menjadi status `CANCELLED`. Barang penjualan dikembalikan ke stok gudang secara otomatis.
+- **Audit Log Manual Stock**: Perbaikan handler `T_updateStock` agar wajib melalui `StockService`. Setiap pembaruan stok manual oleh supervisor kini tercatat dalam histori pergerakan stok sebagai `MANUAL_ADJUSTMENT` untuk kebutuhan audit.
+- **Vercel Infrastructure Sync**: Sinkronisasi variabel lingkungan `VITE_API_URL` dengan suffix `-7abe` yang diperlukan untuk koneksi backend Railway yang stabil di lingkungan produksi.
+- **Frontend Build Reliability**: Perbaikan kesalahan tipe (TypeScript errors) pada komponen Recharts di halaman laporan (`Production`, `Sales`, `COGM`, `Stock Report`) yang sebelumnya menghambat proses build di Vercel.
+- **Vercel Deployment Optimization**: Pengaturan otomatis `Root Directory` ke folder `frontend` dan penetapan preset **Vite** untuk proses deploy yang lebih cepat dan bebas error.
+
 ## [2.2.0] - 2026-02-13
 
 ### Ditambahkan
