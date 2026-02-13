@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 
-export const method = 'POST';
+export const method = 'post';
 export const url_path = '/users';
-export const alias = 'createUserByAdmin';
+export const alias = 'T_createUserByAdmin';
 
 export type T_createUserByAdmin = (
     req: Request<

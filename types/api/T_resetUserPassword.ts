@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 
-export const method = 'PUT';
+export const method = 'put';
 export const url_path = '/users/:id/reset-password';
-export const alias = 'resetUserPassword';
+export const alias = 'T_resetUserPassword';
 
 export type T_resetUserPassword = (
     req: Request<

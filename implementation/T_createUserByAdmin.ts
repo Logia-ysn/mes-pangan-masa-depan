@@ -1,14 +1,15 @@
 import { apiWrapper } from '../src/utils/apiWrapper';
 import { requireAuth, sanitizeUser } from '../utility/auth';
 import { userService } from '../src/services/user.service';
+import { T_createUserByAdmin } from '../types/api/T_createUserByAdmin';
 
-export const t_createUserByAdmin = apiWrapper(async (req: any, res: any) => {
+export const t_createUserByAdmin: T_createUserByAdmin = apiWrapper(async (req, res) => {
     await requireAuth(req, 'ADMIN');
 
     const { email, password, fullname, role, id_factory } = req.body;
 
     if (!email || !password || !fullname) {
-        return res.status(400).json({ error: 'Email, password, dan fullname wajib diisi' });
+        throw new Error('Email, password, dan fullname wajib diisi');
     }
 
     const user = await userService.createUser({
@@ -19,5 +20,5 @@ export const t_createUserByAdmin = apiWrapper(async (req: any, res: any) => {
         id_factory,
     });
 
-    res.status(201).json(sanitizeUser(user));
+    return sanitizeUser(user);
 });

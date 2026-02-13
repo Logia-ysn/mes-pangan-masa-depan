@@ -1,92 +1,21 @@
 
-> erp-pangan-masa-depan@1.2.0 dev
-> npm run build && npm start
-
-
-> erp-pangan-masa-depan@1.2.0 build
-> rm -rf dist && tsc
-
-
-> erp-pangan-masa-depan@1.2.0 start
+> erp-pangan-masa-depan@2.1.1 start
 > node dist
 
-[dotenv@17.2.4] injecting env (9) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
-[dotenv@17.2.4] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-✅api [normal] 'post /analyze-grain' (T_analyzeGrain) is ready
-✅api [normal] 'put /auth/change-password' (T_changePassword) is ready
-✅api [normal] 'post /employees' (T_createEmployee) is ready
-✅api [normal] 'post /factories' (T_createFactory) is ready
-✅api [normal] 'post /machines' (T_createMachine) is ready
-✅api [normal] 'post /maintenances' (T_createMaintenance) is ready
-✅api [normal] 'post /output-products' (T_createOutputProduct) is ready
-✅api [normal] 'post /process-categories' (T_createProcessCategory) is ready
-✅api [normal] 'post /product-types' (T_createProductType) is ready
-✅api [normal] 'post /quality-parameters' (T_createQualityParameter) is ready
-✅api [normal] 'post /raw-material-categories' (T_createRawMaterialCategory) is ready
-✅api [normal] 'post /raw-material-varieties' (T_createRawMaterialVariety) is ready
-✅api [normal] 'post /stocks' (T_createStock) is ready
-✅api [normal] 'post /stock-movements' (T_createStockMovement) is ready
-✅api [normal] 'post /suppliers' (T_createSupplier) is ready
-✅api [normal] 'post /worksheets' (T_createWorksheet) is ready
-✅api [normal] 'delete /employees/:id' (T_deleteEmployee) is ready
-✅api [normal] 'delete /factories/:id' (T_deleteFactory) is ready
-✅api [normal] 'delete /machines/:id' (T_deleteMachine) is ready
-✅api [normal] 'delete /maintenances/:id' (T_deleteMaintenance) is ready
-✅api [normal] 'delete /product-types/:id' (T_deleteProductType) is ready
-✅api [normal] 'delete /quality-parameters/:id' (T_deleteQualityParameter) is ready
-✅api [normal] 'delete /raw-material-categories/:id' (T_deleteRawMaterialCategory) is ready
-✅api [normal] 'delete /raw-material-varieties/:id' (T_deleteRawMaterialVariety) is ready
-✅api [normal] 'delete /stocks/:id' (T_deleteStock) is ready
-✅api [normal] 'delete /stock-movements/:id' (T_deleteStockMovement) is ready
-✅api [normal] 'delete /suppliers/:id' (T_deleteSupplier) is ready
-✅api [normal] 'delete /users/:id' (T_deleteUser) is ready
-✅api [normal] 'delete /worksheets/:id' (T_deleteWorksheet) is ready
-✅api [normal] 'post /admin/dummy/generate' (T_generateDummy) is ready
-⚠️ implementation for api 'get /reports/cogm' not found, skip.
-✅api [normal] 'get /dashboard/stats' (T_getDashboardStats) is ready
-✅api [normal] 'get /employees/:id' (T_getEmployeeById) is ready
-✅api [normal] 'get /reports/employee-demographics' (T_getEmployeeDemographics) is ready
-✅api [normal] 'get /employees' (T_getEmployees) is ready
-✅api [normal] 'get /dashboard/executive' (T_getExecutiveDashboard) is ready
-✅api [normal] 'get /factories' (T_getFactories) is ready
-✅api [normal] 'get /factories/:id' (T_getFactoryById) is ready
-✅api [normal] 'get /machines/:id' (T_getMachineById) is ready
-✅api [normal] 'get /machines' (T_getMachines) is ready
-✅api [normal] 'get /maintenances/:id' (T_getMaintenanceById) is ready
-✅api [normal] 'get /maintenances' (T_getMaintenances) is ready
-✅api [normal] 'get /auth/me' (T_getMe) is ready
-✅api [normal] 'get /output-products' (T_getOutputProducts) is ready
-✅api [normal] 'get /process-categories' (T_getProcessCategories) is ready
-✅api [normal] 'get /product-types/:id' (T_getProductTypeById) is ready
-✅api [normal] 'get /product-types' (T_getProductTypes) is ready
-✅api [normal] 'get /reports/production-summary' (T_getProductionSummary) is ready
-✅api [normal] 'get /quality-parameters' (T_getQualityParameters) is ready
-✅api [normal] 'get /raw-material-categories' (T_getRawMaterialCategories) is ready
-✅api [normal] 'get /raw-material-varieties' (T_getRawMaterialVarieties) is ready
-⚠️ implementation for api 'get /reports/sales-summary' not found, skip.
-✅api [normal] 'get /stocks/:id' (T_getStockById) is ready
-✅api [normal] 'get /stock-movements' (T_getStockMovements) is ready
-✅api [normal] 'get /stocks' (T_getStocks) is ready
-✅api [normal] 'get /suppliers/:id' (T_getSupplierById) is ready
-✅api [normal] 'get /suppliers' (T_getSuppliers) is ready
-✅api [normal] 'get /users/:id' (T_getUserById) is ready
-✅api [normal] 'get /users' (T_getUsers) is ready
-✅api [normal] 'get /worksheets/:id' (T_getWorksheetById) is ready
-✅api [normal] 'get /worksheets' (T_getWorksheets) is ready
-✅api [normal] 'post /auth/login' (T_login) is ready
-✅api [normal] 'post /auth/register' (T_register) is ready
-✅api [normal] 'delete /admin/dummy/reset' (T_resetDummy) is ready
-✅api [normal] 'post /seed-superuser' (T_seedSuperuser) is ready
-✅api [normal] 'post /quality-analysis' (T_submitQualityAnalysis) is ready
-✅api [normal] 'put /employees/:id' (T_updateEmployee) is ready
-✅api [normal] 'put /factories/:id' (T_updateFactory) is ready
-✅api [normal] 'put /machines/:id' (T_updateMachine) is ready
-✅api [normal] 'put /maintenances/:id' (T_updateMaintenance) is ready
-✅api [normal] 'put /product-types/:id' (T_updateProductType) is ready
-✅api [normal] 'put /quality-parameters/:id' (T_updateQualityParameter) is ready
-✅api [normal] 'put /stocks/:id' (T_updateStock) is ready
-✅api [normal] 'put /suppliers/:id' (T_updateSupplier) is ready
-✅api [normal] 'put /users/:id' (T_updateUser) is ready
-✅api [normal] 'put /worksheets/:id' (T_updateWorksheet) is ready
+Unhandled Rejection at: Promise {
+  <rejected> PrismaClientInitializationError: Can't reach database server at `localhost:5434`
+  
+  Please make sure your database server is running at `localhost:5434`.
+      at t (/Users/yay/Project/erp-pangan-masa-depan/node_modules/@prisma/client/runtime/library.js:112:2473)
+      at async Object.beforeStart (/Users/yay/Project/erp-pangan-masa-depan/dist/index.js:246:9) {
+    clientVersion: '6.4.0',
+    errorCode: 'P1001'
+  }
+} reason: PrismaClientInitializationError: Can't reach database server at `localhost:5434`
 
-⚡️[server]: Server is running at http://localhost:3005
+Please make sure your database server is running at `localhost:5434`.
+    at t (/Users/yay/Project/erp-pangan-masa-depan/node_modules/@prisma/client/runtime/library.js:112:2473)
+    at async Object.beforeStart (/Users/yay/Project/erp-pangan-masa-depan/dist/index.js:246:9) {
+  clientVersion: '6.4.0',
+  errorCode: 'P1001'
+}
