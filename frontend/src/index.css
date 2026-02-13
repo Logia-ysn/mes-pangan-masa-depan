@@ -10,16 +10,19 @@
   --primary-light: #60a5fa;
   --primary-dark: #0052cc;
   --primary-hover: #0e69c4;
+  --glass: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --sidebar-glass: rgba(255, 255, 255, 0.85);
 
   /* Status Colors */
-  --success: #22c55e;
-  --success-light: rgba(34, 197, 94, 0.1);
+  --success: #10b981;
+  --success-light: rgba(16, 185, 129, 0.1);
   --warning: #f59e0b;
   --warning-light: rgba(245, 158, 11, 0.1);
-  --error: #ef4444;
-  --error-light: rgba(239, 68, 68, 0.1);
-  --info: #06b6d4;
-  --info-light: rgba(6, 182, 212, 0.1);
+  --error: #f43f5e;
+  --error-light: rgba(244, 63, 94, 0.1);
+  --info: #3b82f6;
+  --info-light: rgba(59, 130, 246, 0.1);
 
   /* Layout */
   --sidebar-width: 280px;
@@ -50,10 +53,11 @@ html.light {
   --text-inverse: #ffffff;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 1px 20px rgba(0, 0, 0, 0.03);
 }
 
 /* Mobile Breakpoint (768px) */
@@ -145,7 +149,7 @@ html.light {
 
   .table-container th.hide-mobile,
   .table-container td.hide-mobile {
-    display: none;
+    display: none !important;
   }
 
   .table-container th,
@@ -487,10 +491,22 @@ textarea {
 
 .page-content {
   flex: 1;
-  padding: 24px;
+  padding: 32px;
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px;
+  }
 }
 
 /* ============ Sidebar ============ */
@@ -1763,5 +1779,132 @@ tbody tr:hover {
   .table-container {
     overflow: visible !important;
     border: none !important;
+  }
+}
+
+/* ============ Premium UI Enhancements ============ */
+.premium-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.premium-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary);
+  opacity: 0.8;
+}
+
+.stat-card.premium {
+  border: none;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  padding: 24px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.stat-card.premium .stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.glass-header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--glass);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: slideUp 0.4s ease forwards;
+}
+
+/* Fix for horizontal scroll on mobile headers */
+@media (max-width: 768px) {
+  .page-header-responsive {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header-actions-mobile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .header-actions-mobile .btn,
+  .header-actions-mobile .form-select,
+  .header-actions-mobile div {
+    width: 100% !important;
+  }
+
+  .header-actions-mobile div {
+    grid-column: span 2;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Utility Classes for Responsive Display */
+.show-mobile {
+  display: none;
+}
+
+.show-mobile-inline {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .show-mobile {
+    display: block;
+  }
+
+  .show-mobile-inline {
+    display: inline;
+  }
+
+  .hide-mobile {
+    display: none !important;
   }
 }

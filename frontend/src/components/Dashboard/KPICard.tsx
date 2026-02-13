@@ -47,7 +47,7 @@ const KPICard: React.FC<KPICardProps> = ({
     };
 
     return (
-        <div className={`kpi-card ${getStatusClass()}`}>
+        <div className={`kpi-card ${getStatusClass()} animate-fade-up`}>
             <div className="kpi-card-header">
                 <span className="kpi-card-label">{label}</span>
                 <div className="kpi-card-icon">

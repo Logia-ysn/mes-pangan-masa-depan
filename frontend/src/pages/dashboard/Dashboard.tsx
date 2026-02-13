@@ -196,7 +196,7 @@ const Dashboard = () => {
 
             <div className="page-content">
                 {/* Page Header */}
-                <div className="page-header">
+                <div className="page-header page-header-responsive">
                     <div className="page-header-content">
                         <h1>Executive Dashboard</h1>
                         <p>Real-time manufacturing insights and performance metrics</p>

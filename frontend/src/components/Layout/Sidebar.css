@@ -102,26 +102,60 @@
 .nav-item .material-symbols-outlined {
     font-size: 22px;
 }
+
 /* ============ Mobile Polish ============ */
 @media (max-width: 768px) {
-  .sidebar {
-    z-index: 1000;
-    width: 85vw;
-    max-width: 320px;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
-  }
+    .sidebar {
+        z-index: 1001;
+        /* Above overlay */
+        width: 85vw;
+        max-width: 320px;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+        background: var(--sidebar-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid var(--glass-border);
+    }
 
-  .sidebar-overlay {
-    z-index: 999;
-    backdrop-filter: blur(2px);
-  }
+    .sidebar-header {
+        height: 72px;
+        padding: 0 20px;
+        background: transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
 
-  .sidebar-footer {
-    padding: 12px;
-    font-size: 0.8125rem;
-  }
+    .sidebar-overlay {
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        background: rgba(15, 23, 42, 0.4);
+        /* Deeper overlay color */
+    }
 
-  .nav-item, .nav-subitem {
-    min-height: 48px; /* Better touch target */
-  }
+    .sidebar-footer {
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item,
+    .nav-subitem {
+        min-height: 52px;
+        /* Even better touch target */
+        display: flex;
+        align-items: center;
+        margin: 4px 12px;
+        padding-left: 16px;
+    }
+
+    .nav-subitem {
+        padding-left: 48px;
+    }
+
+    .sidebar-user {
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.5);
+        margin: 12px;
+        border-radius: var(--border-radius);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
 }

@@ -210,12 +210,12 @@ const Users = () => {
     };
 
     return (
-        <div style={{ padding: 24, paddingBottom: 100 }}>
+        <div className="page-content animate-fade-up">
             <Header title="Manajemen User" subtitle="Kelola hak akses dan akun pengguna sistem" />
 
             {/* Stats Grid */}
             <div className="stats-grid" style={{ marginBottom: 24 }}>
-                <div className="stat-card">
+                <div className="stat-card premium">
                     <div className="stat-icon" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
                         <span className="material-symbols-outlined">group</span>
                     </div>
@@ -224,7 +224,7 @@ const Users = () => {
                         <div className="stat-value">{stats.total}</div>
                     </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card premium">
                     <div className="stat-icon" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
                         <span className="material-symbols-outlined">person_check</span>
                     </div>
@@ -233,7 +233,7 @@ const Users = () => {
                         <div className="stat-value">{stats.active}</div>
                     </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card premium">
                     <div className="stat-icon" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
                         <span className="material-symbols-outlined">admin_panel_settings</span>
                     </div>
@@ -242,7 +242,7 @@ const Users = () => {
                         <div className="stat-value">{stats.adminCount}</div>
                     </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card premium">
                     <div className="stat-icon" style={{ backgroundColor: 'rgba(107, 114, 128, 0.1)', color: '#6b7280' }}>
                         <span className="material-symbols-outlined">engineering</span>
                     </div>
@@ -254,26 +254,25 @@ const Users = () => {
             </div>
 
             {/* Main Content */}
-            <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <div className="card premium-card">
+                <div className="card-header page-header-responsive">
                     <h3 className="card-title">Daftar Pengguna</h3>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="header-actions-mobile">
                         <div style={{ position: 'relative' }}>
-                            <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
+                            <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 18 }}>search</span>
                             <input
                                 type="text"
                                 className="form-input"
                                 placeholder="Cari nama atau email..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                style={{ paddingLeft: 40, minWidth: 250 }}
+                                style={{ paddingLeft: 40, width: '100%' }}
                             />
                         </div>
                         <select
                             className="form-select"
                             value={roleFilter}
                             onChange={(e) => setRoleFilter(e.target.value)}
-                            style={{ minWidth: 150 }}
                         >
                             <option value="all">Semua Role</option>
                             <option value="OPERATOR">OPERATOR</option>
@@ -283,7 +282,8 @@ const Users = () => {
                         </select>
                         <button className="btn btn-primary" onClick={() => openModal()}>
                             <span className="material-symbols-outlined">add</span>
-                            Tambah User
+                            <span className="hide-mobile">Tambah User</span>
+                            <span className="show-mobile-inline">Tambah</span>
                         </button>
                     </div>
                 </div>
@@ -293,7 +293,7 @@ const Users = () => {
                         <thead>
                             <tr>
                                 <th>Nama Lengkap</th>
-                                <th>Email</th>
+                                <th className="hide-mobile">Email</th>
                                 <th>Role</th>
                                 <th className="hide-mobile">Pabrik</th>
                                 <th>Status</th>
@@ -304,41 +304,63 @@ const Users = () => {
                             {loading ? (
                                 <tr>
                                     <td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>
-                                        <span className="material-symbols-outlined spin">refresh</span>
-                                        <p>Memuat data...</p>
+                                        <span className="material-symbols-outlined spin" style={{ fontSize: 32, color: 'var(--primary)' }}>refresh</span>
+                                        <p style={{ marginTop: 8, color: 'var(--text-secondary)' }}>Memuat data pengguna...</p>
                                     </td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>
-                                        <p className="text-muted">Tidak ada user ditemukan</p>
+                                        <div style={{ opacity: 0.5 }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 48 }}>person_search</span>
+                                            <p style={{ marginTop: 8 }}>Tidak ada user yang ditemukan</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredUsers.map(u => (
                                     <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.6 }}>
                                         <td>
-                                            <div style={{ fontWeight: 600 }}>{u.fullname}</div>
-                                            {u.id === currentUser?.id && <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Anda</span>}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <div className="user-avatar" style={{ width: 32, height: 32, fontSize: '0.8rem', flexShrink: 0 }}>
+                                                    {u.fullname.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.fullname}</div>
+                                                    <div className="show-mobile" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                                                </div>
+                                                {u.id === currentUser?.id && <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>Anda</span>}
+                                            </div>
                                         </td>
-                                        <td className="font-mono" style={{ fontSize: '0.9rem' }}>{u.email}</td>
+                                        <td className="hide-mobile font-mono" style={{ fontSize: '0.85rem' }}>{u.email}</td>
                                         <td>
                                             <span className={`badge ${getRoleBadge(u.role)}`}>{u.role}</span>
                                         </td>
                                         <td className="hide-mobile">{u.Factory?.name || 'Semua Pabrik'}</td>
                                         <td>
-                                            <span className={`status-indicator ${u.is_active ? 'status-online' : 'status-offline'}`} />
-                                            {u.is_active ? 'Aktif' : 'Nonaktif'}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span className={`status-indicator ${u.is_active ? 'status-online' : 'status-offline'}`} />
+                                                <span className="hide-mobile">{u.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                                            </div>
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
                                             <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
-                                                {/* Don't allow editing other superusers unless you are a superuser */}
                                                 {(u.role !== 'SUPERUSER' || currentUser?.role === 'SUPERUSER') && (
                                                     <>
-                                                        <button className="btn btn-icon btn-ghost" title="Edit User" onClick={() => openModal(u)}>
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            style={{ color: 'var(--primary)' }}
+                                                            title="Edit User"
+                                                            onClick={() => openModal(u)}
+                                                        >
                                                             <span className="material-symbols-outlined">edit</span>
                                                         </button>
-                                                        <button className="btn btn-icon btn-ghost" title="Reset Password" onClick={() => openPasswordModal(u.id)}>
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            style={{ color: 'var(--warning)' }}
+                                                            title="Reset Password"
+                                                            onClick={() => openPasswordModal(u.id)}
+                                                        >
                                                             <span className="material-symbols-outlined">lock_reset</span>
                                                         </button>
                                                         <button
