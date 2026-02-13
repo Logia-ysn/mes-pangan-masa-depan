@@ -7,6 +7,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.3.1] - 2026-02-13
+
+### Ditambahkan (User Management System)
+- **Halaman Manajemen User**: CRUD user lengkap di `/admin/users` untuk role ADMIN+.
+- **Reset Password Admin**: Fitur bagi admin untuk me-reset password user lain via modal.
+- **Role Hierarchy UI**: Badge warna berbeda untuk tiap level role (Superuser, Admin, Manager, Supervisor, Operator).
+- **Factory Assignment**: Kemampuan admin untuk menugaskan user ke pabrik tertentu (PMD-1, PMD-2) atau akses global.
+- **Admin Panel Sidebar**: Menu navigasi "Admin Panel" yang hanya muncul jika user memiliki hak akses yang cukup.
+- **Backend Extensions**: Implementasi endpoint `POST /users` (create by admin) dan `PUT /users/:id/reset-password`.
+
 ## [2.3.0] - 2026-02-13
 
 ### Ditambahkan (Mobile Responsiveness & UI Modern)

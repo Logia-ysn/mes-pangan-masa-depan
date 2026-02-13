@@ -1,8 +1,17 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 11 Complete — Mobile Responsiveness & Modern UI
+## 🟢 Status: Phase 12 Complete — User Management System
 **Date**: Feb 13, 2026
-**Current Version**: 2.3.0
+**Current Version**: 2.3.1
+
+### ✅ Phase 12: User Management System (Feb 13, 2026)
+Implemented complete administrative control over user accounts and access levels.
+
+1.  **Admin User Management UI** — Created a dedicated `/admin/users` page for user CRUD with statistics and search/filter.
+2.  **Password Management** — Added Admin override for user passwords (reset password functionality).
+3.  **Role-Based UI Integration** — Secured the Sidebar and App routes specifically for ADMIN and SUPERUSER roles.
+4.  **Service Expansion** — Enhanced `UserService` to handle factory assignment and specialized creation by administrators.
+5.  **Data Integrity** — Implemented soft-delete (is_active toggle) for users to prevent orphan data in historical records.
 
 ### ✅ Phase 11: Mobile Responsiveness & Modern UI (Feb 13, 2026)
 Full overhaul of the user interface to ensure the ERP is fully accessible and pleasant to use on mobile devices.

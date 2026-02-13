@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.3.0
+> **Current Version**: 2.3.1
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -108,10 +108,10 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 ### 3.1 User Management Page
 > Endpoint CRUD user sudah ada. Belum ada halaman admin.
 
-- [ ] Frontend: `pages/admin/Users.tsx` — list user, assign role, toggle active
-- [ ] Frontend: `pages/admin/Users.tsx` — reset password user lain (admin only)
-- [ ] Frontend: `App.tsx` — route `/admin/users`
-- [ ] Frontend: `Sidebar.tsx` — tambah menu "Admin" (visible hanya untuk ADMIN+)
+- [x] Frontend: `pages/admin/Users.tsx` — list user, assign role, toggle active
+- [x] Frontend: `pages/admin/Users.tsx` — reset password user lain (admin only)
+- [x] Frontend: `App.tsx` — route `/admin/users`
+- [x] Frontend: `Sidebar.tsx` — tambah menu "Admin" (visible hanya untuk ADMIN+)
 
 ### 3.2 Quality Trending / SPC Charts
 > Data QC sudah tersimpan. Perlu visualisasi trend.
@@ -149,7 +149,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | Halaman Laporan | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Notifikasi | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Export Excel | `[x]` Selesai | - | 100% | 100% | v2.2.0 |
-| User Management | `[ ]` Belum | Ya | 0% | 0% | - |
+| User Management | `[x]` Selesai | Ya | 100% | 100% | v2.3.1 |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
 | Mobile/PWA | `[x]` Selesai | - | - | 100% | v2.3.0 |
