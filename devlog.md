@@ -1,8 +1,22 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 9 Complete — Operational Excellence
+## 🟢 Status: Phase 10 Complete — Production Stability & Integrity
 **Date**: Feb 13, 2026
-**Current Version**: 2.2.0
+**Current Version**: 2.2.1
+
+### ✅ Phase 10: Production Stability & Integrity (Feb 13, 2026)
+Final pass for version 2.2.1, ensuring 100% stable production environment and bulletproof data integrity.
+
+1.  **Vercel Configuration** — Automated "mode cepat" deployment:
+    - Root Directory set to `frontend`.
+    - Framework preset **Vite** enforced.
+    - Build settings optimized for Git push deployment.
+    - Synchronized `VITE_API_URL` environment variables with railway `-7abe` suffix.
+2.  **Stock Integrity (Worksheet)** — Refactored `deleteWorksheet` in `worksheet.service.ts` to perform full **Stock Reversal**. Deleting a production log now correctly restores input raw materials and removes output finished goods from inventory.
+3.  **Stock Integrity (Invoice)** — Added `cancelInvoice` logic to `invoice.service.ts`. Changing an invoice status to `CANCELLED` now automatically reverses stock deductions, returning goods to inventory.
+4.  **Audit Trail (Manual Update)** — Patched `T_updateStock.ts` to always use `StockService`. Manual stock adjustments now create `StockMovement` entries with `ADJUSTMENT` type, ensuring a transparent audit log of quantities and users.
+5.  **Frontend Build Fixes** — Resolved 4 critical TypeScript type errors in Recharts components across all report pages (`Production`, `Sales`, `COGM`, `Stock`). This was a blocker for Vercel production builds.
+6.  **Backup & Versioning** — Executed `git tag v2.2.1` and `v2.2.1` release. Synchronized `CHANGELOG.md` and `task.md`.
 
 ### ✅ Phase 9: Operational Excellence — Reports, Notifications & Excel Export (Feb 13, 2026)
 Full implementation of Prioritas 2: integrated report pages, notification system, and Excel export capabilities.
@@ -118,6 +132,7 @@ We have successfully migrated the entire data layer from TypeORM to Prisma. This
 - **ML Service**: Rewritten to v2.0.0 with multi-color support. In-memory calibration resets on restart (no persistence yet).
 
 ### 🚀 Recent Changes
+- Completed **Production Stability & Integrity** (v2.2.1): Auto-reversal for deleted worksheets & cancelled invoices, audit logs for manual updates, and Vercel build fixes.
 - Completed **Operational Excellence** (Prioritas 2): Report pages, Notifications, Excel export.
 - 4 report pages with charts, KPI cards, and export functionality.
 - Full notification system with persistent alerts and header dropdown.

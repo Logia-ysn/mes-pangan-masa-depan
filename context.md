@@ -23,7 +23,9 @@ The project follows a **Modified Layered Architecture**:
 - **Auth**: JWT-based with dual-mode token extraction (Bearer header + httpOnly cookie). Handled in `utility/auth.ts`. All handlers call `requireAuth(req, role)` which checks both sources.
 - **Auth (Frontend)**: Cookie-based via `withCredentials: true`. No localStorage token. Session checked via `/auth/me` on mount.
 - **ML Integration**: `T_analyzeGrain.ts` communicates with an external ML service for `ML_SERVICE_URL`.
-- **Inventory Logic**: Stocks and Movements are tracked closely. Every production worksheet triggers stock reductions of raw materials and increases in finished goods.
+- **Inventory Logic**: Stocks and Movements are tracked closely. Every production worksheet triggers stock reductions of raw materials and increases in finished goods. **v2.2.1** ensures stock reversal on worksheet deletion and invoice cancellation.
+- **Audit System**: Manual stock updates via supervisor always trigger a `StockMovement` entry (ADJUSTMENT) for audit trails, enforced at the service layer.
+- **Deployment**: Backend is on Railway (configured for Express + Prisma), Frontend is on Vercel (Vite preset with `frontend/` root directory).
 
 ## 🛡 Operational Features
 - **Health Check**: `GET /health` — direct Express route, bypasses NAIV pipeline
