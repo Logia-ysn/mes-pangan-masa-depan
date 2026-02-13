@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../../components/Layout/Header';
 import api from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface Maintenance {
     id: number;
@@ -59,7 +60,7 @@ const Maintenance = () => {
             const data = response.data?.data || response.data || [];
             setMaintenances(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Error fetching maintenances:', error);
+            logger.error('Error fetching maintenances:', error);
         } finally {
             setLoading(false);
         }
@@ -71,7 +72,7 @@ const Maintenance = () => {
             const data = response.data?.data || response.data || [];
             setMachines(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Error fetching machines:', error);
+            logger.error('Error fetching machines:', error);
         }
     };
 
@@ -93,7 +94,7 @@ const Maintenance = () => {
             fetchMaintenances();
             closeModal();
         } catch (error) {
-            console.error('Error saving maintenance:', error);
+            logger.error('Error saving maintenance:', error);
         }
     };
 
@@ -103,7 +104,7 @@ const Maintenance = () => {
                 await api.delete(`/maintenances/${id}`);
                 fetchMaintenances();
             } catch (error) {
-                console.error('Error deleting maintenance:', error);
+                logger.error('Error deleting maintenance:', error);
             }
         }
     };

@@ -1,13 +1,13 @@
 import { T_updateFactory } from "../types/api/T_updateFactory";
-import { Factory } from "../types/model/table/Factory";
-import { getUserFromToken } from "../utility/auth";
+import { factoryRepository } from "../src/repositories/factory.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_updateFactory: T_updateFactory = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_updateFactory: T_updateFactory = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'ADMIN');
 
-  const factory = await Factory.findOne({
-    where: { id: req.path.id }
-  });
+  const factoryId = Number(req.path.id);
+  const factory = await factoryRepository.findById(factoryId);
 
   if (!factory) {
     throw new Error('Factory not found');
@@ -15,13 +15,13 @@ export const t_updateFactory: T_updateFactory = async (req, res) => {
 
   const { code, name, address, phone, is_active } = req.body;
 
-  if (code !== undefined) factory.code = code;
-  if (name !== undefined) factory.name = name;
-  if (address !== undefined) factory.address = address;
-  if (phone !== undefined) factory.phone = phone;
-  if (is_active !== undefined) factory.is_active = is_active;
+  const updatedFactory = await factoryRepository.update(factoryId, {
+    code,
+    name,
+    address,
+    phone,
+    is_active
+  });
 
-  await factory.save();
-
-  return factory;
-}
+  return updatedFactory as any;
+});

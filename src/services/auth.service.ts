@@ -1,15 +1,9 @@
 /**
  * Auth Service
- * Handles authentication business logic
- * 
- * RULES:
- * - No HTTP request/response objects
- * - No direct database queries (use repositories)
- * - Pure business logic only
+ * Handles authentication business logic using Prisma
  */
 
-import { User } from '../../types/model/table/User';
-import { UserRole } from '../../types/model/enum/UserRole';
+import { User, User_role_enum } from '@prisma/client';
 import { userRepository } from '../repositories/user.repository';
 import { hashPassword, comparePassword, generateToken, verifyToken, extractToken } from '../../utility/auth';
 import { UnauthorizedError, ValidationError, NotFoundError, ConflictError } from '../utils/errors';
@@ -57,7 +51,7 @@ class AuthService {
         }
 
         // Generate token
-        const token = generateToken(user);
+        const token = generateToken(user as any);
 
         return { token, user };
     }
@@ -81,17 +75,18 @@ class AuthService {
         // Hash password
         const passwordHash = await hashPassword(dto.password);
 
-        // Create user
+        // SECURITY: Always create new users as OPERATOR regardless of what was passed
+        // Only ADMIN/SUPERUSER can change roles via the updateUser endpoint
         const user = await userRepository.create({
             email: dto.email,
             password_hash: passwordHash,
             fullname: dto.fullname,
-            role: (dto.role || 'OPERATOR') as UserRole,
+            role: User_role_enum.OPERATOR,
             is_active: true
-        }) as User;
+        });
 
         // Generate token
-        const token = generateToken(user);
+        const token = generateToken(user as any);
 
         return { token, user };
     }
@@ -99,12 +94,8 @@ class AuthService {
     /**
      * Get user from authorization token
      */
-    async getUserFromToken(authorization: string): Promise<User> {
-        if (!authorization) {
-            throw new UnauthorizedError('Authorization header is required');
-        }
-
-        const token = extractToken(authorization);
+    async getUserFromToken(req: any): Promise<User> {
+        const token = extractToken(req);
         const payload = verifyToken(token);
 
         const user = await userRepository.findActiveById(payload.userId);
@@ -148,9 +139,9 @@ class AuthService {
     /**
      * Validate token (without fetching user)
      */
-    validateToken(authorization: string): boolean {
+    validateToken(req: any): boolean {
         try {
-            const token = extractToken(authorization);
+            const token = extractToken(req);
             verifyToken(token);
             return true;
         } catch {

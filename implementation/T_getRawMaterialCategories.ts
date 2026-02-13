@@ -1,12 +1,18 @@
-import { T_getRawMaterialCategories } from "../types/api/T_getRawMaterialCategories";
-import { RawMaterialCategory } from "../types/model/table/RawMaterialCategory";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_getRawMaterialCategories: T_getRawMaterialCategories = async (req, res) => {
-    await getUserFromToken(req.headers.authorization);
-    const { limit = 100, offset = 0, is_active } = req.query;
-    const where: any = {};
-    if (is_active !== undefined) where.is_active = is_active;
-    const [data, total] = await RawMaterialCategory.findAndCount({ where, take: limit, skip: offset, order: { name: 'ASC' } });
-    return { data, total };
-}
+import { T_getRawMaterialCategories } from "../types/api/T_getRawMaterialCategories";
+import { requireAuth } from "../utility/auth";
+import { rawMaterialCategoryRepository } from "../src/repositories/raw-material-category.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
+
+export const t_getRawMaterialCategories: T_getRawMaterialCategories = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'OPERATOR');
+    const { limit, offset, is_active } = req.query;
+
+    const { data, total } = await rawMaterialCategoryRepository.findWithFilters({
+        limit: limit ? Number(limit) : 100,
+        offset: offset ? Number(offset) : 0,
+        is_active: is_active !== undefined ? Boolean(is_active) : undefined
+    });
+
+    return { data: data as any, total };
+});

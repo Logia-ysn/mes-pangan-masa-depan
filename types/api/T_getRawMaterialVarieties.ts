@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { Transform, Type } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsBoolean, IsOptional, IsString, ValidateNested, IsArray } from "class-validator";
-import { RawMaterialVariety } from '../model/table/RawMaterialVariety'
+import { RawMaterialVariety } from '@prisma/client'
 
 export class T_getRawMaterialVarieties_headers {
     @IsNotEmpty({ message: 'authorization cannot be empty' })
@@ -30,7 +30,7 @@ class ReturnType_0 {
     @IsNotEmpty({ message: 'data cannot be empty' })
     @IsArray()
     @ValidateNested({ each: true })
-    @Type(() => RawMaterialVariety)
+    @Type(() => Object)
     data!: RawMaterialVariety[]
 }
 

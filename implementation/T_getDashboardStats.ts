@@ -1,15 +1,12 @@
-/**
- * Get Dashboard Stats Handler (Presentation Layer)
- * 
- * Returns dashboard statistics matching the expected API response format
- */
 
 import { T_getDashboardStats } from "../types/api/T_getDashboardStats";
+import { requireAuth } from "../utility/auth";
 import { dashboardService } from "../src/services/dashboard.service";
-import { worksheetRepository } from "../src/repositories/worksheet.repository";
-import { Employee } from "../types/model/table/Employee";
+import { employeeRepository } from "../src/repositories/employee.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getDashboardStats: T_getDashboardStats = async (req, res) => {
+export const t_getDashboardStats: T_getDashboardStats = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   // 1. Extract query params
   const { id_factory, start_date, end_date } = req.query;
 
@@ -28,7 +25,7 @@ export const t_getDashboardStats: T_getDashboardStats = async (req, res) => {
   });
 
   // 4. Get employee count
-  const totalEmployees = await Employee.count();
+  const totalEmployees = await employeeRepository.count();
 
   // 5. Return response in expected format
   return {
@@ -44,4 +41,4 @@ export const t_getDashboardStats: T_getDashboardStats = async (req, res) => {
       beras_output: item.total_output
     }))
   };
-}
+});

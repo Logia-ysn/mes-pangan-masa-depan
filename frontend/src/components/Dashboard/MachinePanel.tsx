@@ -117,4 +117,4 @@ const MachinePanel: React.FC<MachinePanelProps> = ({ data }) => {
     );
 };
 
-export default MachinePanel;
+export default React.memo(MachinePanel);

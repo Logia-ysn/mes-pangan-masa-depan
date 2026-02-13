@@ -1,11 +1,10 @@
 /**
  * Stock Movement Repository
- * Handles all database operations for StockMovement entity
+ * Handles all database operations for StockMovement entity using Prisma
  */
 
 import { BaseRepository } from './base.repository';
-import { StockMovement } from '../../types/model/table/StockMovement';
-import { FindManyOptions, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { StockMovement, StockMovement_movement_type_enum } from '@prisma/client';
 
 export interface StockMovementListParams {
     limit?: number;
@@ -18,15 +17,15 @@ export interface StockMovementListParams {
 }
 
 export class StockMovementRepository extends BaseRepository<StockMovement> {
-    protected entity = StockMovement;
+    protected modelName = 'StockMovement';
 
     /**
      * Find movements by stock ID
      */
     async findByStock(id_stock: number): Promise<StockMovement[]> {
-        return await StockMovement.find({
+        return await this.model.findMany({
             where: { id_stock },
-            order: { created_at: 'DESC' }
+            orderBy: { created_at: 'desc' }
         });
     }
 
@@ -34,7 +33,7 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
      * Find movements by reference
      */
     async findByReference(reference_type: string, reference_id: number): Promise<StockMovement[]> {
-        return await StockMovement.find({
+        return await this.model.findMany({
             where: { reference_type, reference_id }
         });
     }
@@ -43,13 +42,6 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
      * Find all movements with filtering
      */
     async findWithFilters(params: StockMovementListParams): Promise<{ movements: StockMovement[], total: number }> {
-        const options: FindManyOptions<StockMovement> = {
-            take: params.limit || 20,
-            skip: params.offset || 0,
-            order: { created_at: 'DESC' },
-            relations: ['otm_id_stock', 'otm_id_user']
-        };
-
         const where: any = {};
 
         if (params.id_stock) {
@@ -57,26 +49,33 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
         }
 
         if (params.movement_type) {
-            where.movement_type = params.movement_type;
+            where.movement_type = params.movement_type as StockMovement_movement_type_enum;
         }
 
         if (params.reference_type) {
             where.reference_type = params.reference_type;
         }
 
-        if (params.start_date && params.end_date) {
-            where.created_at = Between(params.start_date, params.end_date);
-        } else if (params.start_date) {
-            where.created_at = MoreThanOrEqual(params.start_date);
-        } else if (params.end_date) {
-            where.created_at = LessThanOrEqual(params.end_date);
+        if (params.start_date || params.end_date) {
+            where.created_at = {};
+            if (params.start_date) where.created_at.gte = params.start_date;
+            if (params.end_date) where.created_at.lte = params.end_date;
         }
 
-        if (Object.keys(where).length > 0) {
-            options.where = where;
-        }
+        const [movements, total] = await Promise.all([
+            this.model.findMany({
+                where,
+                take: params.limit || 20,
+                skip: params.offset || 0,
+                orderBy: { created_at: 'desc' },
+                include: {
+                    Stock: true,
+                    User: true
+                }
+            }),
+            this.model.count({ where })
+        ]);
 
-        const [movements, total] = await StockMovement.findAndCount(options);
         return { movements, total };
     }
 
@@ -89,19 +88,20 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
         movement_type: string;
         quantity: number;
         reference_type?: string;
-        reference_id?: number;
+        reference_id?: number | bigint;
         notes?: string;
     }): Promise<StockMovement> {
-        const movement = new StockMovement();
-        movement.id_stock = data.id_stock;
-        movement.id_user = data.id_user;
-        movement.movement_type = data.movement_type as any;
-        movement.quantity = data.quantity;
-        movement.reference_type = data.reference_type;
-        movement.reference_id = data.reference_id;
-        movement.notes = data.notes;
-        await movement.save();
-        return movement;
+        return await this.model.create({
+            data: {
+                id_stock: data.id_stock,
+                id_user: data.id_user,
+                movement_type: data.movement_type as StockMovement_movement_type_enum,
+                quantity: data.quantity,
+                reference_type: data.reference_type,
+                reference_id: data.reference_id,
+                notes: data.notes
+            }
+        });
     }
 }
 

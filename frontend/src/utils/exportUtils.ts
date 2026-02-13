@@ -1,6 +1,8 @@
-export const exportToCSV = (data: any[], filename: string) => {
+import { logger } from './logger';
+
+export const exportToCSV = (data: Record<string, any>[], filename: string) => {
     if (!data || !data.length) {
-        console.warn('No data to export');
+        logger.warn('No data to export');
         return;
     }
 
@@ -41,7 +43,7 @@ export const exportToCSV = (data: any[], filename: string) => {
 export const exportTableToCSV = (tableId: string, filename: string) => {
     const table = document.getElementById(tableId);
     if (!table) {
-        console.warn(`Table with ID ${tableId} not found`);
+        logger.warn(`Table with ID ${tableId} not found`);
         return;
     }
 

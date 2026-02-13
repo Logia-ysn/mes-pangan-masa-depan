@@ -101,4 +101,4 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ data }) => {
     );
 };
 
-export default InventoryPanel;
+export default React.memo(InventoryPanel);

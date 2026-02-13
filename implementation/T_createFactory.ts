@@ -1,26 +1,26 @@
 import { T_createFactory } from "../types/api/T_createFactory";
-import { Factory } from "../types/model/table/Factory";
-import { getUserFromToken } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { factoryRepository } from "../src/repositories/factory.repository";
+import { requireAuth } from "../utility/auth";
 
-export const t_createFactory: T_createFactory = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_createFactory: T_createFactory = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'ADMIN');
 
   const { code, name, address, phone } = req.body;
 
   // Check if code already exists
-  const existing = await Factory.findOne({ where: { code } });
-  if (existing) {
+  const exists = await factoryRepository.codeExists(code);
+  if (exists) {
     throw new Error('Factory code already exists');
   }
 
-  const factory = new Factory();
-  factory.code = code;
-  factory.name = name;
-  factory.address = address;
-  factory.phone = phone;
-  factory.is_active = true;
+  const factory = await factoryRepository.create({
+    code,
+    name,
+    address,
+    phone,
+    is_active: true
+  });
 
-  await factory.save();
-
-  return factory;
-}
+  return factory as any;
+});

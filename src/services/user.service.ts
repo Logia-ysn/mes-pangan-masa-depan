@@ -1,15 +1,9 @@
 /**
  * User Service
- * Handles user management business logic
- * 
- * RULES:
- * - No HTTP request/response objects
- * - No direct database queries (use repositories)
- * - Pure business logic only
+ * Handles user management business logic using Prisma
  */
 
-import { User } from '../../types/model/table/User';
-import { UserRole } from '../../types/model/enum/UserRole';
+import { User, User_role_enum } from '@prisma/client';
 import { userRepository, UserListParams } from '../repositories/user.repository';
 import { hashPassword } from '../../utility/auth';
 import { NotFoundError, ConflictError, ValidationError } from '../utils/errors';
@@ -76,9 +70,9 @@ class UserService {
             email: dto.email,
             password_hash: passwordHash,
             fullname: dto.fullname,
-            role: (dto.role || 'OPERATOR') as UserRole,
+            role: (dto.role || 'OPERATOR') as User_role_enum,
             is_active: dto.is_active !== undefined ? dto.is_active : true
-        }) as User;
+        });
     }
 
     /**
@@ -90,21 +84,22 @@ class UserService {
             throw new NotFoundError('User', dto.id);
         }
 
+        const data: any = {};
+
         // Check email uniqueness if changing email
         if (dto.email && dto.email !== user.email) {
             if (await userRepository.emailExists(dto.email)) {
                 throw new ConflictError('Email already registered');
             }
-            user.email = dto.email;
+            data.email = dto.email;
         }
 
-        if (dto.fullname) user.fullname = dto.fullname;
-        if (dto.role) user.role = dto.role as UserRole;
-        if (dto.is_active !== undefined) user.is_active = dto.is_active;
-        user.updated_at = new Date();
+        if (dto.fullname) data.fullname = dto.fullname;
+        if (dto.role) data.role = dto.role as User_role_enum;
+        if (dto.is_active !== undefined) data.is_active = dto.is_active;
+        data.updated_at = new Date();
 
-        await user.save();
-        return user;
+        return await userRepository.update(dto.id, data);
     }
 
     /**

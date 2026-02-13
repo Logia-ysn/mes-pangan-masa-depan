@@ -1,13 +1,11 @@
 /**
- * Seed Superuser Script
+ * Seed Superuser Script (Prisma Version)
  * 
  * Jalankan dengan: npx ts-node seed-superuser.ts
  */
 
-import 'reflect-metadata';
-import { AppDataSource } from './data-source';
-import { User } from './types/model/table/User';
-import { UserRole } from './types/model/enum/UserRole';
+import { prisma } from './src/libs/prisma';
+import { User_role_enum } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const ROOT_EMAIL = 'root@pangan.com';
@@ -16,36 +14,36 @@ const ROOT_FULLNAME = 'Super Administrator';
 
 async function seedSuperuser() {
     try {
-        console.log('🔌 Connecting to database...');
-        await AppDataSource.initialize();
-        console.log('✅ Database connected!');
+        console.log('🔌 Connecting to database via Prisma...');
 
-        const userRepo = AppDataSource.getRepository(User);
-
-        const existing = await userRepo.findOne({
+        const existing = await prisma.user.findFirst({
             where: { email: ROOT_EMAIL }
         });
 
+        const passwordHash = await bcrypt.hash(ROOT_PASSWORD, 10);
+
         if (existing) {
             console.log('⚠️  Superuser already exists! Updating...');
-            existing.password_hash = await bcrypt.hash(ROOT_PASSWORD, 10);
-            existing.role = UserRole.SUPERUSER;
-            existing.is_active = true;
-            await userRepo.save(existing);
+            await prisma.user.update({
+                where: { id: existing.id },
+                data: {
+                    password_hash: passwordHash,
+                    role: User_role_enum.SUPERUSER,
+                    is_active: true
+                }
+            });
             console.log('✅ Superuser updated!');
         } else {
             console.log('🔐 Creating superuser...');
-            const passwordHash = await bcrypt.hash(ROOT_PASSWORD, 10);
-
-            const superuser = userRepo.create({
-                email: ROOT_EMAIL,
-                password_hash: passwordHash,
-                fullname: ROOT_FULLNAME,
-                role: UserRole.SUPERUSER,
-                is_active: true
+            await prisma.user.create({
+                data: {
+                    email: ROOT_EMAIL,
+                    password_hash: passwordHash,
+                    fullname: ROOT_FULLNAME,
+                    role: User_role_enum.SUPERUSER,
+                    is_active: true
+                }
             });
-
-            await userRepo.save(superuser);
             console.log('✅ Superuser created!');
         }
 
@@ -58,7 +56,7 @@ async function seedSuperuser() {
         console.log('   👤 Role     : SUPERUSER');
         console.log('═══════════════════════════════════════════');
 
-        await AppDataSource.destroy();
+        await prisma.$disconnect();
         console.log('');
         console.log('🔒 Database connection closed.');
         process.exit(0);

@@ -1,23 +1,18 @@
 import { T_getProductTypes } from "../types/api/T_getProductTypes";
-import { ProductType } from "../types/model/table/ProductType";
-import { getUserFromToken } from "../utility/auth";
-import { Like } from "typeorm";
+import { productTypeRepository } from "../src/repositories/product-type.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getProductTypes: T_getProductTypes = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_getProductTypes: T_getProductTypes = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
 
-  const { limit = 10, offset = 0, search } = req.query;
+  const { limit, offset, search } = req.query;
 
-  const where: any = {};
-  if (search) {
-    where.name = Like(`%${search}%`);
-  }
-
-  const [data, total] = await ProductType.findAndCount({
-    where,
-    take: limit,
-    skip: offset
+  const { productTypes, total } = await productTypeRepository.findWithFilters({
+    limit: limit ? Number(limit) : 50,
+    offset: offset ? Number(offset) : 0,
+    search: search as string
   });
 
-  return { data, total };
-}
+  return { data: productTypes as any, total };
+});

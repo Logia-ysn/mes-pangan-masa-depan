@@ -1,25 +1,18 @@
 import { T_getFactories } from "../types/api/T_getFactories";
-import { Factory } from "../types/model/table/Factory";
-import { getUserFromToken } from "../utility/auth";
-import { Like } from "typeorm";
+import { factoryRepository } from "../src/repositories/factory.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getFactories: T_getFactories = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_getFactories: T_getFactories = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
 
-  const { limit = 10, offset = 0, search } = req.query;
+  const { limit, offset, search } = req.query;
 
-  const where: any = {};
-
-  if (search) {
-    where.name = Like(`%${search}%`);
-  }
-
-  const [data, total] = await Factory.findAndCount({
-    where,
-    take: limit,
-    skip: offset,
-    order: { created_at: 'DESC' }
+  const { factories, total } = await factoryRepository.findWithFilters({
+    limit: limit ? Number(limit) : 10,
+    offset: offset ? Number(offset) : 0,
+    search: search as string
   });
 
-  return { data, total };
-}
+  return { data: factories as any, total };
+});

@@ -1,7 +1,0 @@
-export enum UserRole {
-  'SUPERUSER' = 'SUPERUSER',
-  'ADMIN' = 'ADMIN',
-  'MANAGER' = 'MANAGER',
-  'SUPERVISOR' = 'SUPERVISOR',
-  'OPERATOR' = 'OPERATOR',
-};

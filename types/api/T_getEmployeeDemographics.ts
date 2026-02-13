@@ -48,17 +48,17 @@ class ReturnType_0 {
   @IsNotEmpty({ message: 'by_gender cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ReturnType_0_1)
+  @Type(() => Object)
   by_gender!: ReturnType_0_1[]
   @IsNotEmpty({ message: 'by_department cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ReturnType_0_2)
+  @Type(() => Object)
   by_department!: ReturnType_0_2[]
   @IsNotEmpty({ message: 'by_employment_status cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ReturnType_0_3)
+  @Type(() => Object)
   by_employment_status!: ReturnType_0_3[]
 }
 

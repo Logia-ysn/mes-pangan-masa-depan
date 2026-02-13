@@ -1,21 +1,21 @@
-import { T_createProductType } from "../types/api/T_createProductType";
-import { ProductType } from "../types/model/table/ProductType";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_createProductType: T_createProductType = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+import { T_createProductType } from "../types/api/T_createProductType";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { requireAuth } from "../utility/auth";
+import { productTypeRepository } from "../src/repositories/product-type.repository";
+
+export const t_createProductType: T_createProductType = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'SUPERVISOR');
 
   const { code, name, description, unit } = req.body;
 
-  const existing = await ProductType.findOne({ where: { code } });
+  const existing = await productTypeRepository.findOne({ where: { code } });
   if (existing) throw new Error('Product type code already exists');
 
-  const productType = new ProductType();
-  productType.code = code;
-  productType.name = name;
-  productType.description = description;
-  productType.unit = unit || 'kg';
-
-  await productType.save();
-  return productType;
-}
+  return await productTypeRepository.create({
+    code,
+    name,
+    description,
+    unit: unit || 'kg'
+  });
+});

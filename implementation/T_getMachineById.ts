@@ -1,10 +1,12 @@
-import { T_getMachineById } from "../types/api/T_getMachineById";
-import { Machine } from "../types/model/table/Machine";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_getMachineById: T_getMachineById = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
-  const machine = await Machine.findOne({ where: { id: req.path.id } });
+import { T_getMachineById } from "../types/api/T_getMachineById";
+import { requireAuth } from "../utility/auth";
+import { machineRepository } from "../src/repositories/machine.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
+
+export const t_getMachineById: T_getMachineById = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
+  const machine = await machineRepository.findById(req.path.id);
   if (!machine) throw new Error('Machine not found');
   return machine;
-}
+});

@@ -1,25 +1,19 @@
 /**
  * Stock Service
- * Handles stock management business logic
- * 
- * RULES:
- * - No HTTP request/response objects
- * - No direct database queries (use repositories)
- * - Pure business logic only
+ * Handles stock management business logic using Prisma
  */
 
-import { Stock } from '../../types/model/table/Stock';
+import { Stock, StockMovement_movement_type_enum } from '@prisma/client';
+import { prisma } from '../libs/prisma';
 import { stockRepository } from '../repositories/stock.repository';
-import { stockMovementRepository } from '../repositories/stock-movement.repository';
 import { productTypeRepository } from '../repositories/product-type.repository';
-import { MovementType } from '../../types/model/enum/MovementType';
-import { NotFoundError, BusinessRuleError } from '../utils/errors';
+import { BusinessRuleError } from '../utils/errors';
 
 export interface UpdateStockDTO {
     factoryId: number;
     productCode: string;
     quantity: number;
-    movementType: MovementType;
+    movementType: StockMovement_movement_type_enum;
     userId: number;
     referenceType?: string;
     referenceId?: number;
@@ -53,8 +47,7 @@ class StockService {
     }
 
     /**
-     * Update stock quantity and create movement record
-     * This is the core business logic for stock management
+     * Update stock quantity and create movement record (transactional)
      */
     async updateStock(dto: UpdateStockDTO): Promise<Stock | null> {
         if (dto.quantity <= 0) {
@@ -68,45 +61,60 @@ class StockService {
             return null;
         }
 
-        // Get or create stock
-        const stock = await stockRepository.getOrCreate(
-            dto.factoryId,
-            productType.id,
-            productType.unit
-        );
+        return await prisma.$transaction(async (tx) => {
+            // Get or create stock within transaction
+            let stock = await tx.stock.findFirst({
+                where: { id_factory: dto.factoryId, id_product_type: productType.id }
+            });
 
-        // Calculate new quantity
-        let newQuantity: number;
-        if (dto.movementType === MovementType.OUT) {
-            newQuantity = Number(stock.quantity) - dto.quantity;
+            if (!stock) {
+                stock = await tx.stock.create({
+                    data: {
+                        id_factory: dto.factoryId,
+                        id_product_type: productType.id,
+                        quantity: 0,
+                        unit: productType.unit
+                    }
+                });
+            }
 
-            // Business rule: Cannot have negative stock (optional - can be configured)
-            // if (newQuantity < 0) {
-            //     throw new BusinessRuleError(`Insufficient stock for ${dto.productCode}`);
-            // }
-        } else {
-            newQuantity = Number(stock.quantity) + dto.quantity;
-        }
+            // Calculate new quantity
+            let newQuantity: number;
+            if (dto.movementType === StockMovement_movement_type_enum.OUT) {
+                newQuantity = Number(stock.quantity) - dto.quantity;
+                if (newQuantity < 0) {
+                    throw new BusinessRuleError(
+                        `Insufficient stock for ${dto.productCode}. Available: ${stock.quantity}, Requested: ${dto.quantity}`
+                    );
+                }
+            } else {
+                newQuantity = Number(stock.quantity) + dto.quantity;
+            }
 
-        // Update stock
-        await stockRepository.updateQuantity(stock.id, newQuantity);
+            // Update stock atomically
+            const updatedStock = await tx.stock.update({
+                where: { id: stock.id },
+                data: { quantity: newQuantity }
+            });
 
-        // Create movement record
-        await stockMovementRepository.createMovement({
-            id_stock: stock.id,
-            id_user: dto.userId,
-            movement_type: dto.movementType,
-            quantity: dto.quantity,
-            reference_type: dto.referenceType,
-            reference_id: dto.referenceId,
-            notes: dto.notes || JSON.stringify({
-                type: dto.movementType === MovementType.OUT ? 'STOCK_OUT' : 'STOCK_IN',
-                productCode: dto.productCode
-            })
+            // Create movement record
+            await tx.stockMovement.create({
+                data: {
+                    id_stock: stock.id,
+                    id_user: dto.userId,
+                    movement_type: dto.movementType,
+                    quantity: dto.quantity,
+                    reference_type: dto.referenceType,
+                    reference_id: dto.referenceId,
+                    notes: dto.notes || JSON.stringify({
+                        type: dto.movementType === StockMovement_movement_type_enum.OUT ? 'STOCK_OUT' : 'STOCK_IN',
+                        productCode: dto.productCode
+                    })
+                }
+            });
+
+            return updatedStock;
         });
-
-        // Return updated stock
-        return await stockRepository.findById(stock.id);
     }
 
     /**
@@ -124,7 +132,7 @@ class StockService {
             factoryId,
             productCode,
             quantity,
-            movementType: MovementType.IN,
+            movementType: StockMovement_movement_type_enum.IN,
             userId,
             referenceType,
             referenceId
@@ -146,7 +154,7 @@ class StockService {
             factoryId,
             productCode,
             quantity,
-            movementType: MovementType.OUT,
+            movementType: StockMovement_movement_type_enum.OUT,
             userId,
             referenceType,
             referenceId
@@ -174,7 +182,7 @@ class StockService {
     }
 
     /**
-     * Transfer stock between factories
+     * Transfer stock between factories (single transaction)
      */
     async transferStock(
         fromFactoryId: number,
@@ -183,32 +191,78 @@ class StockService {
         quantity: number,
         userId: number
     ): Promise<{ from: Stock | null; to: Stock | null }> {
-        // Check sufficient stock
-        if (!await this.hasSufficientStock(fromFactoryId, productCode, quantity)) {
-            throw new BusinessRuleError(`Insufficient stock for transfer: ${productCode}`);
+        const productType = await productTypeRepository.findByCode(productCode);
+        if (!productType) {
+            throw new BusinessRuleError(`Product type not found: ${productCode}`);
         }
 
-        // Remove from source
-        const from = await this.removeStock(
-            fromFactoryId,
-            productCode,
-            quantity,
-            userId,
-            'TRANSFER',
-            toFactoryId
-        );
+        return await prisma.$transaction(async (tx) => {
+            // Source stock
+            const sourceStock = await tx.stock.findFirst({
+                where: { id_factory: fromFactoryId, id_product_type: productType.id }
+            });
 
-        // Add to destination
-        const to = await this.addStock(
-            toFactoryId,
-            productCode,
-            quantity,
-            userId,
-            'TRANSFER',
-            fromFactoryId
-        );
+            if (!sourceStock || Number(sourceStock.quantity) < quantity) {
+                throw new BusinessRuleError(
+                    `Insufficient stock for transfer: ${productCode}. Available: ${sourceStock?.quantity ?? 0}, Requested: ${quantity}`
+                );
+            }
 
-        return { from, to };
+            // Destination stock (get or create)
+            let destStock = await tx.stock.findFirst({
+                where: { id_factory: toFactoryId, id_product_type: productType.id }
+            });
+
+            if (!destStock) {
+                destStock = await tx.stock.create({
+                    data: {
+                        id_factory: toFactoryId,
+                        id_product_type: productType.id,
+                        quantity: 0,
+                        unit: productType.unit
+                    }
+                });
+            }
+
+            // Deduct from source
+            const from = await tx.stock.update({
+                where: { id: sourceStock.id },
+                data: { quantity: { decrement: quantity } }
+            });
+
+            // Add to destination
+            const to = await tx.stock.update({
+                where: { id: destStock.id },
+                data: { quantity: { increment: quantity } }
+            });
+
+            // Create movement records
+            await tx.stockMovement.create({
+                data: {
+                    id_stock: sourceStock.id,
+                    id_user: userId,
+                    movement_type: StockMovement_movement_type_enum.OUT,
+                    quantity,
+                    reference_type: 'TRANSFER',
+                    reference_id: toFactoryId,
+                    notes: JSON.stringify({ type: 'TRANSFER_OUT', productCode, toFactory: toFactoryId })
+                }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    id_stock: destStock.id,
+                    id_user: userId,
+                    movement_type: StockMovement_movement_type_enum.IN,
+                    quantity,
+                    reference_type: 'TRANSFER',
+                    reference_id: fromFactoryId,
+                    notes: JSON.stringify({ type: 'TRANSFER_IN', productCode, fromFactory: fromFactoryId })
+                }
+            });
+
+            return { from, to };
+        });
     }
 }
 

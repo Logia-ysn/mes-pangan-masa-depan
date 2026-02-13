@@ -154,4 +154,4 @@ const ProductionProgress: React.FC<ProductionProgressProps> = ({ steps }) => {
     );
 };
 
-export default ProductionProgress;
+export default React.memo(ProductionProgress);

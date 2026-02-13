@@ -5,6 +5,7 @@ import { worksheetApi } from '../../services/api';
 import ProductionProgress from '../../components/Production/ProductionProgress';
 import type { ProductionStep } from '../../components/Production/ProductionProgress';
 import { printPage } from '../../utils/printUtils';
+import { logger } from '../../utils/logger';
 
 interface InputBatch {
     id: number;
@@ -66,7 +67,7 @@ const WorksheetDetail = () => {
                 date: formatDate(worksheet.worksheet_date),
             }));
         } catch (e) {
-            console.error('Failed to parse process steps', e);
+            logger.error('Failed to parse process steps', e);
             return [];
         }
     };
@@ -84,7 +85,7 @@ const WorksheetDetail = () => {
             const res = await worksheetApi.getById(wsId);
             setWorksheet(res.data.data || res.data);
         } catch (err) {
-            console.error('Error:', err);
+            logger.error('Error:', err);
             setError('Gagal memuat data worksheet');
         } finally {
             setLoading(false);

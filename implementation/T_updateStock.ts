@@ -1,15 +1,21 @@
 import { T_updateStock } from "../types/api/T_updateStock";
-import { Stock } from "../types/model/table/Stock";
-import { getUserFromToken } from "../utility/auth";
+import { stockRepository } from "../src/repositories/stock.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_updateStock: T_updateStock = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
-  const stock = await Stock.findOne({ where: { id: req.path.id } });
+export const t_updateStock: T_updateStock = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'SUPERVISOR');
+
+  const stockId = Number(req.path.id);
+  const stock = await stockRepository.findById(stockId);
   if (!stock) throw new Error('Stock not found');
+
   const { quantity, unit } = req.body;
-  if (quantity !== undefined) stock.quantity = quantity;
-  if (unit !== undefined) stock.unit = unit;
-  stock.updated_at = new Date();
-  await stock.save();
-  return stock;
-}
+
+  const updatedStock = await stockRepository.update(stockId, {
+    quantity: quantity !== undefined ? Number(quantity) : undefined,
+    unit
+  });
+
+  return updatedStock as any;
+});

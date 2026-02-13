@@ -8,6 +8,7 @@ import KPICard from '../../components/Dashboard/KPICard';
 import MachinePanel from '../../components/Dashboard/MachinePanel';
 import InventoryPanel from '../../components/Dashboard/InventoryPanel';
 import MaintenancePanel from '../../components/Dashboard/MaintenancePanel';
+import { logger } from '../../utils/logger';
 import './Dashboard.css';
 
 // Types for Executive Dashboard
@@ -82,7 +83,7 @@ const Dashboard = () => {
                 const response = await dashboardApi.getExecutive();
                 setData(response.data);
             } catch (error) {
-                console.error('Error fetching executive dashboard:', error);
+                logger.error('Error fetching executive dashboard:', error);
             } finally {
                 setLoading(false);
             }

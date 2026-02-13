@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../../components/Layout/Header';
 import api from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface Worksheet {
     id: number;
@@ -45,7 +46,7 @@ const OEE = () => {
             const machinesData = machinesRes.data?.data || machinesRes.data || [];
             setMachines(Array.isArray(machinesData) ? machinesData : []);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            logger.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }

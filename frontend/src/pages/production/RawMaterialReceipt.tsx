@@ -5,6 +5,7 @@ import QualityAnalysisModal from '../../components/Production/QualityAnalysisMod
 import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi } from '../../services/api';
 import { formatDate, formatNumber } from '../../utils/formatUtils';
 import { useAuth } from '../../contexts/AuthContext';
+import { logger } from '../../utils/logger';
 
 // Interface matching the form and backend
 interface RawMaterialBatch {
@@ -117,7 +118,7 @@ const RawMaterialReceipt = () => {
                 setSuppliers(response.data.data);
             }
         } catch (error) {
-            console.error("Failed to fetch suppliers", error);
+            logger.error("Failed to fetch suppliers", error);
         }
     };
 
@@ -128,7 +129,7 @@ const RawMaterialReceipt = () => {
                 setCategories(response.data.data);
             }
         } catch (error) {
-            console.error("Failed to fetch categories", error);
+            logger.error("Failed to fetch categories", error);
         }
     };
 
@@ -139,7 +140,7 @@ const RawMaterialReceipt = () => {
                 setVarieties(response.data.data);
             }
         } catch (error) {
-            console.error("Failed to fetch varieties", error);
+            logger.error("Failed to fetch varieties", error);
         }
     };
 
@@ -156,7 +157,7 @@ const RawMaterialReceipt = () => {
                 setProductTypes(rawMaterials);
             }
         } catch (error) {
-            console.error("Failed to fetch product types", error);
+            logger.error("Failed to fetch product types", error);
             // Fallback to stock-based extraction if productTypeApi fails
             try {
                 const response = await stockApi.getAll();
@@ -170,7 +171,7 @@ const RawMaterialReceipt = () => {
                     setProductTypes(Array.from(uniqueTypes.values()));
                 }
             } catch (err) {
-                console.error("Fallback also failed", err);
+                logger.error("Fallback also failed", err);
             }
         }
     };
@@ -180,15 +181,15 @@ const RawMaterialReceipt = () => {
         try {
             // Fetch StockMovements that are Raw Material Receipts
             const response = await api.get('/stock-movements');
-            console.log('API Response:', response.data);
+            logger.log('API Response:', response.data);
 
             // API returns { data: [...], total: number }
             const movements = response.data?.data || response.data || [];
-            console.log('Movements array:', movements);
+            logger.log('Movements array:', movements);
 
             if (movements && Array.isArray(movements)) {
                 const filtered = movements.filter((m: any) => m.reference_type === 'RAW_MATERIAL_RECEIPT' && m.movement_type === 'IN');
-                console.log('Filtered movements:', filtered);
+                logger.log('Filtered movements:', filtered);
 
                 const receipts = filtered.map((m: any) => {
                     let details: any = {};
@@ -216,11 +217,11 @@ const RawMaterialReceipt = () => {
                         createdAt: m.created_at
                     };
                 });
-                console.log('Receipts to display:', receipts);
+                logger.log('Receipts to display:', receipts);
                 setBatches(receipts);
             }
         } catch (error) {
-            console.error("Error fetching batches:", error);
+            logger.error("Error fetching batches:", error);
         } finally {
             setLoading(false);
         }
@@ -345,7 +346,7 @@ const RawMaterialReceipt = () => {
                         notes: 'Receipt Analysis Updated'
                     });
                 } catch (qaError) {
-                    console.error("Failed to save quality analysis detail:", qaError);
+                    logger.error("Failed to save quality analysis detail:", qaError);
                 }
             }
 
@@ -367,7 +368,7 @@ const RawMaterialReceipt = () => {
             fetchData();
 
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
@@ -380,7 +381,7 @@ const RawMaterialReceipt = () => {
             await api.delete(`/stock-movements/${id}`);
             fetchData();
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showError("Gagal", error.response?.data?.message || error.message);
         }
     };
@@ -428,7 +429,7 @@ const RawMaterialReceipt = () => {
                 showSuccess("Berhasil", "Supplier berhasil ditambahkan!");
             }
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
@@ -451,7 +452,7 @@ const RawMaterialReceipt = () => {
                 showSuccess("Berhasil", "Kategori berhasil ditambahkan!");
             }
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
@@ -474,7 +475,7 @@ const RawMaterialReceipt = () => {
                 showSuccess("Berhasil", "Varietas berhasil ditambahkan!");
             }
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showError("Gagal", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);

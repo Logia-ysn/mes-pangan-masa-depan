@@ -4,6 +4,7 @@ import Header from '../../components/Layout/Header';
 import { stockApi } from '../../services/api';
 import api from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { logger } from '../../utils/logger';
 
 interface Stock {
     id: number;
@@ -60,7 +61,7 @@ const Stocks = () => {
             const ptData = productTypesRes.data?.data || productTypesRes.data || [];
             setProductTypes(Array.isArray(ptData) ? ptData : []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         } finally {
             setLoading(false);
         }
@@ -85,7 +86,7 @@ const Stocks = () => {
             fetchData();
             closeModal();
         } catch (error) {
-            console.error('Error saving stock:', error);
+            logger.error('Error saving stock:', error);
         }
     };
 
@@ -95,7 +96,7 @@ const Stocks = () => {
                 await stockApi.delete(id);
                 fetchData();
             } catch (error) {
-                console.error('Error deleting stock:', error);
+                logger.error('Error deleting stock:', error);
             }
         }
     };

@@ -1,12 +1,7 @@
 
-import { AppDataSource } from './data-source';
-import { QualityParameter } from './types/model/table/QualityParameter';
+import { prisma } from './src/libs/prisma';
 
 const seed = async () => {
-    await AppDataSource.initialize();
-
-    const repo = AppDataSource.getRepository(QualityParameter);
-
     // Initial ML Configs
     // KW 1: Level 1 (< 3%), Level 2 (< 5%), Level 3 (< 10%)
     // KW 2: Level 1 (< 15%), Level 2 (< 20%)
@@ -23,15 +18,18 @@ const seed = async () => {
 
     for (const c of configs) {
         // Check if exists
-        const exists = await repo.findOne({ where: { name: c.name, grade: c.grade, level: c.level } });
+        const exists = await prisma.qualityParameter.findFirst({
+            where: { name: c.name, grade: c.grade, level: c.level }
+        });
         if (!exists) {
-            await repo.save(repo.create(c));
+            await prisma.qualityParameter.create({ data: c });
             console.log(`Created: ${c.grade} Level ${c.level}`);
         } else {
             console.log(`Exists: ${c.grade} Level ${c.level}`);
         }
     }
 
+    await prisma.$disconnect();
     process.exit(0);
 };
 

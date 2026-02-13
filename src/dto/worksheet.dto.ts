@@ -3,7 +3,7 @@
  * Data Transfer Objects for Worksheet operations
  */
 
-import { WorkshiftType } from '../../types/model/enum/WorkshiftType';
+import { Worksheet_shift_enum } from '@prisma/client';
 
 // Process step constants
 export const PROCESS_STEPS = {
@@ -17,7 +17,7 @@ export type ProcessStep = typeof PROCESS_STEPS[keyof typeof PROCESS_STEPS];
 export interface CreateWorksheetDTO {
     id_factory: number;
     worksheet_date: string;
-    shift: WorkshiftType;
+    shift: Worksheet_shift_enum;
     gabah_input: number;
     beras_output: number;
     menir_output?: number;
@@ -95,8 +95,8 @@ export class CreateWorksheetSchema implements CreateWorksheetDTO {
     @IsDateString()
     worksheet_date!: string;
 
-    @IsEnum(WorkshiftType)
-    shift!: WorkshiftType;
+    @IsEnum(Worksheet_shift_enum)
+    shift!: Worksheet_shift_enum;
 
     @IsNumber()
     gabah_input!: number;

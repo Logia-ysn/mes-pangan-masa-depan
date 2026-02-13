@@ -7,6 +7,58 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.1.0] - 2026-02-13
+
+### Ditambahkan
+- **Modul Penjualan (Sales Module)**: Implementasi ulang modul penjualan yang dihapus di v1.2.0
+  - **Customer Management**: CRUD pelanggan dengan search, filter aktif/non-aktif
+  - **Invoice Management**: Buat, edit, hapus invoice dengan otomatis potong stok finished goods
+  - **Payment Management**: Catat pembayaran dengan auto-update status invoice (DRAFT → PARTIAL → PAID)
+  - **Stock Integration**: Stok berkurang saat invoice dibuat, dikembalikan saat invoice dihapus
+- **Backend**: 3 repository (`customer`, `invoice`, `payment`), 1 service (`invoice.service.ts`), 15 NAIV API endpoints
+- **Frontend**: 3 halaman baru (`Customers.tsx`, `Invoices.tsx`, `InvoiceDetail.tsx`), sidebar "Penjualan"
+- **Invoice Detail Page**: Tampilan detail invoice dengan tabel item, ringkasan pembayaran, progress bar, dan aksi CRUD
+
+---
+
+## [2.0.0] - 2026-02-13
+
+### Ditambahkan
+- **ML Service v2.0.0 — Multi-Color Grain Analysis**: Rewrite penuh `ml-service/` dari deteksi hijau saja menjadi analisis multi-warna lengkap
+  - Deteksi 5 kategori warna: **Green**, **Yellow**, **Red**, **Chalky**, **Normal** menggunakan segmentasi HSV dengan priority order (mencegah double-counting pixel)
+  - Red detection menggunakan dual HSV range (H:0-10 dan H:170-179) karena merah berada di kedua ujung spectrum hue
+  - Chalky detection berdasarkan saturasi rendah (S<40) dan value tinggi (V>180)
+- **Endpoint `POST /analyze-detailed`**: Endpoint baru yang mengembalikan:
+  - Full `ColorBreakdown` (persentase semua 5 warna)
+  - `calibration_used` — profil kalibrasi yang dipakai untuk analisis
+  - `grading_rules_used` — aturan grading yang dipakai
+  - `processing_time_ms` — waktu pemrosesan
+  - Support override kalibrasi dan grading per-request
+- **Calibration API**:
+  - `GET /calibration` — lihat profil kalibrasi HSV dan aturan grading saat ini
+  - `PUT /calibration` — update range HSV untuk semua warna (green, yellow, red_low, red_high, chalky)
+  - `PUT /calibration/grading` — update aturan grading (KW1-KW3, level, threshold)
+  - `POST /calibration/reset` — reset kalibrasi dan grading ke default
+- **Konfigurasi via Environment Variable**: Semua HSV default dan threshold bisa di-override via env var dengan prefix `ML_` (contoh: `ML_GREEN_H_MIN=30`)
+- **Grading 6-Tier dengan Level**: KW1 L1 (<3%), KW1 L2 (<5%), KW1 L3 (<10%), KW2 L1 (<15%), KW2 L2 (<20%), KW3 L1 (>=20%) — menggantikan grading 3-tier hardcoded sebelumnya
+- **Dokumentasi**: `docs/ml-service.md` — dokumentasi teknis lengkap pipeline analisis, HSV ranges, API endpoints, kalibrasi, dan integrasi
+
+### Diubah
+- **Arsitektur ML Service**: Reorganisasi dari 3 file flat menjadi struktur modular:
+  - `routers/` — health, analyze, analyze_detailed, calibration
+  - `models/` — Pydantic models untuk request, response, calibration, grading
+  - `services/` — image_processor, color_detector, grading_service, calibration_store
+  - `config.py` — pydantic-settings dengan semua default HSV
+- **`POST /analyze-base64`**: Response diperluas dengan field opsional baru (`yellow_percentage`, `red_percentage`, `chalky_percentage`, `normal_percentage`) — **backward compatible**, field lama (`green_percentage`, `grade`, `status`, `level`, `supplier`, `lot`) tidak berubah
+- **Image Preprocessing**: Foreground mask sekarang exclude pixel gelap (V<15) selain pixel putih (V>240), mengurangi noise dari bayangan
+- **Dependency**: `python-multipart` diupdate ke 0.0.20, `pydantic-settings` ditambahkan ke requirements.txt
+
+### Dihapus
+- **`app/features.py`** — Logika deteksi hijau lama (digantikan `services/color_detector.py`)
+- **`app/predict.py`** — Grading hardcoded 3-tier (digantikan `services/grading_service.py` dengan rules dinamis)
+
+---
+
 ## [1.2.0] - 2026-02-06
 
 ### Ditambahkan

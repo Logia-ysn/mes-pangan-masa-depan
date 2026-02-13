@@ -1,0 +1,515 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Attendance {
+  id              Int                    @id(map: "PK_137a8eec2cec8606cdf8f1e4f67") @default(autoincrement())
+  id_employee     Int
+  id_user         Int
+  attendance_date DateTime               @db.Date
+  check_in_time   DateTime?              @db.Time(6)
+  check_out_time  DateTime?              @db.Time(6)
+  status          Attendance_status_enum @default(PRESENT)
+  notes           String?
+  created_at      DateTime               @default(now()) @db.Timestamp(6)
+  User            User                   @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_d924a0306d869e3c96a1617247b")
+  Employee        Employee               @relation(fields: [id_employee], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e6ea1421dce673712ff1e5e5cb1")
+
+  @@index([id_employee], map: "IDX_attendance_employee")
+  @@index([attendance_date], map: "IDX_attendance_date")
+}
+
+model Customer {
+  id             Int       @id(map: "PK_60596e16740e1fa20dbf0154ec7") @default(autoincrement())
+  code           String    @unique @db.VarChar(20)
+  name           String    @db.VarChar(200)
+  contact_person String?   @db.VarChar(200)
+  phone          String?   @db.VarChar(20)
+  email          String?   @db.VarChar(100)
+  address        String?
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  Invoice        Invoice[]
+}
+
+model DailyExpense {
+  id                  Int             @id(map: "PK_06292ff0a9a26203660b736a205") @default(autoincrement())
+  id_factory          Int
+  id_user             Int
+  id_expense_category Int
+  expense_date        DateTime        @db.Date
+  amount              Decimal         @db.Decimal(15, 2)
+  description         String
+  receipt_url         String?         @db.VarChar(255)
+  created_at          DateTime        @default(now()) @db.Timestamp(6)
+  updated_at          DateTime        @updatedAt @db.Timestamp(6)
+  ExpenseCategory     ExpenseCategory @relation(fields: [id_expense_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_0c3ada66474c1cf9dbd04f29c01")
+  Factory             Factory         @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8fb9155586106a11a7065f2fcc4")
+  User                User            @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_fd6f8ee06f6ae2671e585929d5b")
+
+  @@index([id_factory], map: "IDX_daily_expense_factory")
+  @@index([id_user], map: "IDX_daily_expense_user")
+  @@index([expense_date], map: "IDX_daily_expense_date")
+}
+
+model Employee {
+  id                Int                             @id(map: "PK_9a993c20751b9867abc60108433") @default(autoincrement())
+  id_factory        Int
+  id_user           Int?
+  employee_code     String                          @unique @db.VarChar(20)
+  fullname          String                          @db.VarChar(200)
+  nik               String?                         @db.VarChar(16)
+  phone             String?                         @db.VarChar(20)
+  email             String?                         @db.VarChar(100)
+  address           String?
+  birth_date        DateTime?                       @db.Date
+  birth_place       String?                         @db.VarChar(100)
+  gender            Employee_gender_enum
+  religion          String?                         @db.VarChar(50)
+  marital_status    String?                         @db.VarChar(50)
+  position          String                          @db.VarChar(100)
+  department        String?                         @db.VarChar(100)
+  join_date         DateTime                        @db.Date
+  employment_status Employee_employment_status_enum @default(PERMANENT)
+  salary            Decimal?                        @db.Decimal(15, 2)
+  is_active         Boolean                         @default(true)
+  created_at        DateTime                        @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                        @updatedAt @db.Timestamp(6)
+  Attendance        Attendance[]
+  Factory           Factory                         @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_6fb1f08d2181fcb9ecfc6e8dbd7")
+  User              User?                           @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_92445038f4236e0b2109a4ee29f")
+
+  @@index([id_factory], map: "IDX_employee_factory")
+  @@index([id_user], map: "IDX_employee_user")
+}
+
+model ExpenseCategory {
+  id           Int            @id(map: "PK_a9db04a82eebfc29ba6bca6e8a0") @default(autoincrement())
+  code         String         @unique @db.VarChar(20)
+  name         String         @db.VarChar(100)
+  description  String?
+  DailyExpense DailyExpense[]
+}
+
+model Factory {
+  id            Int             @id(map: "PK_6635a0ad5ed4a0499652a126970") @default(autoincrement())
+  code          String          @unique @db.VarChar(20)
+  name          String          @db.VarChar(200)
+  address       String?
+  phone         String?         @db.VarChar(20)
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  DailyExpense  DailyExpense[]
+  Employee      Employee[]
+  Invoice       Invoice[]
+  Machine       Machine[]
+  OutputProduct OutputProduct[]
+  Stock         Stock[]
+  User          User[]
+  Worksheet     Worksheet[]
+}
+
+model Invoice {
+  id             Int                 @id(map: "PK_0ead03cb5a20e5a5cc4d6defbe6") @default(autoincrement())
+  id_factory     Int
+  id_customer    Int
+  id_user        Int
+  invoice_number String              @unique @db.VarChar(50)
+  invoice_date   DateTime            @db.Date
+  due_date       DateTime            @db.Date
+  subtotal       Decimal             @default(0) @db.Decimal(15, 2)
+  tax            Decimal             @default(0) @db.Decimal(15, 2)
+  discount       Decimal             @default(0) @db.Decimal(15, 2)
+  total          Decimal             @default(0) @db.Decimal(15, 2)
+  status         Invoice_status_enum @default(DRAFT)
+  notes          String?
+  created_at     DateTime            @default(now()) @db.Timestamp(6)
+  updated_at     DateTime            @updatedAt @db.Timestamp(6)
+  User           User                @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_019719e73446b44c79a559fa2ed")
+  Factory        Factory             @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_327b5e6c32a7ad18d1558f33171")
+  Customer       Customer            @relation(fields: [id_customer], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_34be43b2cfd1fcc9838743ff67f")
+  InvoiceItem    InvoiceItem[]
+  Payment        Payment[]
+
+  @@index([id_factory], map: "IDX_invoice_factory")
+  @@index([id_customer], map: "IDX_invoice_customer")
+  @@index([invoice_date], map: "IDX_invoice_date")
+}
+
+model InvoiceItem {
+  id              Int         @id(map: "PK_fe59f574f9f138df4b52fb7ee7a") @default(autoincrement())
+  id_invoice      Int
+  id_product_type Int
+  quantity        Decimal     @db.Decimal(15, 2)
+  unit_price      Decimal     @db.Decimal(15, 2)
+  subtotal        Decimal     @db.Decimal(15, 2)
+  Invoice         Invoice     @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_bd5cd6fccadcc384a73f93c3c89")
+  ProductType     ProductType @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c3c3c7442a541e37357ff4b2328")
+}
+
+model Machine {
+  id                    Int                 @id(map: "PK_575ee17453f39be625e174d7a1f") @default(autoincrement())
+  id_factory            Int
+  code                  String              @unique @db.VarChar(50)
+  name                  String              @db.VarChar(200)
+  machine_type          String?             @db.VarChar(100)
+  capacity_per_hour     Decimal?            @db.Decimal(10, 2)
+  status                Machine_status_enum @default(ACTIVE)
+  last_maintenance_date DateTime?           @db.Date
+  next_maintenance_date DateTime?           @db.Date
+  Factory               Factory             @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b8a0fe79ae166740619fce48848")
+  Maintenance           Maintenance[]
+  Worksheet             Worksheet[]
+
+  @@index([id_factory], map: "IDX_machine_factory")
+}
+
+model Maintenance {
+  id                    Int                               @id(map: "PK_29c5e2995d22e714bc782e0dabc") @default(autoincrement())
+  id_machine            Int
+  id_user               Int
+  maintenance_type      Maintenance_maintenance_type_enum
+  maintenance_date      DateTime                          @db.Date
+  cost                  Decimal                           @default(0) @db.Decimal(15, 2)
+  description           String?
+  parts_replaced        String?
+  next_maintenance_date DateTime?                         @db.Date
+  status                String?                           @db.VarChar(50)
+  created_at            DateTime                          @default(now()) @db.Timestamp(6)
+  Machine               Machine                           @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_56a2aeb1c341080930b90cccfb6")
+  User                  User                              @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b286f77b3a913862b7ed2e97415")
+
+  @@index([id_machine], map: "IDX_maintenance_machine")
+  @@index([maintenance_date], map: "IDX_maintenance_date")
+}
+
+model OutputProduct {
+  id            Int      @id(map: "PK_e3c20634774dc24c518a507ad93") @default(autoincrement())
+  id_factory    Int
+  code          String   @db.VarChar(30)
+  name          String   @db.VarChar(100)
+  description   String?
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  Factory       Factory  @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_032c651db48b9984eba12043150")
+}
+
+model Payment {
+  id               Int                         @id(map: "PK_07e9fb9a8751923eb876d57a575") @default(autoincrement())
+  id_invoice       Int
+  id_user          Int
+  payment_date     DateTime                    @db.Date
+  amount           Decimal                     @db.Decimal(15, 2)
+  payment_method   Payment_payment_method_enum
+  reference_number String?                     @db.VarChar(100)
+  notes            String?
+  created_at       DateTime                    @default(now()) @db.Timestamp(6)
+  User             User                        @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_449e7a6f2e2359ffbb8746d11e8")
+  Invoice          Invoice                     @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_718e9dbbccb3bfd36ae3e8cd5c2")
+}
+
+model ProcessCategory {
+  id              Int      @id(map: "PK_f537bc87f07860fee454dec2de0") @default(autoincrement())
+  code            String   @unique @db.VarChar(30)
+  name            String   @db.VarChar(100)
+  description     String?
+  is_main_process Boolean  @default(true)
+  display_order   Int      @default(0)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+}
+
+model ProductType {
+  id          Int           @id(map: "PK_242e6bc43c0297318eb8560618f") @default(autoincrement())
+  code        String        @unique @db.VarChar(20)
+  name        String        @db.VarChar(100)
+  description String?
+  unit        String        @default("kg") @db.VarChar(20)
+  InvoiceItem InvoiceItem[]
+  Stock       Stock[]
+  Worksheet   Worksheet[]
+}
+
+model QCGabah {
+  supplier         String?  @db.VarChar(255)
+  lot              String?  @db.VarChar(50)
+  image_url        String
+  green_percentage Decimal  @db.Decimal(5, 2)
+  grade            String   @db.VarChar(20)
+  status           String   @db.VarChar(20)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  level            Int      @default(1)
+  id               Int      @id(map: "PK_25e23bf8af8a9efcee9f4b1f1cd") @default(autoincrement())
+}
+
+model QualityParameter {
+  name               String              @db.VarChar
+  grade              String              @db.VarChar
+  min_value          Decimal?            @db.Decimal(10, 2)
+  max_value          Decimal?            @db.Decimal(10, 2)
+  unit               String              @default("percentage") @db.VarChar
+  is_active          Boolean             @default(true)
+  created_at         DateTime            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime            @updatedAt @db.Timestamp(6)
+  level              Int                 @default(1)
+  id                 Int                 @id(map: "PK_5d5fdce6fef66d219e1d69d07d7") @default(autoincrement())
+  id_variety         Int?
+  RawMaterialVariety RawMaterialVariety? @relation(fields: [id_variety], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_046d2225de7a7bedcdf0ca626e8")
+
+  @@index([id_variety], map: "IDX_quality_param_variety")
+}
+
+model RawMaterialCategory {
+  id          Int      @id(map: "PK_ddf58cf202d3dc204e7bee72ad2") @default(autoincrement())
+  code        String   @unique(map: "UQ_a30e2ec13b6a5c7e7ce45a8951f") @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+}
+
+model RawMaterialQualityAnalysis {
+  moisture_value    Decimal?       @db.Decimal(10, 2)
+  density_value     Decimal?       @db.Decimal(10, 2)
+  green_percentage  Decimal?       @db.Decimal(10, 2)
+  yellow_percentage Decimal?       @db.Decimal(10, 2)
+  notes             String?
+  created_at        DateTime       @default(now()) @db.Timestamp(6)
+  updated_at        DateTime       @updatedAt @db.Timestamp(6)
+  analysis_date     DateTime       @default(dbgenerated("('now'::text)::date")) @db.Date
+  moisture_grade    String?        @db.VarChar(20)
+  density_grade     String?        @db.VarChar(20)
+  red_percentage    Decimal?       @db.Decimal(10, 2)
+  color_grade       String?        @db.VarChar(20)
+  image_url         String?
+  id                Int            @id(map: "PK_360eda0c8661d53b9df013fa43b") @default(autoincrement())
+  batch_id          String         @db.VarChar(50)
+  id_stock_movement Int?
+  final_grade       String?        @db.VarChar(20)
+  StockMovement     StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
+}
+
+model RawMaterialVariety {
+  id               Int                @id(map: "PK_e6b1cd87e5533fccbed8e7e24b9") @default(autoincrement())
+  code             String             @unique(map: "UQ_b2486d09132793df46873cd3df9") @db.VarChar(20)
+  name             String             @db.VarChar(100)
+  description      String?
+  is_active        Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamp(6)
+  QualityParameter QualityParameter[]
+}
+
+model Stock {
+  id                  Int                   @id(map: "PK_2725537b7bbe40073a50986598d") @default(autoincrement())
+  id_factory          Int
+  id_product_type     Int
+  quantity            Decimal               @default(0) @db.Decimal(15, 2)
+  unit                String                @default("kg") @db.VarChar(20)
+  updated_at          DateTime              @updatedAt @db.Timestamp(6)
+  Factory             Factory               @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_1e850f690899d16194616041127")
+  ProductType         ProductType           @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c976f3986f53fb7ace248099810")
+  StockMovement       StockMovement[]
+  WorksheetInputBatch WorksheetInputBatch[]
+
+  @@unique([id_factory, id_product_type], map: "UQ_stock_factory_product")
+  @@index([id_factory], map: "IDX_stock_factory")
+  @@index([id_product_type], map: "IDX_stock_product_type")
+}
+
+model StockMovement {
+  id                         Int                              @id(map: "PK_89f737b966ba80fd8227b51fe01") @default(autoincrement())
+  id_stock                   Int
+  id_user                    Int
+  movement_type              StockMovement_movement_type_enum
+  quantity                   Decimal                          @db.Decimal(15, 2)
+  reference_type             String?                          @db.VarChar(50)
+  reference_id               BigInt?
+  notes                      String?
+  created_at                 DateTime                         @default(now()) @db.Timestamp(6)
+  RawMaterialQualityAnalysis RawMaterialQualityAnalysis[]
+  Stock                      Stock                            @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_03c884464cad073305dd53ed7b1")
+  User                       User                             @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_0645774788e95617e3ffd45b3b7")
+
+  @@index([id_stock], map: "IDX_stock_movement_stock")
+  @@index([id_user], map: "IDX_stock_movement_user")
+  @@index([created_at], map: "IDX_stock_movement_created")
+}
+
+model Supplier {
+  id             Int      @id(map: "PK_03ea59de9d1ab05d7d6e5d3e953") @default(autoincrement())
+  code           String   @unique @db.VarChar(20)
+  name           String   @db.VarChar(200)
+  contact_person String?  @db.VarChar(200)
+  phone          String?  @db.VarChar(20)
+  email          String?  @db.VarChar(100)
+  address        String?
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+}
+
+model User {
+  id            Int             @id(map: "PK_9862f679340fb2388436a5ab3e4") @default(autoincrement())
+  email         String          @unique @db.VarChar(100)
+  password_hash String          @db.VarChar(255)
+  fullname      String          @db.VarChar(200)
+  role          User_role_enum  @default(OPERATOR)
+  id_factory    Int?
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  updated_at    DateTime        @updatedAt @db.Timestamp(6)
+  Attendance    Attendance[]
+  DailyExpense  DailyExpense[]
+  Employee      Employee[]
+  Invoice       Invoice[]
+  Maintenance   Maintenance[]
+  Payment       Payment[]
+  StockMovement StockMovement[]
+  Factory       Factory?        @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
+  Worksheet     Worksheet[]
+}
+
+model Worksheet {
+  id                   Int                    @id(map: "PK_dd3c48d621cab0deaa8b38f417e") @default(autoincrement())
+  id_factory           Int
+  id_user              Int
+  worksheet_date       DateTime               @db.Date
+  shift                Worksheet_shift_enum
+  gabah_input          Decimal                @db.Decimal(15, 2)
+  beras_output         Decimal                @db.Decimal(15, 2)
+  menir_output         Decimal                @default(0) @db.Decimal(15, 2)
+  dedak_output         Decimal                @default(0) @db.Decimal(15, 2)
+  sekam_output         Decimal                @default(0) @db.Decimal(15, 2)
+  rendemen             Decimal?               @db.Decimal(5, 2)
+  machine_hours        Decimal                @default(0) @db.Decimal(5, 2)
+  downtime_hours       Decimal                @default(0) @db.Decimal(5, 2)
+  downtime_reason      String?
+  notes                String?
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  updated_at           DateTime               @updatedAt @db.Timestamp(6)
+  id_output_product    Int?
+  id_machine           Int?
+  batch_code           String?                @db.VarChar(50)
+  process_step         String?                @db.VarChar(50)
+  production_cost      Decimal?               @db.Decimal(15, 2)
+  raw_material_cost    Decimal?               @db.Decimal(15, 2)
+  side_product_revenue Decimal?               @db.Decimal(15, 2)
+  hpp                  Decimal?               @db.Decimal(15, 2)
+  hpp_per_kg           Decimal?               @db.Decimal(15, 2)
+  ProductType          ProductType?           @relation(fields: [id_output_product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_10ff9fd85814d58f9a6d74a5a7e")
+  User                 User                   @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_4389afefb4c0bbc4fc7a1a435f3")
+  Factory              Factory                @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b6e3fcc79a8ed4484be3f3d8eeb")
+  Machine              Machine?               @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dddd8317548de410ffa729dc394")
+  WorksheetInputBatch  WorksheetInputBatch[]
+  WorksheetSideProduct WorksheetSideProduct[]
+
+  @@index([id_factory], map: "IDX_worksheet_factory")
+  @@index([id_user], map: "IDX_worksheet_user")
+  @@index([worksheet_date], map: "IDX_worksheet_date")
+}
+
+model WorksheetInputBatch {
+  id           Int       @id(map: "PK_cbcc8c68a536ba6b5eeb90f18ad") @default(autoincrement())
+  id_worksheet Int
+  id_stock     Int
+  batch_code   String?   @db.VarChar(50)
+  quantity     Decimal   @db.Decimal(15, 2)
+  unit_price   Decimal?  @db.Decimal(15, 2)
+  total_cost   Decimal?  @db.Decimal(15, 2)
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  Stock        Stock     @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_83e28cc5e280f92c5d0b7a1c09b")
+  Worksheet    Worksheet @relation(fields: [id_worksheet], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_e0d88499487a68a02f8b06f91c2")
+}
+
+model WorksheetSideProduct {
+  id                 Int       @id(map: "PK_d28ee5b7917b61e88f9332d692a") @default(autoincrement())
+  id_worksheet       Int
+  product_code       String    @db.VarChar(30)
+  product_name       String    @db.VarChar(100)
+  quantity           Decimal   @default(0) @db.Decimal(15, 2)
+  is_auto_calculated Boolean   @default(false)
+  auto_percentage    Decimal?  @db.Decimal(10, 2)
+  unit_price         Decimal?  @db.Decimal(15, 2)
+  total_value        Decimal?  @db.Decimal(15, 2)
+  created_at         DateTime  @default(now()) @db.Timestamp(6)
+  Worksheet          Worksheet @relation(fields: [id_worksheet], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_da2240b0153fe85db8486b2fbdb")
+}
+
+model migrations {
+  id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
+  timestamp BigInt
+  name      String @db.VarChar
+}
+
+enum Attendance_status_enum {
+  PRESENT
+  ABSENT
+  SICK
+  LEAVE
+  PERMISSION
+}
+
+enum Employee_employment_status_enum {
+  PERMANENT
+  CONTRACT
+  DAILY
+  INTERN
+}
+
+enum Employee_gender_enum {
+  MALE
+  FEMALE
+}
+
+enum Invoice_status_enum {
+  DRAFT
+  SENT
+  PAID
+  PARTIAL
+  CANCELLED
+}
+
+enum Machine_status_enum {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum Maintenance_maintenance_type_enum {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+}
+
+enum Payment_payment_method_enum {
+  CASH
+  TRANSFER
+  CHECK
+  GIRO
+}
+
+enum StockMovement_movement_type_enum {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum User_role_enum {
+  SUPERUSER
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  OPERATOR
+}
+
+enum Worksheet_shift_enum {
+  SHIFT_1
+  SHIFT_2
+  SHIFT_3
+}

@@ -1,4 +1,4 @@
-import { QualityParameter } from '../../types/model/table/QualityParameter';
+import { QualityParameter } from '@prisma/client';
 import { qualityParameterRepository } from '../repositories/quality-parameter.repository';
 
 export interface CreateQualityParamDTO {

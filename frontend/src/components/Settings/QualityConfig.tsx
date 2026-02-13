@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { qualityParameterApi, rawMaterialVarietyApi } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface QualityParameter {
     id: number;
@@ -71,7 +72,7 @@ const QualityConfig = () => {
         try {
             const res = await rawMaterialVarietyApi.getAll();
             setVarieties(res.data?.data || []);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
     };
 
     // Fetch ALL parameters for the table (no filter)
@@ -80,7 +81,7 @@ const QualityConfig = () => {
         try {
             const res = await qualityParameterApi.getAll({});
             setAllParams(res.data?.data || []);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
         finally { setAllParamsLoading(false); }
     };
 
@@ -105,7 +106,7 @@ const QualityConfig = () => {
             }
 
             setParams(data);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
         finally { setLoading(false); }
     };
 
@@ -127,7 +128,7 @@ const QualityConfig = () => {
             fetchParams(); // Also refresh the cards if same data
             showToast('Parameter berhasil disimpan!', 'success');
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             showToast('Gagal menyimpan parameter', 'error');
         }
     };
@@ -153,7 +154,7 @@ const QualityConfig = () => {
             fetchParams();
             showToast('Parameter berhasil dibuat!', 'success');
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             showToast('Gagal membuat parameter', 'error');
         }
     };
@@ -173,7 +174,7 @@ const QualityConfig = () => {
             fetchParams();
             setDeleteConfirm({ show: false, id: null, name: '' });
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             showToast('Gagal menghapus parameter', 'error');
         } finally {
             setDeleting(false);
@@ -211,7 +212,7 @@ const QualityConfig = () => {
             fetchAllParams(); // Also refresh the table
             showToast(`Parameter ${name} ${grade} Level 1 berhasil dibuat!`, 'success');
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             showToast('Gagal membuat parameter', 'error');
         }
         finally { setLoading(false); }

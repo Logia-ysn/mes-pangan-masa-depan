@@ -1,26 +1,26 @@
-import { T_createSupplier } from "../types/api/T_createSupplier";
-import { Supplier } from "../types/model/table/Supplier";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_createSupplier: T_createSupplier = async (req, res) => {
-    await getUserFromToken(req.headers.authorization);
+import { T_createSupplier } from "../types/api/T_createSupplier";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { requireAuth } from "../utility/auth";
+import { supplierRepository } from "../src/repositories/supplier.repository";
+
+export const t_createSupplier: T_createSupplier = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'SUPERVISOR');
     const { code, name, contact_person, phone, email, address } = req.body;
 
     // Check for duplicate code
-    const existing = await Supplier.findOne({ where: { code } });
+    const existing = await supplierRepository.findOne({ where: { code } });
     if (existing) {
-        res.status(400).json({ message: `Kode Supplier "${code}" sudah digunakan. Gunakan kode lain.` });
-        return null as any;
+        throw new Error(`Kode Supplier "${code}" sudah digunakan. Gunakan kode lain.`);
     }
 
-    const supplier = new Supplier();
-    supplier.code = code;
-    supplier.name = name;
-    supplier.contact_person = contact_person;
-    supplier.phone = phone;
-    supplier.email = email;
-    supplier.address = address;
-    supplier.is_active = true;
-    await supplier.save();
-    return supplier;
-}
+    return await supplierRepository.create({
+        code,
+        name,
+        contact_person,
+        phone,
+        email,
+        address,
+        is_active: true
+    });
+});

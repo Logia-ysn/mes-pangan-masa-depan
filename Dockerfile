@@ -1,25 +1,44 @@
 # ==================================
-# Backend Dockerfile
+# Backend Dockerfile (multi-stage)
 # ==================================
-FROM node:20
+
+# ---------- Stage 1: builder ----------
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install all dependencies (including devDependencies for build)
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci
 
-# Copy source
+# Copy source and build
 COPY . .
-
-# Make entrypoint executable
-RUN chmod +x docker-entrypoint.sh
-
-# Build step
 RUN npm run build
 
-# Expose port
+# ---------- Stage 2: runner ----------
+FROM node:20-slim AS runner
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Install only production dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
+# Copy built output from builder
+COPY --from=builder /app/dist ./dist
+
+# Copy Prisma schema and generated client
+COPY --from=builder /app/prisma ./prisma
+
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 3000
 
-# Run with entrypoint script
+# Run as non-root user
+USER node
+
 CMD ["./docker-entrypoint.sh"]

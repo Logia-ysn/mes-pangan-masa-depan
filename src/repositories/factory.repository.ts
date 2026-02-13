@@ -1,11 +1,10 @@
 /**
  * Factory Repository
- * Handles all database operations for Factory entity
+ * Handles all database operations for Factory entity using Prisma
  */
 
 import { BaseRepository } from './base.repository';
-import { Factory } from '../../types/model/table/Factory';
-import { FindManyOptions, Like } from 'typeorm';
+import { Factory } from '@prisma/client';
 
 export interface FactoryListParams {
     limit?: number;
@@ -14,13 +13,13 @@ export interface FactoryListParams {
 }
 
 export class FactoryRepository extends BaseRepository<Factory> {
-    protected entity = Factory;
+    protected modelName = 'Factory';
 
     /**
      * Find factory by code
      */
     async findByCode(code: string): Promise<Factory | null> {
-        return await Factory.findOne({
+        return await this.model.findFirst({
             where: { code }
         });
     }
@@ -29,20 +28,25 @@ export class FactoryRepository extends BaseRepository<Factory> {
      * Find all factories with filtering
      */
     async findWithFilters(params: FactoryListParams): Promise<{ factories: Factory[], total: number }> {
-        const options: FindManyOptions<Factory> = {
-            take: params.limit || 10,
-            skip: params.offset || 0,
-            order: { id: 'ASC' }
-        };
+        const where: any = {};
 
         if (params.search) {
-            options.where = [
-                { name: Like(`%${params.search}%`) },
-                { code: Like(`%${params.search}%`) }
+            where.OR = [
+                { name: { contains: params.search, mode: 'insensitive' } },
+                { code: { contains: params.search, mode: 'insensitive' } }
             ];
         }
 
-        const [factories, total] = await Factory.findAndCount(options);
+        const [factories, total] = await Promise.all([
+            this.model.findMany({
+                where,
+                take: params.limit || 10,
+                skip: params.offset || 0,
+                orderBy: { id: 'asc' }
+            }),
+            this.model.count({ where })
+        ]);
+
         return { factories, total };
     }
 
@@ -50,7 +54,9 @@ export class FactoryRepository extends BaseRepository<Factory> {
      * Check if code exists
      */
     async codeExists(code: string, excludeId?: number): Promise<boolean> {
-        const factory = await Factory.findOne({ where: { code } });
+        const factory = await this.model.findFirst({
+            where: { code }
+        });
         if (!factory) return false;
         if (excludeId && factory.id === excludeId) return false;
         return true;

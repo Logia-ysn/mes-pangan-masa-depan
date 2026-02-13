@@ -89,4 +89,4 @@ const MaintenancePanel: React.FC<MaintenancePanelProps> = ({ data }) => {
     );
 };
 
-export default MaintenancePanel;
+export default React.memo(MaintenancePanel);

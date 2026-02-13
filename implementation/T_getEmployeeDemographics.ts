@@ -1,15 +1,17 @@
-import { T_getEmployeeDemographics } from "../types/api/T_getEmployeeDemographics";
-import { Employee } from "../types/model/table/Employee";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_getEmployeeDemographics: T_getEmployeeDemographics = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+import { T_getEmployeeDemographics } from "../types/api/T_getEmployeeDemographics";
+import { requireAuth } from "../utility/auth";
+import { employeeRepository } from "../src/repositories/employee.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
+
+export const t_getEmployeeDemographics: T_getEmployeeDemographics = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   const { id_factory } = req.query;
 
   const where: any = { is_active: true };
-  if (id_factory) where.id_factory = id_factory;
+  if (id_factory) where.id_factory = Number(id_factory);
 
-  const employees = await Employee.find({ where });
+  const employees = await employeeRepository.findAll({ where });
   const total_employees = employees.length;
 
   // By gender
@@ -35,4 +37,4 @@ export const t_getEmployeeDemographics: T_getEmployeeDemographics = async (req, 
   const by_employment_status = Object.entries(statusMap).map(([status, count]) => ({ status, count }));
 
   return { total_employees, by_gender, by_department, by_employment_status };
-}
+});

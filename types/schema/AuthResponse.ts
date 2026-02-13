@@ -1,6 +1,6 @@
 import { ClassConstructor, Transform, Type, plainToInstance } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsObject, IsBoolean, IsOptional, IsISO8601, IsString, IsEnum, ValidateNested, IsArray, ValidationError, validateOrReject } from "class-validator";
-import { User } from '../model/table/User'
+import type { User } from '@prisma/client'
 
 export class AuthResponse {
   @IsNotEmpty({ message: 'token cannot be empty' })
@@ -9,6 +9,6 @@ export class AuthResponse {
   @IsNotEmpty({ message: 'user cannot be empty' })
   @IsObject()
   @ValidateNested()
-  @Type(() => User)
+  @Type(() => Object)
   user!: User
 }

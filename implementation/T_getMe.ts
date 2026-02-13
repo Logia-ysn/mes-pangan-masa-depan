@@ -5,12 +5,13 @@
  */
 
 import { T_getMe } from "../types/api/T_getMe";
-import { authService } from "../src/services/auth.service";
+import { requireAuth, sanitizeUser } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getMe: T_getMe = async (req, res) => {
-  // 1. Get user from token (via service)
-  const user = await authService.getUserFromToken(req.headers.authorization!);
+export const t_getMe: T_getMe = apiWrapper(async (req, res) => {
+  // 1. Authenticate user
+  const user = await requireAuth(req, 'OPERATOR');
 
-  // 2. Return user
-  return user;
-}
+  // 2. Return sanitized user
+  return sanitizeUser(user);
+});

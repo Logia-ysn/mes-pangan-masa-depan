@@ -1,16 +1,17 @@
 import { T_getProductionSummary } from "../types/api/T_getProductionSummary";
-import { Worksheet } from "../types/model/table/Worksheet";
-import { getUserFromToken } from "../utility/auth";
-import { Between } from "typeorm";
+import { worksheetRepository } from "../src/repositories/worksheet.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getProductionSummary: T_getProductionSummary = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_getProductionSummary: T_getProductionSummary = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   const { id_factory, start_date, end_date } = req.query;
 
-  const where: any = { worksheet_date: Between(start_date, end_date) };
-  if (id_factory) where.id_factory = id_factory;
-
-  const worksheets = await Worksheet.find({ where });
+  const worksheets = await worksheetRepository.findByDateRange(
+    new Date(start_date as string),
+    new Date(end_date as string),
+    id_factory ? Number(id_factory) : undefined
+  );
 
   const total_gabah_input = worksheets.reduce((sum, w) => sum + Number(w.gabah_input), 0);
   const total_beras_output = worksheets.reduce((sum, w) => sum + Number(w.beras_output), 0);
@@ -33,4 +34,4 @@ export const t_getProductionSummary: T_getProductionSummary = async (req, res) =
     total_downtime_hours,
     oee
   };
-}
+});

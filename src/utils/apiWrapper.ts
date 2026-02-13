@@ -11,6 +11,17 @@ type ApiHandler = (req: any, res: any) => Promise<any>;
  */
 export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) => {
     try {
+        // NAIV filters the request object. We enrich it back from the raw Express request (res.req)
+        // to ensure requireAuth and other utilities can see headers and cookies.
+        if (res && res.req) {
+            req.headers = { ...res.req.headers, ...req.headers }; // Merge both
+            req.cookies = res.req.cookies || req.cookies;
+            req.method = res.req.method || req.method;
+            req.url = res.req.url || req.url;
+            req.query = res.req.query || req.query;
+            req.params = res.req.params || req.params;
+        }
+
         const data = await handler(req, res);
 
         // If the handler already sent a response (e.g. res.send), don't send again.
@@ -20,6 +31,15 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
         return data;
     } catch (error: any) {
         console.error('API Error:', error);
+
+        // Log to file for debugging
+        const fs = require('fs');
+        const logFile = '/tmp/erp-pmd-api-error.log';
+
+        fs.appendFileSync(
+            logFile,
+            `\n[${new Date().toISOString()}] ${req.method || 'GET'} ${req.url || '/'}\n${error.stack || error}\n`
+        );
 
         if (error instanceof AppError) {
             res.status(error.statusCode).json({

@@ -1,5 +1,5 @@
 
-import { Gender } from "../../types/model/enum/Gender";
+import { Employee_gender_enum } from "@prisma/client";
 
 export const dummyFactories = [
     {
@@ -25,9 +25,9 @@ export const dummyCustomers = [
 ];
 
 export const dummyEmployees = [
-    { fullname: "Budi Santoso", position: "Operator", phone: "085555", gender: Gender.MALE },
-    { fullname: "Siti Aminah", position: "Admin", phone: "086666", gender: Gender.FEMALE },
-    { fullname: "Joko Widodo", position: "Teknisi", phone: "087777", gender: Gender.MALE }
+    { fullname: "Budi Santoso", position: "Operator", phone: "085555", gender: Employee_gender_enum.MALE },
+    { fullname: "Siti Aminah", position: "Admin", phone: "086666", gender: Employee_gender_enum.FEMALE },
+    { fullname: "Joko Widodo", position: "Teknisi", phone: "087777", gender: Employee_gender_enum.MALE }
 ];
 
 export const dummyMachines = [

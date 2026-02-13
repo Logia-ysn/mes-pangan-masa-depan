@@ -1,105 +1,95 @@
 /**
- * Base Repository
+ * Base Repository (Prisma Version)
  * Provides generic CRUD operations for all entity repositories
- * 
- * RULES:
- * - Only database operations here
- * - No business logic
- * - No HTTP request/response objects
  */
 
-import { BaseEntity, FindManyOptions, FindOneOptions, FindOptionsWhere, DeepPartial } from 'typeorm';
+import { prisma } from '../libs/prisma';
 
 export interface IBaseRepository<T> {
-    findAll(options?: FindManyOptions<T>): Promise<T[]>;
+    findAll(params?: any): Promise<T[]>;
     findById(id: number): Promise<T | null>;
-    findOne(options: FindOneOptions<T>): Promise<T | null>;
-    create(data: DeepPartial<T>): Promise<T>;
-    update(id: number, data: DeepPartial<T>): Promise<T>;
+    create(data: any): Promise<T>;
+    update(id: number, data: any): Promise<T>;
     delete(id: number): Promise<boolean>;
-    count(options?: FindManyOptions<T>): Promise<number>;
+    count(params?: any): Promise<number>;
 }
 
-export abstract class BaseRepository<T extends BaseEntity> implements IBaseRepository<T> {
-    protected abstract entity: { new(): T } & typeof BaseEntity;
+export abstract class BaseRepository<T> implements IBaseRepository<T> {
+    protected abstract modelName: string;
+
+    protected get model() {
+        return (prisma as any)[this.modelName];
+    }
 
     /**
      * Find all entities with optional filtering and pagination
      */
-    async findAll(options?: FindManyOptions<T>): Promise<T[]> {
-        return await this.entity.find(options as any) as T[];
+    async findAll(params?: any): Promise<T[]> {
+        return await this.model.findMany(params);
     }
 
     /**
      * Find entity by ID
      */
     async findById(id: number): Promise<T | null> {
-        return await this.entity.findOne({
-            where: { id } as any
-        }) as T | null;
+        return await this.model.findUnique({
+            where: { id }
+        });
     }
 
     /**
      * Find one entity matching criteria
      */
-    async findOne(options: FindOneOptions<T>): Promise<T | null> {
-        return await this.entity.findOne(options as any) as T | null;
-    }
-
-    /**
-     * Find entity by custom where clause
-     */
-    async findByWhere(where: FindOptionsWhere<T>): Promise<T | null> {
-        return await this.entity.findOne({ where } as any) as T | null;
+    async findOne(params: any): Promise<T | null> {
+        return await this.model.findFirst(params);
     }
 
     /**
      * Create new entity
      */
-    async create(data: DeepPartial<T>): Promise<T> {
-        const instance = this.entity.create(data as any) as T;
-        await (instance as BaseEntity).save();
-        return instance;
+    async create(data: any): Promise<T> {
+        return await this.model.create({
+            data
+        });
     }
 
     /**
      * Update existing entity
      */
-    async update(id: number, data: DeepPartial<T>): Promise<T> {
-        const entity = await this.findById(id);
-        if (!entity) {
-            throw new Error(`Entity with id ${id} not found`);
-        }
-        Object.assign(entity, data);
-        await (entity as BaseEntity).save();
-        return entity;
+    async update(id: number, data: any): Promise<T> {
+        return await this.model.update({
+            where: { id },
+            data
+        });
     }
 
     /**
      * Delete entity by ID (hard delete)
      */
     async delete(id: number): Promise<boolean> {
-        const entity = await this.findById(id);
-        if (!entity) {
+        try {
+            await this.model.delete({
+                where: { id }
+            });
+            return true;
+        } catch (error) {
             return false;
         }
-        await (entity as BaseEntity).remove();
-        return true;
     }
 
     /**
      * Count entities matching criteria
      */
-    async count(options?: FindManyOptions<T>): Promise<number> {
-        return await this.entity.count(options as any);
+    async count(params?: any): Promise<number> {
+        return await this.model.count(params);
     }
 
     /**
      * Check if entity exists
      */
     async exists(id: number): Promise<boolean> {
-        const count = await this.entity.count({
-            where: { id } as any
+        const count = await this.model.count({
+            where: { id }
         });
         return count > 0;
     }

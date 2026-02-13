@@ -1,37 +1,59 @@
-import { T_createStockMovement } from "../types/api/T_createStockMovement";
-import { StockMovement } from "../types/model/table/StockMovement";
-import { Stock } from "../types/model/table/Stock";
-import { getUserFromToken } from "../utility/auth";
-import { MovementType } from "../types/model/enum/MovementType";
 
-export const t_createStockMovement: T_createStockMovement = async (req, res) => {
-  const user = await getUserFromToken(req.headers.authorization);
+import { T_createStockMovement } from "../types/api/T_createStockMovement";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { StockMovement_movement_type_enum } from "@prisma/client";
+import { requireAuth } from "../utility/auth";
+import { prisma } from "../src/libs/prisma";
+import { BusinessRuleError } from "../src/utils/errors";
+
+export const t_createStockMovement: T_createStockMovement = apiWrapper(async (req, res) => {
+  const user = await requireAuth(req, 'SUPERVISOR');
   const { id_stock, movement_type, quantity, reference_type, reference_id, notes } = req.body;
 
-  const stock = await Stock.findOne({ where: { id: id_stock } });
-  if (!stock) throw new Error('Stock not found');
+  const qty = Number(quantity);
+  if (qty <= 0) throw new BusinessRuleError('Quantity must be positive');
 
-  const movement = new StockMovement();
-  movement.id_stock = id_stock;
-  movement.id_user = user.id;
-  movement.movement_type = movement_type as MovementType;
-  movement.quantity = quantity;
-  movement.reference_type = reference_type;
-  movement.reference_id = reference_id;
-  movement.notes = notes;
+  return await prisma.$transaction(async (tx) => {
+    // Lock row by reading inside transaction
+    const stock = await tx.stock.findUnique({ where: { id: id_stock } });
+    if (!stock) throw new BusinessRuleError('Stock not found');
 
-  // Update stock quantity based on movement type
-  if (movement_type === 'IN') {
-    stock.quantity = Number(stock.quantity) + Number(quantity);
-  } else if (movement_type === 'OUT') {
-    stock.quantity = Number(stock.quantity) - Number(quantity);
-  } else if (movement_type === 'ADJUSTMENT') {
-    stock.quantity = quantity;
-  }
-  stock.updated_at = new Date();
+    // Calculate new quantity
+    let newQuantity: number;
+    if (movement_type === 'IN') {
+      newQuantity = Number(stock.quantity) + qty;
+    } else if (movement_type === 'OUT') {
+      newQuantity = Number(stock.quantity) - qty;
+      if (newQuantity < 0) {
+        throw new BusinessRuleError(
+          `Insufficient stock. Available: ${stock.quantity}, Requested: ${qty}`
+        );
+      }
+    } else if (movement_type === 'ADJUSTMENT') {
+      newQuantity = qty;
+    } else {
+      throw new BusinessRuleError(`Invalid movement type: ${movement_type}`);
+    }
 
-  await movement.save();
-  await stock.save();
+    // Create movement record
+    const movement = await tx.stockMovement.create({
+      data: {
+        id_stock,
+        id_user: user.id,
+        movement_type: movement_type as StockMovement_movement_type_enum,
+        quantity: qty,
+        reference_type,
+        reference_id,
+        notes
+      }
+    });
 
-  return movement;
-}
+    // Update stock quantity atomically
+    await tx.stock.update({
+      where: { id: id_stock },
+      data: { quantity: newQuantity }
+    });
+
+    return movement;
+  });
+});

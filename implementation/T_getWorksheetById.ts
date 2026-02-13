@@ -3,9 +3,12 @@
  */
 
 import { T_getWorksheetById } from "../types/api/T_getWorksheetById";
+import { requireAuth } from "../utility/auth";
 import { worksheetService } from "../src/services/worksheet.service";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getWorksheetById: T_getWorksheetById = async (req, res) => {
+export const t_getWorksheetById: T_getWorksheetById = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   // 1. Extract ID from path (not params)
   const id = Number(req.path.id);
 
@@ -14,4 +17,4 @@ export const t_getWorksheetById: T_getWorksheetById = async (req, res) => {
 
   // 3. Return response
   return worksheet;
-}
+});

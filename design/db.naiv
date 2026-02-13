@@ -50,6 +50,8 @@ table Worksheet {
   rendemen decimal(5,2)
   machine_hours decimal(5,2) notnull default=0
   downtime_hours decimal(5,2) notnull default=0
+  id_machine Machine.id
+  id_output_product ProductType.id
   downtime_reason text
   notes text
   created_at timestamp notnull default=NOW()

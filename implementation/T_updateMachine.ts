@@ -1,15 +1,16 @@
+
 import { T_updateMachine } from "../types/api/T_updateMachine";
-import { Machine } from "../types/model/table/Machine";
-import { getUserFromToken } from "../utility/auth";
-import { MachineStatus } from "../types/model/enum/MachineStatus";
+import { Machine_status_enum } from "@prisma/client";
+import { requireAuth } from "../utility/auth";
+import { machineRepository } from "../src/repositories/machine.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_updateMachine: T_updateMachine = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
+export const t_updateMachine: T_updateMachine = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'SUPERVISOR');
 
-  const machine = await Machine.findOne({ where: { id: req.path.id } }) as any;
+  const machine = await machineRepository.findById(req.path.id);
   if (!machine) throw new Error('Machine not found');
 
-  const body = req.body as any; // Type assertion for extended properties
   const {
     code,
     name,
@@ -24,26 +25,24 @@ export const t_updateMachine: T_updateMachine = async (req, res) => {
     vendor_id,
     purchase_price,
     warranty_months
-  } = body;
+  } = req.body as any;
 
-  // Update existing fields
-  if (code !== undefined) machine.code = code;
-  if (name !== undefined) machine.name = name;
-  if (machine_type !== undefined) machine.machine_type = machine_type;
-  if (capacity_per_hour !== undefined) machine.capacity_per_hour = capacity_per_hour;
-  if (status !== undefined) machine.status = status as MachineStatus;
-  if (last_maintenance_date !== undefined) machine.last_maintenance_date = new Date(last_maintenance_date);
-  if (next_maintenance_date !== undefined) machine.next_maintenance_date = new Date(next_maintenance_date);
+  const updateData: any = {};
+  if (code !== undefined) updateData.code = code;
+  if (name !== undefined) updateData.name = name;
+  if (machine_type !== undefined) updateData.machine_type = machine_type;
+  if (capacity_per_hour !== undefined) updateData.capacity_per_hour = Number(capacity_per_hour);
+  if (status !== undefined) updateData.status = status as Machine_status_enum;
+  if (last_maintenance_date !== undefined) updateData.last_maintenance_date = last_maintenance_date ? new Date(last_maintenance_date) : null;
+  if (next_maintenance_date !== undefined) updateData.next_maintenance_date = next_maintenance_date ? new Date(next_maintenance_date) : null;
+  if (serial_number !== undefined) updateData.serial_number = serial_number;
+  if (manufacture_year !== undefined) updateData.manufacture_year = manufacture_year ? Number(manufacture_year) : null;
+  if (purchase_date !== undefined) updateData.purchase_date = purchase_date ? new Date(purchase_date) : null;
+  if (vendor_id !== undefined) updateData.vendor_id = vendor_id ? Number(vendor_id) : null;
+  if (purchase_price !== undefined) updateData.purchase_price = purchase_price ? Number(purchase_price) : null;
+  if (warranty_months !== undefined) updateData.warranty_months = warranty_months ? Number(warranty_months) : null;
 
-  // Update new fields
-  if (serial_number !== undefined) machine.serial_number = serial_number;
-  if (manufacture_year !== undefined) machine.manufacture_year = manufacture_year;
-  if (purchase_date !== undefined) machine.purchase_date = new Date(purchase_date);
-  if (vendor_id !== undefined) machine.vendor_id = vendor_id;
-  if (purchase_price !== undefined) machine.purchase_price = purchase_price;
-  if (warranty_months !== undefined) machine.warranty_months = warranty_months;
+  updateData.updated_at = new Date();
 
-  machine.updated_at = new Date();
-  await machine.save();
-  return machine;
-}
+  return await machineRepository.update(req.path.id, updateData);
+});

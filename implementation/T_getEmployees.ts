@@ -1,17 +1,21 @@
 import { T_getEmployees } from "../types/api/T_getEmployees";
-import { Employee } from "../types/model/table/Employee";
-import { getUserFromToken } from "../utility/auth";
-import { Like } from "typeorm";
+import { employeeRepository } from "../src/repositories/employee.repository";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getEmployees: T_getEmployees = async (req, res) => {
-  await getUserFromToken(req.headers.authorization);
-  const { limit = 10, offset = 0, id_factory, search, department, employment_status, is_active } = req.query;
-  const where: any = {};
-  if (id_factory) where.id_factory = id_factory;
-  if (search) where.fullname = Like(`%${search}%`);
-  if (department) where.department = department;
-  if (employment_status) where.employment_status = employment_status;
-  if (is_active !== undefined) where.is_active = is_active;
-  const [data, total] = await Employee.findAndCount({ where, take: limit, skip: offset, order: { created_at: 'DESC' } });
-  return { data, total };
-}
+export const t_getEmployees: T_getEmployees = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
+  const { limit, offset, id_factory, search, department, employment_status, is_active } = req.query;
+
+  const { data, total } = await employeeRepository.findWithFilters({
+    limit: limit ? Number(limit) : 10,
+    offset: offset ? Number(offset) : 0,
+    id_factory: id_factory ? Number(id_factory) : undefined,
+    search: search as string,
+    department: department as string,
+    employment_status: employment_status as string,
+    is_active: is_active !== undefined ? Boolean(is_active) : undefined
+  });
+
+  return { data: data as any, total };
+});

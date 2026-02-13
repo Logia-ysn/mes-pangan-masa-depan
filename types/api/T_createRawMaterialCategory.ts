@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { Transform } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
-import { RawMaterialCategory } from '../model/table/RawMaterialCategory'
+import { RawMaterialCategory } from '@prisma/client'
 
 export class T_createRawMaterialCategory_headers {
     @IsNotEmpty({ message: 'authorization cannot be empty' })

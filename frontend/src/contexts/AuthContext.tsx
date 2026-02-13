@@ -11,7 +11,6 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    token: string | null;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
@@ -21,41 +20,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadUser = async () => {
-            if (token) {
-                try {
-                    const res = await authApi.getMe();
-                    setUser(res.data);
-                } catch (error) {
-                    localStorage.removeItem('token');
-                    setToken(null);
-                }
+            try {
+                const res = await authApi.getMe();
+                setUser(res.data);
+            } catch {
+                setUser(null);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
         loadUser();
-    }, [token]);
+    }, []);
 
     const login = async (email: string, password: string) => {
         const res = await authApi.login({ email, password });
-        const { token: newToken, user: newUser } = res.data;
-        localStorage.setItem('token', newToken);
-        setToken(newToken);
-        setUser(newUser);
+        setUser(res.data.user);
     };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        setToken(null);
+    const logout = async () => {
+        try {
+            await authApi.logout();
+        } catch {
+            // Ignore logout errors
+        }
         setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+        <AuthContext.Provider value={{ user, login, logout, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

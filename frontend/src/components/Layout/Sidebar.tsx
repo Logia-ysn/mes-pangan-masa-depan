@@ -23,6 +23,14 @@ const navItems: NavItemConfig[] = [
             { label: 'Maintenance', to: '/production/maintenance' },
             { label: 'OEE Monitor', to: '/production/oee' },
         ]
+    },
+    {
+        label: 'Penjualan',
+        icon: 'point_of_sale',
+        children: [
+            { label: 'Pelanggan', to: '/sales/customers' },
+            { label: 'Invoice', to: '/sales/invoices' },
+        ]
     }
 ];
 

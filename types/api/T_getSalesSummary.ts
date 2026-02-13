@@ -48,7 +48,7 @@ class ReturnType_0 {
   @IsNotEmpty({ message: 'by_customer cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ReturnType_0_4)
+  @Type(() => Object)
   by_customer!: ReturnType_0_4[]
 }
 

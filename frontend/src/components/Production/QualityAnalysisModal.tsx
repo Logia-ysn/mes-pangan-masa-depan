@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { qualityParameterApi, qualityAnalysisApi, qcGabahApi } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface QualityAnalysisModalProps {
     batchId: string;
@@ -119,9 +120,9 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
             }
 
             setConfig(mergedConfig);
-            console.log('Quality Config loaded:', mergedConfig.length, 'params', varietyId ? `(variety: ${varietyId})` : '(global fallback)');
+            logger.log('Quality Config loaded:', mergedConfig.length, 'params', varietyId ? `(variety: ${varietyId})` : '(global fallback)');
         } catch (error) {
-            console.error('Failed to fetch quality config:', error);
+            logger.error('Failed to fetch quality config:', error);
         }
     };
 
@@ -231,7 +232,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
         }
 
         // Log for debugging
-        console.log(`Calculation: A(${pA}) + B(${pB}) + C(${pC}) = ${totalPoints}. Closest Ref: ${closest.score} -> ${closest.grade}:${closest.level}`);
+        logger.log(`Calculation: A(${pA}) + B(${pB}) + C(${pC}) = ${totalPoints}. Closest Ref: ${closest.score} -> ${closest.grade}:${closest.level}`);
     };
 
     // State for ML Analysis
@@ -290,7 +291,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                     setColorGrade(displayGrade); // Set displayed grade with level
                     setGreenPercentage(green_percentage);
                 }).catch((error: any) => {
-                    console.error('ML Analysis Failed:', error);
+                    logger.error('ML Analysis Failed:', error);
                     const errorMessage = error.response?.data?.error || error.message || "Unknown Error";
                     setColorGrade('Error');
                     setGreenPercentage(null);
@@ -299,7 +300,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
             };
 
         } catch (err) {
-            console.error(err);
+            logger.error(err);
         }
     };
 
@@ -340,7 +341,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                 onSave(data);
                 onClose();
             } catch (err) {
-                console.error(err);
+                logger.error(err);
                 alert("Error saving analysis");
             } finally {
                 setLoading(false);

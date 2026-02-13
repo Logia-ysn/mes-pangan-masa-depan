@@ -1,11 +1,10 @@
 /**
  * Stock Repository
- * Handles all database operations for Stock entity
+ * Handles all database operations for Stock entity using Prisma
  */
 
 import { BaseRepository } from './base.repository';
-import { Stock } from '../../types/model/table/Stock';
-import { FindManyOptions } from 'typeorm';
+import { Stock } from '@prisma/client';
 
 export interface StockListParams {
     limit?: number;
@@ -15,13 +14,13 @@ export interface StockListParams {
 }
 
 export class StockRepository extends BaseRepository<Stock> {
-    protected entity = Stock;
+    protected modelName = 'Stock';
 
     /**
      * Find stock by factory and product type
      */
     async findByFactoryAndProduct(id_factory: number, id_product_type: number): Promise<Stock | null> {
-        return await Stock.findOne({
+        return await this.model.findFirst({
             where: { id_factory, id_product_type }
         });
     }
@@ -30,9 +29,12 @@ export class StockRepository extends BaseRepository<Stock> {
      * Find all stocks for a factory
      */
     async findByFactory(id_factory: number): Promise<Stock[]> {
-        return await Stock.find({
+        return await this.model.findMany({
             where: { id_factory },
-            relations: ['otm_id_product_type', 'otm_id_factory']
+            include: {
+                ProductType: true,
+                Factory: true
+            }
         });
     }
 
@@ -40,13 +42,6 @@ export class StockRepository extends BaseRepository<Stock> {
      * Find all stocks with filtering
      */
     async findWithFilters(params: StockListParams): Promise<{ stocks: Stock[], total: number }> {
-        const options: FindManyOptions<Stock> = {
-            take: params.limit || 10,
-            skip: params.offset || 0,
-            order: { id: 'DESC' },
-            relations: ['otm_id_product_type', 'otm_id_factory']
-        };
-
         const where: any = {};
 
         if (params.id_factory) {
@@ -57,11 +52,20 @@ export class StockRepository extends BaseRepository<Stock> {
             where.id_product_type = params.id_product_type;
         }
 
-        if (Object.keys(where).length > 0) {
-            options.where = where;
-        }
+        const [stocks, total] = await Promise.all([
+            this.model.findMany({
+                where,
+                take: params.limit || 10,
+                skip: params.offset || 0,
+                orderBy: { id: 'desc' },
+                include: {
+                    ProductType: true,
+                    Factory: true
+                }
+            }),
+            this.model.count({ where })
+        ]);
 
-        const [stocks, total] = await Stock.findAndCount(options);
         return { stocks, total };
     }
 
@@ -69,57 +73,68 @@ export class StockRepository extends BaseRepository<Stock> {
      * Update stock quantity
      */
     async updateQuantity(id: number, quantity: number): Promise<Stock | null> {
-        const stock = await this.findById(id);
-        if (!stock) return null;
-
-        stock.quantity = quantity;
-        stock.updated_at = new Date();
-        await stock.save();
-        return stock;
+        try {
+            return await this.model.update({
+                where: { id },
+                data: {
+                    quantity,
+                }
+            });
+        } catch (error) {
+            return null;
+        }
     }
 
     /**
      * Increment stock quantity
      */
     async incrementQuantity(id: number, amount: number): Promise<Stock | null> {
-        const stock = await this.findById(id);
-        if (!stock) return null;
-
-        stock.quantity = Number(stock.quantity) + amount;
-        stock.updated_at = new Date();
-        await stock.save();
-        return stock;
+        try {
+            return await this.model.update({
+                where: { id },
+                data: {
+                    quantity: { increment: amount },
+                }
+            });
+        } catch (error) {
+            return null;
+        }
     }
 
     /**
      * Decrement stock quantity
      */
     async decrementQuantity(id: number, amount: number): Promise<Stock | null> {
-        const stock = await this.findById(id);
-        if (!stock) return null;
-
-        stock.quantity = Number(stock.quantity) - amount;
-        stock.updated_at = new Date();
-        await stock.save();
-        return stock;
+        try {
+            return await this.model.update({
+                where: { id },
+                data: {
+                    quantity: { decrement: amount },
+                }
+            });
+        } catch (error) {
+            return null;
+        }
     }
 
     /**
      * Create or get stock for factory and product
      */
     async getOrCreate(id_factory: number, id_product_type: number, unit: string): Promise<Stock> {
-        let stock = await this.findByFactoryAndProduct(id_factory, id_product_type);
+        const stock = await this.findByFactoryAndProduct(id_factory, id_product_type);
 
-        if (!stock) {
-            stock = new Stock();
-            stock.id_factory = id_factory;
-            stock.id_product_type = id_product_type;
-            stock.quantity = 0;
-            stock.unit = unit;
-            await stock.save();
+        if (stock) {
+            return stock;
         }
 
-        return stock;
+        return await this.model.create({
+            data: {
+                id_factory,
+                id_product_type,
+                quantity: 0,
+                unit
+            }
+        });
     }
 }
 

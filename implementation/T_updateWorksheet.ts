@@ -4,9 +4,13 @@
 
 import { T_updateWorksheet } from "../types/api/T_updateWorksheet";
 import { worksheetService } from "../src/services/worksheet.service";
-import { WorkshiftType } from "../types/model/enum/WorkshiftType";
+import { Worksheet_shift_enum } from "@prisma/client";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
+export const t_updateWorksheet: T_updateWorksheet = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'SUPERVISOR');
+
   // 1. Extract ID from path (not params)
   const id = Number(req.path.id);
 
@@ -39,7 +43,7 @@ export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
   const worksheet = await worksheetService.updateWorksheet({
     id,
     worksheet_date,
-    shift: shift as WorkshiftType,
+    shift: shift as Worksheet_shift_enum,
     gabah_input,
     beras_output,
     menir_output,
@@ -57,7 +61,7 @@ export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
     side_product_revenue,
     hpp,
     hpp_per_kg,
-    side_products: side_products?.map(sp => ({
+    side_products: side_products?.map((sp: any) => ({
       ...sp,
       is_auto_calculated: sp.is_auto_calculated ?? false,
       total_value: sp.total_value ?? (sp.quantity * sp.unit_price)
@@ -66,4 +70,4 @@ export const t_updateWorksheet: T_updateWorksheet = async (req, res) => {
 
   // 4. Return response
   return worksheet;
-}
+});

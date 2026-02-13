@@ -1,15 +1,15 @@
+
 import { T_deleteRawMaterialCategory } from "../types/api/T_deleteRawMaterialCategory";
-import { RawMaterialCategory } from "../types/model/table/RawMaterialCategory";
-import { getUserFromToken } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { requireAuth } from "../utility/auth";
+import { rawMaterialCategoryRepository } from "../src/repositories/raw-material-category.repository";
 
-export const t_deleteRawMaterialCategory: T_deleteRawMaterialCategory = async (req, res) => {
-    await getUserFromToken(req.headers.authorization || '');
-    const category = await RawMaterialCategory.findOne({ where: { id: req.path.id } });
+export const t_deleteRawMaterialCategory: T_deleteRawMaterialCategory = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'ADMIN');
+    const category = await rawMaterialCategoryRepository.findById(req.path.id);
     if (!category) {
-        res.status(404).json({ message: 'Kategori tidak ditemukan' });
-        return { success: false, message: 'Kategori tidak ditemukan' };
+        throw new Error('Kategori tidak ditemukan');
     }
-    await category.remove();
+    await rawMaterialCategoryRepository.delete(req.path.id);
     return { success: true, message: 'Kategori berhasil dihapus' };
-}
-
+});

@@ -1,27 +1,30 @@
+
 import { T_deleteStock } from "../types/api/T_deleteStock";
-import { Stock } from "../types/model/table/Stock";
-import { StockMovement } from "../types/model/table/StockMovement";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { stockRepository } from "../src/repositories/stock.repository";
+import { stockMovementRepository } from "../src/repositories/stock-movement.repository";
+import { requireAuth } from "../utility/auth";
 
-export const t_deleteStock: T_deleteStock = async (req, res) => {
-    const { id } = req.params;
+export const t_deleteStock: T_deleteStock = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'ADMIN');
 
-    const stock = await Stock.findOne({ where: { id } });
+    const id = Number(req.params.id);
+
+    const stock = await stockRepository.findById(id);
     if (!stock) {
-        res.status(404);
         throw new Error('Stock not found');
     }
 
     // Check for existing movements
-    const movementCount = await StockMovement.count({ where: { id_stock: id } });
+    const movementCount = await stockMovementRepository.count({ where: { id_stock: id } });
     if (movementCount > 0) {
-        res.status(400);
         throw new Error(`Cannot delete stock. It has ${movementCount} transaction records. Please delete the transactions first.`);
     }
 
-    await stock.remove();
+    await stockRepository.delete(id);
 
     return {
         status: "success",
         message: "Stock deleted successfully"
     };
-}
+});

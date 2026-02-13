@@ -1,44 +1,54 @@
+
 import { T_deleteStockMovement } from "../types/api/T_deleteStockMovement";
-import { StockMovement } from "../types/model/table/StockMovement";
-import { Stock } from "../types/model/table/Stock";
-import { AppDataSource } from "../data-source";
-import { RawMaterialQualityAnalysis } from "../types/model/table/RawMaterialQualityAnalysis";
+import { prisma } from "../src/libs/prisma";
+import { requireAuth } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_deleteStockMovement: T_deleteStockMovement = async (req, res) => {
-    const { id } = req.params;
+export const t_deleteStockMovement: T_deleteStockMovement = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'ADMIN');
 
-    try {
-        const movement = await StockMovement.findOne({ where: { id } });
-        if (!movement) {
-            res.status(404);
-            throw new Error('Stock Movement not found');
-        }
+    const id = Number(req.params.id);
 
-        const stock = await Stock.findOne({ where: { id: movement.id_stock } });
+    const movement = await prisma.stockMovement.findUnique({ where: { id } });
+    if (!movement) {
+        throw new Error('Stock Movement not found');
+    }
 
-        // Start transaction to ensure data integrity
-        await AppDataSource.transaction(async transactionalEntityManager => {
-            // Reverse the stock quantity impact
-            if (stock) {
-                if (movement.movement_type === 'IN') {
-                    stock.quantity = Number(stock.quantity) - Number(movement.quantity);
-                } else if (movement.movement_type === 'OUT') {
-                    stock.quantity = Number(stock.quantity) + Number(movement.quantity);
+    const stock = await prisma.stock.findUnique({ where: { id: movement.id_stock } });
+
+    // Use Prisma transaction
+    await prisma.$transaction(async (tx) => {
+        // Reverse the stock quantity impact
+        if (stock) {
+            let newQuantity = Number(stock.quantity);
+            if (movement.movement_type === 'IN') {
+                newQuantity -= Number(movement.quantity);
+                if (newQuantity < 0) {
+                    throw new Error(
+                        `Cannot reverse: would result in negative stock (${newQuantity})`
+                    );
                 }
-                stock.updated_at = new Date();
-                await transactionalEntityManager.save(Stock, stock);
+            } else if (movement.movement_type === 'OUT') {
+                newQuantity += Number(movement.quantity);
             }
 
-            // Delete dependent Quality Analysis first to match FK constraints
-            await transactionalEntityManager.delete(RawMaterialQualityAnalysis, { id_stock_movement: id });
+            await tx.stock.update({
+                where: { id: stock.id },
+                data: {
+                    quantity: newQuantity
+                }
+            });
+        }
 
-            await transactionalEntityManager.remove(StockMovement, movement);
+        // Delete dependent Quality Analysis first to match FK constraints
+        await tx.rawMaterialQualityAnalysis.deleteMany({
+            where: { id_stock_movement: id }
         });
 
-        return { status: "success" };
-    } catch (error) {
-        console.error("DELETE STOCK MOVEMENT ERROR:", error);
-        res.status(500);
-        throw error;
-    }
-}
+        await tx.stockMovement.delete({
+            where: { id }
+        });
+    });
+
+    return { status: "success" };
+});

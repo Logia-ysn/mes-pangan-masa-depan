@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { IsNotEmpty, IsString, IsOptional } from "class-validator";
-import { QCGabah } from '../model/table/QCGabah';
+import { QCGabah } from '@prisma/client';
 
 export class T_analyzeGrain_headers {
     @IsNotEmpty({ message: 'authorization cannot be empty' })

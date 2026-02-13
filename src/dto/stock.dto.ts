@@ -1,5 +1,5 @@
 import { IsNumber, IsString, IsOptional, IsEnum } from 'class-validator';
-import { MovementType } from '../../types/model/enum/MovementType';
+import { StockMovement_movement_type_enum } from '@prisma/client';
 
 export class CreateStockDTO {
     @IsNumber()
@@ -35,8 +35,8 @@ export class StockMovementDTO {
     @IsNumber()
     quantity!: number;
 
-    @IsEnum(MovementType)
-    movementType!: MovementType;
+    @IsEnum(StockMovement_movement_type_enum)
+    movementType!: StockMovement_movement_type_enum;
 
     @IsOptional()
     @IsString()

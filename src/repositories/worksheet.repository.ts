@@ -1,11 +1,10 @@
 /**
  * Worksheet Repository
- * Handles all database operations for Worksheet entity
+ * Handles all database operations for Worksheet entity using Prisma
  */
 
 import { BaseRepository } from './base.repository';
-import { Worksheet } from '../../types/model/table/Worksheet';
-import { FindManyOptions, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Worksheet, Worksheet_shift_enum } from '@prisma/client';
 
 export interface WorksheetListParams {
     limit?: number;
@@ -29,24 +28,30 @@ export interface ProductionStats {
 }
 
 export class WorksheetRepository extends BaseRepository<Worksheet> {
-    protected entity = Worksheet;
+    protected modelName = 'Worksheet';
 
     /**
      * Find worksheet by ID with full relations
      */
     async findById(id: number): Promise<Worksheet | null> {
-        return await Worksheet.findOne({
+        return await this.model.findUnique({
             where: { id },
-            relations: [
-                'otm_id_factory',
-                'otm_id_user',
-                'otm_id_output_product',
-                'otm_id_machine',
-                'input_batches',
-                'input_batches.otm_id_stock',
-                'input_batches.otm_id_stock.otm_id_product_type',
-                'side_products'
-            ]
+            include: {
+                Factory: true,
+                User: true,
+                ProductType: true,
+                Machine: true,
+                WorksheetInputBatch: {
+                    include: {
+                        Stock: {
+                            include: {
+                                ProductType: true
+                            }
+                        }
+                    }
+                },
+                WorksheetSideProduct: true
+            }
         });
     }
 
@@ -54,10 +59,13 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
      * Find worksheets by factory
      */
     async findByFactory(id_factory: number): Promise<Worksheet[]> {
-        return await Worksheet.find({
+        return await this.model.findMany({
             where: { id_factory },
-            order: { worksheet_date: 'DESC' },
-            relations: ['otm_id_factory', 'otm_id_user']
+            orderBy: { worksheet_date: 'desc' },
+            include: {
+                Factory: true,
+                User: true
+            }
         });
     }
 
@@ -66,17 +74,23 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
      */
     async findByDateRange(start: Date, end: Date, id_factory?: number): Promise<Worksheet[]> {
         const where: any = {
-            worksheet_date: Between(start, end)
+            worksheet_date: {
+                gte: start,
+                lte: end
+            }
         };
 
         if (id_factory) {
             where.id_factory = id_factory;
         }
 
-        return await Worksheet.find({
+        return await this.model.findMany({
             where,
-            order: { worksheet_date: 'DESC' },
-            relations: ['otm_id_factory', 'otm_id_user']
+            orderBy: { worksheet_date: 'desc' },
+            include: {
+                Factory: true,
+                User: true
+            }
         });
     }
 
@@ -84,13 +98,6 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
      * Find all worksheets with filtering
      */
     async findWithFilters(params: WorksheetListParams): Promise<{ worksheets: Worksheet[], total: number }> {
-        const options: FindManyOptions<Worksheet> = {
-            take: params.limit || 20,
-            skip: params.offset || 0,
-            order: { worksheet_date: 'DESC', id: 'DESC' },
-            relations: ['otm_id_factory', 'otm_id_user', 'otm_id_output_product', 'otm_id_machine', 'side_products']
-        };
-
         const where: any = {};
 
         if (params.id_factory) {
@@ -102,26 +109,35 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
         }
 
         if (params.shift) {
-            where.shift = params.shift;
+            where.shift = params.shift as Worksheet_shift_enum;
         }
 
-        if (params.process_step) {
-            where.process_step = params.process_step;
+        if (params.start_date || params.end_date) {
+            where.worksheet_date = {};
+            if (params.start_date) where.worksheet_date.gte = params.start_date;
+            if (params.end_date) where.worksheet_date.lte = params.end_date;
         }
 
-        if (params.start_date && params.end_date) {
-            where.worksheet_date = Between(params.start_date, params.end_date);
-        } else if (params.start_date) {
-            where.worksheet_date = MoreThanOrEqual(params.start_date);
-        } else if (params.end_date) {
-            where.worksheet_date = LessThanOrEqual(params.end_date);
-        }
+        const [worksheets, total] = await Promise.all([
+            this.model.findMany({
+                where,
+                take: params.limit || 20,
+                skip: params.offset || 0,
+                orderBy: [
+                    { worksheet_date: 'desc' },
+                    { id: 'desc' }
+                ],
+                include: {
+                    Factory: true,
+                    User: true,
+                    ProductType: true,
+                    Machine: true,
+                    WorksheetSideProduct: true
+                }
+            }),
+            this.model.count({ where })
+        ]);
 
-        if (Object.keys(where).length > 0) {
-            options.where = where;
-        }
-
-        const [worksheets, total] = await Worksheet.findAndCount(options);
         return { worksheets, total };
     }
 
@@ -129,47 +145,40 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
      * Get production statistics for a factory
      */
     async getProductionStats(id_factory: number, start_date?: Date, end_date?: Date): Promise<ProductionStats> {
-        const query = this.entity.createQueryBuilder('worksheet')
-            .select('COALESCE(SUM(worksheet.gabah_input), 0)', 'total_input')
-            .addSelect('COALESCE(SUM(worksheet.beras_output), 0)', 'total_output')
-            .addSelect('COALESCE(SUM(worksheet.menir_output), 0)', 'total_menir')
-            .addSelect('COALESCE(SUM(worksheet.dedak_output), 0)', 'total_dedak')
-            .addSelect('COALESCE(SUM(worksheet.sekam_output), 0)', 'total_sekam')
-            .addSelect('COALESCE(AVG(NULLIF(worksheet.rendemen, 0)), 0)', 'avg_rendemen')
-            .addSelect('COUNT(worksheet.id)', 'worksheet_count')
-            .where('worksheet.id_factory = :id_factory', { id_factory });
+        const where: any = { id_factory };
 
-        if (start_date && end_date) {
-            query.andWhere('worksheet.worksheet_date BETWEEN :start_date AND :end_date', { start_date, end_date });
+        if (start_date || end_date) {
+            where.worksheet_date = {};
+            if (start_date) where.worksheet_date.gte = start_date;
+            if (end_date) where.worksheet_date.lte = end_date;
         }
 
-        const result = await query.getRawOne();
+        const stats = await this.model.aggregate({
+            where,
+            _sum: {
+                gabah_input: true,
+                beras_output: true,
+                menir_output: true,
+                dedak_output: true,
+                sekam_output: true
+            },
+            _avg: {
+                rendemen: true
+            },
+            _count: {
+                id: true
+            }
+        });
 
         return {
-            total_input: parseFloat(result.total_input),
-            total_output: parseFloat(result.total_output),
-            total_menir: parseFloat(result.total_menir),
-            total_dedak: parseFloat(result.total_dedak),
-            total_sekam: parseFloat(result.total_sekam),
-            avg_rendemen: parseFloat(result.avg_rendemen),
-            worksheet_count: parseInt(result.worksheet_count, 10)
+            total_input: Number(stats._sum.gabah_input || 0),
+            total_output: Number(stats._sum.beras_output || 0),
+            total_menir: Number(stats._sum.menir_output || 0),
+            total_dedak: Number(stats._sum.dedak_output || 0),
+            total_sekam: Number(stats._sum.sekam_output || 0),
+            avg_rendemen: Number(stats._avg.rendemen || 0),
+            worksheet_count: stats._count.id
         };
-    }
-
-    /**
-     * Get worksheets by process step
-     */
-    async findByProcessStep(process_step: string, id_factory?: number): Promise<Worksheet[]> {
-        const where: any = { process_step };
-
-        if (id_factory) {
-            where.id_factory = id_factory;
-        }
-
-        return await Worksheet.find({
-            where,
-            order: { worksheet_date: 'DESC' }
-        });
     }
 }
 

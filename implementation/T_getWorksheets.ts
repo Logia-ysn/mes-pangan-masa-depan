@@ -3,9 +3,12 @@
  */
 
 import { T_getWorksheets } from "../types/api/T_getWorksheets";
+import { requireAuth } from "../utility/auth";
 import { worksheetService } from "../src/services/worksheet.service";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getWorksheets: T_getWorksheets = async (req, res) => {
+export const t_getWorksheets: T_getWorksheets = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   // 1. Extract query params
   const {
     limit,
@@ -31,4 +34,4 @@ export const t_getWorksheets: T_getWorksheets = async (req, res) => {
     limit: limit ? Number(limit) : 10,
     offset: offset ? Number(offset) : 0
   };
-}
+});

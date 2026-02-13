@@ -4,6 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Header from '../../components/Layout/Header';
 import { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
 import { exportToCSV } from '../../utils/exportUtils';
+import { logger } from '../../utils/logger';
 
 interface Worksheet {
     id: number;
@@ -182,7 +183,7 @@ const Worksheets = () => {
             if (pmd1) setSelectedFactory(pmd1.id);
             else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -195,7 +196,7 @@ const Worksheets = () => {
             });
             setWorksheets(res.data.data || res.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         } finally {
             setLoading(false);
         }
@@ -206,7 +207,7 @@ const Worksheets = () => {
             const res = await stockApi.getAll({ id_factory: selectedFactory });
             setStocks(res.data?.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -215,7 +216,7 @@ const Worksheets = () => {
             const res = await machineApi.getAll();
             setMachines(res.data?.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -224,7 +225,7 @@ const Worksheets = () => {
             const res = await employeeApi.getAll();
             setEmployees(res.data?.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -233,7 +234,7 @@ const Worksheets = () => {
             const res = await processCategoryApi.getAll({ is_main_process: true });
             setProcessCategories(res.data?.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -242,7 +243,7 @@ const Worksheets = () => {
             const res = await outputProductApi.getAll({ id_factory: selectedFactory || undefined });
             setOutputProducts(res.data?.data || []);
         } catch (error) {
-            console.error('Error:', error);
+            logger.error('Error:', error);
         }
     };
 
@@ -431,7 +432,7 @@ const Worksheets = () => {
             setShowForm(false);
             resetForm();
         } catch (error) {
-            console.error('Error saving worksheet:', error);
+            logger.error('Error saving worksheet:', error);
             showError('Gagal', 'Gagal menyimpan worksheet');
         }
     };
@@ -461,7 +462,7 @@ const Worksheets = () => {
                 showSuccess('Berhasil', 'Worksheet berhasil dihapus');
                 fetchWorksheets();
             } catch (error) {
-                console.error('Error deleting worksheet:', error);
+                logger.error('Error deleting worksheet:', error);
                 showError('Gagal', 'Gagal menghapus worksheet');
             }
         }
@@ -484,7 +485,7 @@ const Worksheets = () => {
             setNewOperator({ fullname: '', position: 'Operator', phone: '' });
             showSuccess('Berhasil', 'Operator berhasil ditambahkan!');
         } catch (error) {
-            console.error('Error adding operator:', error);
+            logger.error('Error adding operator:', error);
             showError('Gagal', 'Gagal menambah operator');
         }
     };

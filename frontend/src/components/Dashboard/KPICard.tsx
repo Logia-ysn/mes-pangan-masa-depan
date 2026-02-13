@@ -85,4 +85,4 @@ const KPICard: React.FC<KPICardProps> = ({
     );
 };
 
-export default KPICard;
+export default React.memo(KPICard);

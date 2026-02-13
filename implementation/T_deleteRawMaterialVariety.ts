@@ -1,15 +1,15 @@
+
 import { T_deleteRawMaterialVariety } from "../types/api/T_deleteRawMaterialVariety";
-import { RawMaterialVariety } from "../types/model/table/RawMaterialVariety";
-import { getUserFromToken } from "../utility/auth";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { requireAuth } from "../utility/auth";
+import { rawMaterialVarietyRepository } from "../src/repositories/raw-material-variety.repository";
 
-export const t_deleteRawMaterialVariety: T_deleteRawMaterialVariety = async (req, res) => {
-    await getUserFromToken(req.headers.authorization || '');
-    const variety = await RawMaterialVariety.findOne({ where: { id: req.path.id } });
+export const t_deleteRawMaterialVariety: T_deleteRawMaterialVariety = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'ADMIN');
+    const variety = await rawMaterialVarietyRepository.findById(req.path.id);
     if (!variety) {
-        res.status(404).json({ message: 'Varietas tidak ditemukan' });
-        return { success: false, message: 'Varietas tidak ditemukan' };
+        throw new Error('Varietas tidak ditemukan');
     }
-    await variety.remove();
+    await rawMaterialVarietyRepository.delete(req.path.id);
     return { success: true, message: 'Varietas berhasil dihapus' };
-}
-
+});

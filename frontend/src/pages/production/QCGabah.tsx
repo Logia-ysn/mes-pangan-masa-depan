@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Header from '../../components/Layout/Header';
 import { qcGabahApi } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 const QCGabah = () => {
     const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ const QCGabah = () => {
 
             setResult(res.data);
         } catch (err: any) {
-            console.error(err);
+            logger.error(err);
             // Check for response data error (Backend error message)
             const errorMessage = err.response?.data?.error || err.message || "Failed to analyze image";
             setError(errorMessage);

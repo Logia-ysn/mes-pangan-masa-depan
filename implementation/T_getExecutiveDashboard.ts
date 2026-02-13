@@ -5,9 +5,12 @@
  */
 
 import { T_getExecutiveDashboard } from "../types/api/T_getExecutiveDashboard";
+import { requireAuth } from "../utility/auth";
 import { dashboardService } from "../src/services/dashboard.service";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getExecutiveDashboard: T_getExecutiveDashboard = async (req, res) => {
+export const t_getExecutiveDashboard: T_getExecutiveDashboard = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'OPERATOR');
     // 1. Extract query params
     const { id_factory } = req.query;
 
@@ -18,4 +21,4 @@ export const t_getExecutiveDashboard: T_getExecutiveDashboard = async (req, res)
 
     // 3. Return response
     return data;
-};
+});

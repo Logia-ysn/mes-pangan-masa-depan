@@ -1,22 +1,22 @@
-import { T_createRawMaterialCategory } from "../types/api/T_createRawMaterialCategory";
-import { RawMaterialCategory } from "../types/model/table/RawMaterialCategory";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_createRawMaterialCategory: T_createRawMaterialCategory = async (req, res) => {
-    await getUserFromToken(req.headers.authorization);
+import { T_createRawMaterialCategory } from "../types/api/T_createRawMaterialCategory";
+import { apiWrapper } from "../src/utils/apiWrapper";
+import { requireAuth } from "../utility/auth";
+import { rawMaterialCategoryRepository } from "../src/repositories/raw-material-category.repository";
+
+export const t_createRawMaterialCategory: T_createRawMaterialCategory = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'SUPERVISOR');
     const { code, name, description } = req.body;
 
-    const existing = await RawMaterialCategory.findOne({ where: { code } });
+    const existing = await rawMaterialCategoryRepository.findOne({ where: { code } });
     if (existing) {
-        res.status(400).json({ message: `Kode Kategori "${code}" sudah digunakan. Gunakan kode lain.` });
-        return null as any;
+        throw new Error(`Kode Kategori "${code}" sudah digunakan. Gunakan kode lain.`);
     }
 
-    const category = new RawMaterialCategory();
-    category.code = code;
-    category.name = name;
-    category.description = description;
-    category.is_active = true;
-    await category.save();
-    return category;
-}
+    return await rawMaterialCategoryRepository.create({
+        code,
+        name,
+        description,
+        is_active: true
+    });
+});

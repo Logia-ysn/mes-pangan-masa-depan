@@ -3,9 +3,12 @@
  */
 
 import { T_getStocks } from "../types/api/T_getStocks";
+import { requireAuth } from "../utility/auth";
 import { stockRepository } from "../src/repositories/stock.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
 
-export const t_getStocks: T_getStocks = async (req, res) => {
+export const t_getStocks: T_getStocks = apiWrapper(async (req, res) => {
+  await requireAuth(req, 'OPERATOR');
   // 1. Extract query params
   const { limit, offset, id_factory, id_product_type } = req.query;
 
@@ -24,4 +27,4 @@ export const t_getStocks: T_getStocks = async (req, res) => {
     limit: limit ? Number(limit) : 10,
     offset: offset ? Number(offset) : 0
   };
-}
+});

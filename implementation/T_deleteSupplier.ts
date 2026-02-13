@@ -1,12 +1,14 @@
-import { T_deleteSupplier } from "../types/api/T_deleteSupplier";
-import { Supplier } from "../types/model/table/Supplier";
-import { getUserFromToken } from "../utility/auth";
 
-export const t_deleteSupplier: T_deleteSupplier = async (req, res) => {
-    await getUserFromToken(req.headers.authorization);
+import { T_deleteSupplier } from "../types/api/T_deleteSupplier";
+import { requireAuth } from "../utility/auth";
+import { supplierRepository } from "../src/repositories/supplier.repository";
+import { apiWrapper } from "../src/utils/apiWrapper";
+
+export const t_deleteSupplier: T_deleteSupplier = apiWrapper(async (req, res) => {
+    await requireAuth(req, 'ADMIN');
     const { id } = req.path;
-    const supplier = await Supplier.findOne({ where: { id } });
+    const supplier = await supplierRepository.findById(id);
     if (!supplier) throw new Error('Supplier not found');
-    await supplier.remove();
+    await supplierRepository.delete(id);
     return { message: 'Supplier deleted successfully', success: true };
-}
+});

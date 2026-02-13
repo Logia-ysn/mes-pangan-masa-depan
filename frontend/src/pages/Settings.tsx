@@ -3,6 +3,7 @@ import { useToast } from '../contexts/ToastContext';
 import Header from '../components/Layout/Header';
 import api, { supplierApi, rawMaterialCategoryApi, rawMaterialVarietyApi } from '../services/api';
 import QualityConfig from '../components/Settings/QualityConfig';
+import { logger } from '../utils/logger';
 
 interface Supplier {
     id: number;
@@ -65,21 +66,21 @@ const Settings = () => {
         try {
             const res = await supplierApi.getAll();
             setSuppliers(res.data?.data || []);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
     };
 
     const fetchCategories = async () => {
         try {
             const res = await rawMaterialCategoryApi.getAll();
             setCategories(res.data?.data || []);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
     };
 
     const fetchVarieties = async () => {
         try {
             const res = await rawMaterialVarietyApi.getAll();
             setVarieties(res.data?.data || []);
-        } catch (e) { console.error(e); }
+        } catch (e) { logger.error(e); }
     };
 
     const closeModal = () => setModalConfig(null);

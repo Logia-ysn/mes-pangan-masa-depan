@@ -14,9 +14,9 @@
  */
 
 import { T_createWorksheet } from "../types/api/T_createWorksheet";
-import { authService } from "../src/services/auth.service";
+import { requireAuth } from "../utility/auth";
 import { worksheetService } from "../src/services/worksheet.service";
-import { WorkshiftType } from "../types/model/enum/WorkshiftType";
+import { Worksheet_shift_enum } from "@prisma/client";
 import { apiWrapper } from "../src/utils/apiWrapper";
 import { CreateWorksheetSchema } from "../src/dto/worksheet.dto";
 import { validate } from "class-validator";
@@ -27,7 +27,7 @@ export const t_createWorksheet: T_createWorksheet = apiWrapper(async (req, res) 
   console.log('Creating worksheet:', req.body);
 
   // 1. Get authenticated user
-  const user = await authService.getUserFromToken(req.headers.authorization!);
+  const user = await requireAuth(req, 'SUPERVISOR');
 
   // 2. Validate Request Body
   const body = req.body as any;
@@ -77,7 +77,7 @@ export const t_createWorksheet: T_createWorksheet = apiWrapper(async (req, res) 
     id_factory,
     id_user: user.id,
     worksheet_date,
-    shift: shift as WorkshiftType,
+    shift: shift as Worksheet_shift_enum,
     gabah_input,
     beras_output,
     menir_output,

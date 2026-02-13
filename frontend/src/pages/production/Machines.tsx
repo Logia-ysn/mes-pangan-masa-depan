@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../../components/Layout/Header';
 import api, { factoryApi, supplierApi } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface Machine {
     id: number;
@@ -78,7 +79,7 @@ const Machines = () => {
             const machinesData = response.data?.data || response.data || [];
             setMachines(Array.isArray(machinesData) ? machinesData : []);
         } catch (error) {
-            console.error('Error fetching machines:', error);
+            logger.error('Error fetching machines:', error);
         } finally {
             setLoading(false);
         }
@@ -93,7 +94,7 @@ const Machines = () => {
                 setSelectedFactory(factoriesData[0].id);
             }
         } catch (error) {
-            console.error('Error fetching factories:', error);
+            logger.error('Error fetching factories:', error);
         }
     };
 
@@ -103,7 +104,7 @@ const Machines = () => {
             const suppliersData = response.data?.data || response.data || [];
             setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
         } catch (error) {
-            console.error('Error fetching suppliers:', error);
+            logger.error('Error fetching suppliers:', error);
         }
     };
 
@@ -133,7 +134,7 @@ const Machines = () => {
             fetchMachines();
             closeModal();
         } catch (error) {
-            console.error('Error saving machine:', error);
+            logger.error('Error saving machine:', error);
         }
     };
 
@@ -143,7 +144,7 @@ const Machines = () => {
                 await api.delete(`/machines/${id}`);
                 fetchMachines();
             } catch (error) {
-                console.error('Error deleting machine:', error);
+                logger.error('Error deleting machine:', error);
             }
         }
     };

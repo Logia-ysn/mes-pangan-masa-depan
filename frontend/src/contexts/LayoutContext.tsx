@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { logger } from '../utils/logger';
 
 interface LayoutContextType {
     isSidebarOpen: boolean;
@@ -14,8 +15,8 @@ export const useLayout = () => {
         // Return default values to avoid crashing if used outside Layout (though it shouldn't happen)
         return {
             isSidebarOpen: false,
-            toggleSidebar: () => console.warn('useLayout used outside LayoutProvider'),
-            closeSidebar: () => console.warn('useLayout used outside LayoutProvider'),
+            toggleSidebar: () => logger.warn('useLayout used outside LayoutProvider'),
+            closeSidebar: () => logger.warn('useLayout used outside LayoutProvider'),
         };
     }
     return context;

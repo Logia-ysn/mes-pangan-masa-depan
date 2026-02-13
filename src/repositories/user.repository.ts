@@ -1,16 +1,10 @@
 /**
  * User Repository
- * Handles all database operations for User entity
- * 
- * RULES:
- * - Only database operations
- * - No password hashing (that's service layer)
- * - No token generation (that's service layer)
+ * Handles all database operations for User entity using Prisma
  */
 
 import { BaseRepository } from './base.repository';
-import { User } from '../../types/model/table/User';
-import { FindManyOptions, Like } from 'typeorm';
+import { User, User_role_enum } from '@prisma/client';
 
 export interface UserListParams {
     limit?: number;
@@ -21,13 +15,13 @@ export interface UserListParams {
 }
 
 export class UserRepository extends BaseRepository<User> {
-    protected entity = User;
+    protected modelName = 'User';
 
     /**
      * Find user by email
      */
     async findByEmail(email: string): Promise<User | null> {
-        return await User.findOne({
+        return await this.model.findFirst({
             where: { email }
         });
     }
@@ -36,7 +30,7 @@ export class UserRepository extends BaseRepository<User> {
      * Find active user by email
      */
     async findActiveByEmail(email: string): Promise<User | null> {
-        return await User.findOne({
+        return await this.model.findFirst({
             where: { email, is_active: true }
         });
     }
@@ -45,7 +39,7 @@ export class UserRepository extends BaseRepository<User> {
      * Find user by ID (only active users)
      */
     async findActiveById(id: number): Promise<User | null> {
-        return await User.findOne({
+        return await this.model.findFirst({
             where: { id, is_active: true }
         });
     }
@@ -54,31 +48,30 @@ export class UserRepository extends BaseRepository<User> {
      * Find all users with filtering
      */
     async findWithFilters(params: UserListParams): Promise<{ users: User[], total: number }> {
-        const options: FindManyOptions<User> = {
-            take: params.limit || 10,
-            skip: params.offset || 0,
-            order: { id: 'DESC' }
-        };
-
         const where: any = {};
 
         if (params.search) {
-            where.fullname = Like(`%${params.search}%`);
+            where.fullname = { contains: params.search, mode: 'insensitive' };
         }
 
         if (params.role) {
-            where.role = params.role;
+            where.role = params.role as User_role_enum;
         }
 
         if (params.is_active !== undefined) {
             where.is_active = params.is_active;
         }
 
-        if (Object.keys(where).length > 0) {
-            options.where = where;
-        }
+        const [users, total] = await Promise.all([
+            this.model.findMany({
+                where,
+                take: params.limit || 10,
+                skip: params.offset || 0,
+                orderBy: { id: 'desc' }
+            }),
+            this.model.count({ where })
+        ]);
 
-        const [users, total] = await User.findAndCount(options);
         return { users, total };
     }
 
@@ -86,7 +79,7 @@ export class UserRepository extends BaseRepository<User> {
      * Check if email exists
      */
     async emailExists(email: string): Promise<boolean> {
-        const count = await User.count({ where: { email } });
+        const count = await this.model.count({ where: { email } });
         return count > 0;
     }
 
@@ -94,26 +87,34 @@ export class UserRepository extends BaseRepository<User> {
      * Update password hash
      */
     async updatePassword(id: number, passwordHash: string): Promise<boolean> {
-        const user = await this.findById(id);
-        if (!user) return false;
-
-        user.password_hash = passwordHash;
-        user.updated_at = new Date();
-        await user.save();
-        return true;
+        try {
+            await this.model.update({
+                where: { id },
+                data: {
+                    password_hash: passwordHash
+                }
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 
     /**
      * Deactivate user (soft delete)
      */
     async deactivate(id: number): Promise<boolean> {
-        const user = await this.findById(id);
-        if (!user) return false;
-
-        user.is_active = false;
-        user.updated_at = new Date();
-        await user.save();
-        return true;
+        try {
+            await this.model.update({
+                where: { id },
+                data: {
+                    is_active: false
+                }
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 }
 
