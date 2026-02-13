@@ -10,6 +10,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const server = new Server({ noCors: true });
 
+// Trust proxy for secure cookies in production (Railway/Vercel)
+server.express.set('trust proxy', 1);
+
 // --- CORS with credentials ---
 server.express.use(cors({
   origin: FRONTEND_URL,
@@ -74,7 +77,12 @@ server.express.get('/health', (_req, res) => {
 
 // --- Logout (clears httpOnly cookie) ---
 server.express.post('/auth/logout', (_req, res) => {
-  res.clearCookie('token', { httpOnly: true, path: '/' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
   res.json({ success: true });
 });
 
