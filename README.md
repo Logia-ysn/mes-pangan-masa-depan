@@ -1,81 +1,60 @@
-# 🌾 ERP Pangan Masa Depan
+# ERP Pangan Masa Depan
 
 > **Modern ERP Manufacturing System with AI-Powered Quality Analysis for Rice Mill Industry**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
-[![TypeORM](https://img.shields.io/badge/TypeORM-0.3-orange.svg)](https://typeorm.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748.svg)](https://www.prisma.io/)
 [![Python](https://img.shields.io/badge/Python-3.9+-yellow.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
-## 📋 Deskripsi
+## Deskripsi
 
-**ERP Pangan Masa Depan** adalah sistem Enterprise Resource Planning (ERP) generasi terbaru yang dirancang khusus untuk industri penggilingan padi modern. Sistem ini mengintegrasikan **Machine Learning** untuk analisis kualitas gabah secara otomatis, menjadikannya solusi unik di industri ini.
+**ERP Pangan Masa Depan** adalah sistem Enterprise Resource Planning (ERP) yang dirancang khusus untuk industri penggilingan padi modern. Sistem ini mengintegrasikan **Machine Learning** untuk analisis kualitas gabah secara otomatis melalui computer vision.
 
-Dengan arsitektur **Layered Architecture** yang bersih dan modular, sistem ini mudah dikembangkan, di-maintain, dan di-deploy baik secara lokal maupun cloud.
-
-### 🎯 Visi
-Memberdayakan industri penggilingan padi dengan teknologi modern untuk meningkatkan efisiensi, akurasi, dan profitabilitas.
+**Scope Aplikasi**: Penerimaan Bahan Baku, Produksi, Inventory, Maintenance, Pembelian, dan Penjualan.
+HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 
 ---
 
-## ✨ Fitur Utama
+## Modul
 
-### 🤖 AI-Powered Quality Analysis
-- **Color Grading**: Analisis warna gabah otomatis menggunakan Computer Vision (OpenCV + HSV Segmentation)
-- **Dynamic Calibration**: Konfigurasi ambang batas warna (Hue, Saturation, Value) melalui database
-- **Point-Based Grading System**: Sistem penilaian kualitas berbasis poin (1-30) dengan 9 tingkat grade (KW 1:1 hingga KW 3:3)
-- **Real-time Analysis**: Upload foto gabah dan dapatkan hasil analisis dalam hitungan detik
-
-### 🏭 Production Management
-- **Worksheet Management**: Kelola lembar kerja produksi harian dengan tracking input/output
-- **Multi-Factory Support**: Dukungan untuk PMD 1 & PMD 2 dengan output product berbeda
-- **Process Steps Tracking**: Monitoring proses Drying, Husking, Polishing, dan Packing
-- **HPP Calculation**: Hitung Harga Pokok Produksi secara otomatis
-- **Side Product Tracking**: Kelola produk samping (Bekatul, Sekam, Menir)
-
-### 📦 Inventory & Stock Management
-- **Real-time Stock Tracking**: Monitor stok bahan baku dan produk jadi
-- **Batch Management**: Tracking batch dari penerimaan hingga produksi
-- **Stock Movement History**: Riwayat lengkap pergerakan stok
-- **Multi-Product Type**: Dukungan GKP, GKG, PK, Glosor, Beras berbagai grade
-
-### 👥 Employee & Operator Management
-- **Employee Database**: Manajemen data karyawan untuk seleksi operator
-- **Operator Assignment**: Penugasan operator ke worksheet produksi
-
-### 🔧 Advanced Features
-- **OEE Monitoring**: Overall Equipment Effectiveness tracking
-- **Machine Maintenance**: Penjadwalan dan tracking maintenance mesin
-- **Export & Print**: Export data ke CSV dan cetak laporan
-- **Dark/Light Theme**: UI modern dengan dukungan tema gelap/terang
-- **Interactive Feedback**: Sistem notifikasi global (Toast) untuk status aksi user
-- **Error Handling**: Proteksi aplikasi dengan Error Boundaries untuk stabilitas maksimal
+| Modul | Status | Deskripsi |
+|-------|--------|-----------|
+| **Core Production** | Selesai | Worksheet, Stok, Mesin, Maintenance, OEE |
+| **Quality Control** | Selesai | ML Grain Analysis, Kalibrasi HSV, Grading |
+| **Dashboard** | Selesai | KPI, Grafik Produksi, Machine Summary, Inventory Snapshot |
+| **Penerimaan Bahan Baku** | Selesai | Raw Material Receipt + QC Integration |
+| **Penjualan (v2.1.0)** | Selesai | Customer, Invoice, Payment, Stock Deduction, PDF Export |
+| **Pembelian (v2.2.0)** | Selesai | Purchase Order, Goods Receipt, Stock Integration |
+| **Authentication** | Selesai | Login, Register, Role-based Access (5 level) |
+| **Multi-Factory** | Selesai | Support PMD-1 & PMD-2 |
+| **Settings** | Selesai | Supplier, Product Type, Quality Config |
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 ### Backend
 | Technology | Description |
 |------------|-------------|
-| **Node.js** | JavaScript runtime |
-| **TypeScript** | Type-safe JavaScript |
+| **Node.js 18+** | JavaScript runtime |
+| **TypeScript 5.9** | Type-safe JavaScript |
 | **Express.js** | Web framework |
-| **TypeORM** | ORM untuk database |
-| **MySQL/PostgreSQL** | Database |
-| **JWT** | Authentication |
-| **NAIV Framework** | API design & codegen |
+| **Prisma 6** | ORM untuk PostgreSQL |
+| **PostgreSQL** | Database |
+| **NAIV Framework** | Auto-generate Express routes dari type definitions |
+| **PDFKit** | Generate invoice PDF |
 
 ### Frontend
 | Technology | Description |
 |------------|-------------|
 | **React 18** | UI Library |
 | **Vite** | Build tool & dev server |
-| **Vanilla CSS** | Custom styling dengan glassmorphism |
+| **Vanilla CSS** | Custom styling (glassmorphism) |
 | **Recharts** | Data visualization |
 | **Material Symbols** | Icon library |
 
@@ -83,253 +62,302 @@ Memberdayakan industri penggilingan padi dengan teknologi modern untuk meningkat
 | Technology | Description |
 |------------|-------------|
 | **Python 3.9+** | ML runtime |
+| **FastAPI** | ML API server |
 | **OpenCV** | Computer vision |
 | **NumPy** | Numerical computing |
-| **FastAPI** (optional) | ML API server |
+
+### Infrastructure
+| Technology | Description |
+|------------|-------------|
+| **Docker** | Containerization (backend, frontend, ML) |
+| **Docker Compose** | Multi-container orchestration |
+| **Nginx** | Frontend reverse proxy |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 erp-pangan-masa-depan/
-├── 📁 design/                 # NAIV API design files (.naiv)
-├── 📁 types/                  # Generated TypeScript types
-│   ├── api/                  # API type definitions
-│   └── model/                # Database model types
-├── 📁 implementation/         # API handler implementations
-├── 📁 src/
-│   ├── services/             # Business logic layer
-│   ├── repositories/         # Data access layer
-│   ├── dto/                  # Data Transfer Objects
-│   ├── utils/                # Utilities & helpers
-│   └── ml/                   # ML Python scripts
-├── 📁 frontend/               # React frontend application
-│   ├── src/
-│   │   ├── components/       # Reusable components
-│   │   ├── pages/            # Page components
-│   │   ├── contexts/         # React contexts
-│   │   ├── services/         # API services
-│   │   └── utils/            # Frontend utilities
-│   └── public/               # Static assets
-├── 📁 ml-service/             # Machine Learning service
-│   └── app/                  # FastAPI ML application
-├── 📁 migration/              # Database migrations
-├── 📄 data-source.ts          # TypeORM configuration
-├── 📄 index.ts                # Server entry point
-├── 📄 package.json            # Node.js dependencies
-└── 📄 CHANGELOG.md            # Version history
+├── prisma/
+│   ├── schema.prisma            # Database schema (27 models, 6 enums)
+│   └── migrations/              # Prisma migrations
+├── types/
+│   ├── api/                     # 103 API type definitions (NAIV)
+│   ├── model/                   # Database model types
+│   └── schema/                  # Shared schemas (Auth, Pagination, etc.)
+├── implementation/              # 103 API handler implementations
+├── src/
+│   ├── repositories/            # 26 data access repositories
+│   ├── services/                # 12 business logic services
+│   ├── dto/                     # Data Transfer Objects
+│   ├── utils/                   # apiWrapper, errors, response
+│   ├── libs/                    # Prisma client instance
+│   └── ml/                      # Python ML script (legacy)
+├── frontend/
+│   └── src/
+│       ├── pages/
+│       │   ├── auth/            # Login
+│       │   ├── dashboard/       # Dashboard
+│       │   ├── production/      # Worksheets, Stocks, Machines, Maintenance, OEE, QC, Raw Material
+│       │   ├── sales/           # Customers, Invoices, InvoiceDetail
+│       │   ├── purchasing/      # PurchaseOrders, PurchaseOrderDetail
+│       │   └── Settings.tsx
+│       ├── components/          # Layout, Dashboard, Production, UI components
+│       ├── contexts/            # Auth, Theme, Toast, Layout contexts
+│       ├── services/            # API client (axios)
+│       └── utils/               # Format, export, print, logger utilities
+├── ml-service/
+│   └── app/
+│       ├── main.py              # FastAPI entry point
+│       ├── routers/             # health, analyze, calibration
+│       ├── models/              # grading, requests, responses
+│       └── services/            # image_processor, color_detector, grading_service
+├── design/                      # NAIV API design files (.naiv)
+├── docker-compose.yml
+├── Dockerfile                   # Backend
+├── frontend/Dockerfile          # Frontend + Nginx
+└── ml-service/Dockerfile        # ML service
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Node.js 18+**
-- **npm** atau **yarn**
+- **PostgreSQL**
 - **Python 3.9+** (untuk ML service)
-- **MySQL** atau **PostgreSQL**
-- **Git**
 
 ### Installation
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/Logia-ysn/erp-pangan-masa-depan.git
-
-# 2. Masuk ke direktori project
 cd erp-pangan-masa-depan
 
-# 3. Install backend dependencies
+# 2. Install backend dependencies
 npm install
 
-# 4. Setup environment
+# 3. Setup environment
 cp .env.example .env
-# Edit .env dengan database credentials Anda
+# Edit .env (lihat bagian Configuration)
 
-# 5. Run database migrations
-npm run migrate
+# 4. Run database migrations
+npx prisma migrate deploy
+
+# 5. Generate Prisma client
+npx prisma generate
 
 # 6. Install frontend dependencies
-cd frontend
-npm install
-cd ..
+cd frontend && npm install && cd ..
 
 # 7. (Optional) Setup ML service
 cd ml-service
 python -m venv venv
-source venv/bin/activate  # atau venv\Scripts\activate di Windows
+source venv/bin/activate
 pip install -r requirements.txt
 cd ..
-
-# 8. Run development server
-npm run dev
 ```
 
-Backend akan berjalan di `http://localhost:3000`
-
-### Frontend Development
+### Development
 
 ```bash
-cd frontend
+# Backend (http://localhost:3000)
 npm run dev
+
+# Frontend (http://localhost:5173)
+cd frontend && npm run dev
+
+# ML Service (http://localhost:8000)
+cd ml-service && uvicorn app.main:app --reload
 ```
 
-Frontend akan berjalan di `http://localhost:5173`
+### Docker
+
+```bash
+docker-compose up --build
+```
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
 ```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=erp_pangan
+# Database (Prisma)
+DATABASE_URL=postgresql://user:password@localhost:5432/erp_pangan
 
-# Server Configuration
+# Server
 PORT=3000
 JWT_SECRET=your_jwt_secret
+FRONTEND_URL=http://localhost:5173
 
-# Python Path (untuk ML service)
+# ML Service
+ML_SERVICE_URL=http://localhost:8000
 PYTHON_PATH=python3
 ```
 
-### Quality Parameter Configuration
+---
 
-Parameter kualitas dan kalibrasi warna dikonfigurasi melalui tabel `QualityParameter`:
+## Architecture
 
-| Parameter Type | Example Name | Description |
-|----------------|--------------|-------------|
-| Grading Rules | `Moisture`, `Density`, `GreenPercentage` | Aturan grading berdasarkan range nilai |
-| Calibration | `Calib_Green_Hue`, `Calib_Yellow_Sat` | Ambang batas HSV untuk deteksi warna |
+### Backend Pattern
+
+```
+NAIV Type Definition (types/api/) → Auto-generated Express Route
+                                         ↓
+                            Implementation (implementation/)
+                                         ↓
+                              apiWrapper + requireAuth
+                                         ↓
+                               Service (business logic)
+                                         ↓
+                            Repository (data access / Prisma)
+```
+
+### Authentication & Authorization
+
+Authentication menggunakan httpOnly cookie dengan JWT. Role hierarchy (dari rendah ke tinggi):
+
+```
+OPERATOR → SUPERVISOR → MANAGER → ADMIN → SUPERUSER
+```
+
+Setiap endpoint memerlukan minimum role tertentu. User dengan role lebih tinggi otomatis memiliki akses ke endpoint role di bawahnya.
+
+### Stock Flow
+
+**Penjualan (Invoice)**:
+```
+Create Invoice → stockService.removeStock('SALE') per item
+Delete Invoice → stockService.addStock('SALE_REVERSAL') per item
+```
+
+**Pembelian (Purchase Order)**:
+```
+Create PO (DRAFT) → No stock change
+Approve PO → APPROVED
+Receive Goods → stockService.addStock('GOODS_RECEIPT') per item
+  → Update received_quantity → Auto-update PO status (PARTIAL_RECEIVED / RECEIVED)
+Delete Goods Receipt → stockService.removeStock('GOODS_RECEIPT_REVERSAL')
+Cancel PO → Reverse all stock, set CANCELLED
+```
 
 ---
 
-## 🧪 ML Quality Analysis
+## Modul Detail
 
-### Cara Kerja
+### Penjualan (Sales)
 
-1. **Upload Gambar**: User mengupload foto sampel gabah
-2. **Preprocessing**: Gambar di-crop dan dinormalisasi
-3. **HSV Segmentation**: Deteksi area hijau (padi muda) dan kuning (padi matang)
-4. **Percentage Calculation**: Hitung persentase masing-masing warna
-5. **Grading**: Tentukan grade berdasarkan persentase hijau
+- **Customer Management**: CRUD data customer
+- **Invoice**: Buat invoice dengan items, auto stock deduction, tax/discount
+- **Payment**: Catat pembayaran per invoice, tracking sisa tagihan
+- **PDF Export**: Generate invoice PDF (header, items table, summary, payments, notes)
 
-### Grading Point System
+### Pembelian (Purchasing)
 
-| Grade | Level | Points |
-|-------|-------|--------|
-| KW 1 | 1 | 10 |
-| KW 1 | 2 | 9 |
-| KW 1 | 3 | 8 |
-| KW 2 | 1 | 7 |
-| KW 2 | 2 | 6 |
-| KW 2 | 3 | 5 |
-| KW 3 | 1 | 4 |
-| KW 3 | 2 | 3 |
-| KW 3 | 3 | 2 |
-| REJECT | - | 1 |
+- **Purchase Order**: Buat PO ke supplier, workflow DRAFT → APPROVED → RECEIVED
+- **Goods Receipt**: Terima barang per PO (partial/full), auto stock IN
+- **Stock Integration**: Stok otomatis bertambah saat goods receipt, reversal saat cancel/delete
 
-Total Score = Points(Moisture) + Points(Density) + Points(Color)
+### Produksi (Production)
+
+- **Worksheet**: Lembar kerja produksi harian (input bahan baku, output product)
+- **Process Tracking**: Drying, Husking, Polishing, Packing
+- **HPP Calculation**: Hitung Harga Pokok Produksi otomatis
+- **Side Products**: Tracking Bekatul, Sekam, Menir
+
+### Quality Control
+
+- **ML Grain Analysis**: Upload foto gabah, analisis warna otomatis (HSV segmentation)
+- **Dynamic Calibration**: Konfigurasi threshold warna via database
+- **Grading System**: Penilaian berbasis poin (1-30), 9 grade (KW 1:1 - KW 3:3)
+
+### Inventory
+
+- **Real-time Stock**: Monitor stok bahan baku dan produk jadi
+- **Stock Movement**: Riwayat lengkap (IN/OUT) dengan reference type
+- **Multi-Product**: GKP, GKG, PK, Glosor, Beras berbagai grade
+
+### Maintenance
+
+- **Machine Management**: Data mesin per factory
+- **Maintenance Scheduling**: Penjadwalan dan tracking maintenance
+- **OEE Monitoring**: Overall Equipment Effectiveness per mesin
 
 ---
 
-## 📝 Available Scripts
+## API Overview
+
+Total **103 API endpoints** yang di-generate oleh NAIV framework:
+
+| Domain | Endpoints | Contoh |
+|--------|-----------|--------|
+| Auth | 4 | login, register, changePassword, seedSuperuser |
+| Dashboard | 3 | stats, executive, productionSummary |
+| Production | 20+ | worksheet, outputProduct, processCategory |
+| Inventory | 10+ | stock, stockMovement |
+| Quality | 5 | analyzeGrain, qualityParameter, submitAnalysis |
+| Sales | 15 | customer, invoice, payment, invoiceItem |
+| Purchasing | 12 | purchaseOrder, goodsReceipt, approve, cancel, stats |
+| Settings | 15+ | supplier, productType, rawMaterial, factory, machine |
+| User | 5 | CRUD + role management |
+
+---
+
+## Available Scripts
 
 ### Backend
 
 ```bash
-npm run dev          # Build & start server
-npm run build        # Build TypeScript
-npm run start        # Start built server
-npm run codegen      # Generate API types from design
-npm run migrate      # Run database migrations
-npm run generate-migration migration/<name>  # Create new migration
+npm run dev              # Build & start server
+npm run build            # Build TypeScript
+npm run start            # Start built server
+npm run codegen          # Generate API types dari NAIV design
+npx prisma migrate dev   # Create & apply migration
+npx prisma generate      # Generate Prisma client
+npx prisma studio        # Open Prisma Studio (DB GUI)
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
+npm run dev              # Start dev server (Vite)
+npm run build            # Build for production
+npm run preview          # Preview production build
 ```
 
 ---
 
-## 🔐 Authentication
+## Seed Data
 
-### Demo Accounts
+```bash
+# Create superuser
+curl -X POST http://localhost:3000/seed-superuser \
+  -H "Content-Type: application/json" \
+  -d '{"secretKey": "P4ng4nM4s4D3p4nJ4y4!"}'
+```
 
 | Role | Email | Password |
 |------|-------|----------|
 | Superuser | root@pangan.com | root123 |
 
-> **Note**: Untuk membuat superuser, panggil endpoint `POST /seed-superuser` dengan body `{"secretKey": "P4ng4nM4s4D3p4nJ4y4!"}`
-
-### API Authentication
-
-Semua endpoint (kecuali `/auth/login`) memerlukan JWT token di header:
-
-```
-Authorization: Bearer <token>
-```
-
 ---
 
-## 🎨 Screenshots
-
-### Dashboard
-<p align="center">
-  <em>Dashboard dengan statistik real-time dan quick actions</em>
-</p>
-
-### Quality Analysis
-<p align="center">
-  <em>Modal analisis kualitas dengan ML-powered color grading</em>
-</p>
-
-### Production Module
-<p align="center">
-  <em>Manajemen worksheet produksi dengan HPP calculation</em>
-</p>
-
----
-
-## 📚 Documentation
+## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) - Riwayat perubahan versi
 - [INSTRUCTION.md](INSTRUCTION.md) - Panduan pengembangan dengan NAIV framework
-- [design/](design/) - API design files
+- [LOCAL_SETUP.md](LOCAL_SETUP.md) - Setup lokal
+- [DEPLOY_ONLINE.md](DEPLOY_ONLINE.md) - Deployment guide
+- [design/](design/) - NAIV API design files
 
 ---
 
-## 🤝 Contributing
-
-Kontribusi sangat dihargai! Untuk berkontribusi:
-
-1. Fork repository ini
-2. Buat branch baru (`git checkout -b feature/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
----
-
-## 📄 License
-
-Proyek ini dilisensikan di bawah **MIT License** - lihat file [LICENSE](LICENSE) untuk detail.
-
----
-
-## 👥 Team
+## Team
 
 | Role | Name |
 |------|------|
@@ -338,27 +366,12 @@ Proyek ini dilisensikan di bawah **MIT License** - lihat file [LICENSE](LICENSE)
 
 ---
 
-## 📞 Support
+## License
 
-- **Email**: support@panganmasadepan.com
-- **Issues**: [GitHub Issues](https://github.com/Logia-ysn/erp-pangan-masa-depan/issues)
-
----
-
-## 🙏 Acknowledgments
-
-- [NAIV Framework](https://naiv.dev) - API Design & Codegen
-- [TypeORM](https://typeorm.io) - Database ORM
-- [React](https://reactjs.org) - UI Library
-- [OpenCV](https://opencv.org) - Computer Vision
-- [Recharts](https://recharts.org) - Data Visualization
+MIT License - lihat [LICENSE](LICENSE) untuk detail.
 
 ---
 
 <p align="center">
-  Made with ❤️ for Indonesian Rice Mill Industry
-</p>
-
-<p align="center">
-  <strong>PT Pangan Masa Depan © 2026</strong>
+  <strong>PT Pangan Masa Depan &copy; 2026</strong>
 </p>
