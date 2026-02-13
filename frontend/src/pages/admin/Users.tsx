@@ -151,7 +151,7 @@ const Users = () => {
             closeModal();
         } catch (error: any) {
             logger.error('Error saving user:', error);
-            const msg = error.response?.data?.error || 'Gagal menyimpan user';
+            const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Gagal menyimpan user';
             toast.error(msg);
         }
     };
@@ -175,7 +175,8 @@ const Users = () => {
             }
         } catch (error: any) {
             logger.error('Error resetting password:', error);
-            toast.error(error.response?.data?.error || 'Gagal mereset password');
+            const msg = error.response?.data?.error?.message || error.response?.data?.message || 'Gagal mereset password';
+            toast.error(msg);
         }
     };
 
