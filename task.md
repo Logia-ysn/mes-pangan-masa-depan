@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.1.0
+> **Current Version**: 2.1.1
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -14,10 +14,11 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [x] **Dashboard** — KPI, Grafik Produksi, Machine Summary, Inventory Snapshot
 - [x] **Penerimaan Bahan Baku** — Raw Material Receipt + QC Integration
 - [x] **Modul Penjualan (v2.1.0)** — Customer, Invoice, Payment, Stock Deduction
+- [x] **Modul Pembelian (v2.2.0)** — Purchase Order, Goods Receipt, Stock Integration
+- [x] **Cloud Deployment (v2.1.1)** — Railway (Backend/ML), Vercel (Frontend), SSL, Custom Port
 - [x] **Authentication** — Login, Register, Role-based Access (5 level)
 - [x] **Multi-Factory** — Support PMD-1 & PMD-2
 - [x] **Settings** — Supplier, Product Type, Quality Config
-- [x] **Modul Pembelian (v2.2.0)** — Purchase Order, Goods Receipt, Stock Integration
 
 ---
 
@@ -132,10 +133,9 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
 | Modul | Status | DB Ready | Backend | Frontend | Target |
 |-------|--------|----------|---------|----------|--------|
-| ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope (Keuangan) |
-| Export PDF Invoice | `[x]` Selesai | - | 100% | 100% | - |
-| ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope (HRD) |
-| Purchase Order | `[x]` Selesai | Ya | 100% | 100% | - |
+| Cloud Deployment | `[x]` Selesai | - | 100% | 100% | v2.1.1 |
+| Purchase Order | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
+| Export PDF Invoice | `[x]` Selesai | - | 100% | 100% | v2.1.0 |
 | Halaman Laporan | `[ ]` Belum | Sebagian | 0% | 0% | - |
 | Notifikasi | `[ ]` Belum | Belum | 0% | 0% | - |
 | Export Excel | `[ ]` Belum | - | 0% | 0% | - |
@@ -143,6 +143,8 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
 | Mobile/PWA | `[ ]` Belum | - | - | 0% | - |
+| ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
+| ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 
 ---
 

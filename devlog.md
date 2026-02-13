@@ -1,8 +1,26 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 6 Complete — Sales Module
+## 🟢 Status: Phase 8 Complete — Cloud Deployment
 **Date**: Feb 13, 2026
-**Current Version**: 2.1.0
+**Current Version**: 2.1.1
+
+### ✅ Phase 8: Cloud Deployment — Railway & Vercel (Feb 13, 2026)
+Successfully deployed the full stack online with high-availability configuration and cross-platform communication.
+
+1. **Railway: Backend API** — Configured Nixpacks deployment. Resolved **Port Mismatch** (App on 8080, Railway Settings updated to match). Verified connectivity to Postgres and ML-Service.
+2. **Railway: ML Service** — Configured `/ml-service` subdirectory to use **Docker Builder** (Python environment). Service is now healthy and processing grain images.
+3. **Vercel: Frontend** — Deployed React/Vite app with dynamic `VITE_API_URL`.
+4. **Environment Security** — `trust proxy` enabled in `index.ts`. Cookie security updated: `secure: true`, `sameSite: 'none'` in production to support Vercel → Railway cross-site authentication.
+5. **Database Initialization** — Success with `prisma migrate deploy` and `npm run seed-admin` on the production database.
+
+### ✅ Phase 7: Purchasing Module — Purchase Orders & Goods Receipts (Feb 13, 2026)
+Full implementation of the procurement cycle for raw material (Gabah) and packaging (Product Types) inflow.
+
+1. **Backend Repositories** — `purchase-order.repository.ts`, `goods-receipt.repository.ts` with full relations and stats.
+2. **Purchase Order Logic** — Service-layer logic for PO lifecycle management: `DRAFT` → `APPROVED` → `RECEIVED` / `CANCELLED`.
+3. **Goods Receipt Integration** — Creating a Goods Receipt automatically triggers `stockService.addStock()` (Stock Movement IN), ensuring inventory accuracy on receipt.
+4. **11 NAIV API Endpoints** — PO CRUD (5), Approve/Cancel actions (2), Goods Receipt CRUD (4).
+5. **Frontend UI** — New "Pembelian" sidebar section. Purchase Orders list with aggregate stats (Pending POs, Monthly Spend). PO Detail page with itemized receipts.
 
 ### ✅ Phase 6: Sales Module — Invoices, Customers & Payments (Feb 13, 2026)
 Full implementation of the sales module that was removed in v1.2.0. Enables finished goods stock outflow via invoicing.
@@ -74,14 +92,15 @@ We have successfully migrated the entire data layer from TypeORM to Prisma. This
 - **ML Service**: Rewritten to v2.0.0 with multi-color support. In-memory calibration resets on restart (no persistence yet).
 
 ### 🚀 Recent Changes
-- Removed all Vercel and Railway specific configurations (`vercel.json`, `railway.json`, `DEPLOY.md`).
-- Focus shifted to **Full Local Development**.
-- Updated `.env.example` to use `DATABASE_URL`.
-- Optimized `package.json` by removing legacy TypeORM dependencies (`pg`, `reflect-metadata`).
+- Completed **Cloud Deployment** to Railway (Backend/ML) and Vercel (Frontend).
+- Refined `package.json` scripts (`build`, `prebuild`, `postinstall`) for cloud compatibility.
+- Fixed **ML Service** build by isolating it into a Docker-based subfolder deployment on Railway.
+- Implemented **Purchasing Module** (PO & Goods Receipt) with full stock integration.
 
 ### 🛠 Active Workstream
-- Validating all repositories singletons in `src/repositories/index.ts`.
-- Ensuring new entity handlers (Employee, Machine, etc.) correctly map to the new repository pattern.
+- **Production Testing**: Verifying cross-domain cookie authentication and session persistence on Vercel/Railway.
+- **Reporting Extension**: Planning for COGM (Cost of Goods Manufactured) report implementation.
+- **Optimization**: Monitoring Railway resource usage (Memory/CPU) for the ML Service.
 
 ---
 *Note for future AI Agents: Always check `src/repositories/base.repository.ts` before modifying any data access logic.*
