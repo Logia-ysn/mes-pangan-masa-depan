@@ -15,6 +15,7 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Audit Log Manual Stock**: Perbaikan handler `T_updateStock` agar wajib melalui `StockService`. Setiap pembaruan stok manual oleh supervisor kini tercatat dalam histori pergerakan stok sebagai `MANUAL_ADJUSTMENT` untuk kebutuhan audit.
 - **Vercel Infrastructure Sync**: Sinkronisasi variabel lingkungan `VITE_API_URL` dengan suffix `-7abe` yang diperlukan untuk koneksi backend Railway yang stabil di lingkungan produksi.
 - **Frontend Build Reliability**: Perbaikan kesalahan tipe (TypeScript errors) pada komponen Recharts di halaman laporan (`Production`, `Sales`, `COGM`, `Stock Report`) yang sebelumnya menghambat proses build di Vercel.
+- **Production Performance (Rate Limiting)**: Peningkatan batas *Rate Limiting* global (100 -> 1000) dan auth (10 -> 50) untuk mengatasi error "Too many requests" pada dashboard produksi.
 - **Vercel Deployment Optimization**: Pengaturan otomatis `Root Directory` ke folder `frontend` dan penetapan preset **Vite** untuk proses deploy yang lebih cepat dan bebas error.
 
 ## [2.2.0] - 2026-02-13

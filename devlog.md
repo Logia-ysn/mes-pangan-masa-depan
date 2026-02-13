@@ -15,8 +15,9 @@ Final pass for version 2.2.1, ensuring 100% stable production environment and bu
 2.  **Stock Integrity (Worksheet)** — Refactored `deleteWorksheet` in `worksheet.service.ts` to perform full **Stock Reversal**. Deleting a production log now correctly restores input raw materials and removes output finished goods from inventory.
 3.  **Stock Integrity (Invoice)** — Added `cancelInvoice` logic to `invoice.service.ts`. Changing an invoice status to `CANCELLED` now automatically reverses stock deductions, returning goods to inventory.
 4.  **Audit Trail (Manual Update)** — Patched `T_updateStock.ts` to always use `StockService`. Manual stock adjustments now create `StockMovement` entries with `ADJUSTMENT` type, ensuring a transparent audit log of quantities and users.
-5.  **Frontend Build Fixes** — Resolved 4 critical TypeScript type errors in Recharts components across all report pages (`Production`, `Sales`, `COGM`, `Stock`). This was a blocker for Vercel production builds.
-6.  **Backup & Versioning** — Executed `git tag v2.2.1` and `v2.2.1` release. Synchronized `CHANGELOG.md` and `task.md`.
+6.  **Production Performance** — Mengatasi error "Too many requests" dengan meningkatkan batas *Rate Limiting* (Global: 1000, Auth: 50).
+7.  **Database Migration (Railway)** — Sinkronisasi skema database produksi melalui `npx prisma migrate deploy` untuk menghapus error table missing.
+8.  **Backup & Versioning** — Eksekusi full folder backup dan pembaruan tag `v2.2.1`.
 
 ### ✅ Phase 9: Operational Excellence — Reports, Notifications & Excel Export (Feb 13, 2026)
 Full implementation of Prioritas 2: integrated report pages, notification system, and Excel export capabilities.
