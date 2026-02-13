@@ -8,13 +8,13 @@ import { requireAuth } from "../utility/auth";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_deleteWorksheet: T_deleteWorksheet = apiWrapper(async (req, res) => {
-  await requireAuth(req, 'ADMIN');
+  const user = await requireAuth(req, 'ADMIN');
 
-  // 1. Extract ID from path (not params)
+  // 1. Extract ID from path
   const id = Number(req.path.id);
 
-  // 2. Call service
-  await worksheetService.deleteWorksheet(id);
+  // 2. Call service with user ID for stock reversal tracking
+  await worksheetService.deleteWorksheet(id, user.id);
 
   // 3. Return response (MessageResponse requires both success and message)
   return { success: true, message: 'Worksheet deleted successfully' };

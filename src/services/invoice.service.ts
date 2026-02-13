@@ -168,7 +168,55 @@ class InvoiceService {
 
         await prisma.invoice.update({ where: { id }, data: updateData });
 
+        // If status changed to CANCELLED, reverse stock
+        if (data.status === Invoice_status_enum.CANCELLED) {
+            await this.cancelInvoice(id, userId);
+        }
+
         return await invoiceRepository.findById(id);
+    }
+
+    /**
+     * Cancel an invoice and reverse stock
+     */
+    async cancelInvoice(id: number, userId: number) {
+        const invoice = await prisma.invoice.findUnique({
+            where: { id },
+            include: {
+                InvoiceItem: {
+                    include: { ProductType: true }
+                }
+            }
+        });
+
+        if (!invoice) {
+            throw new NotFoundError('Invoice', id);
+        }
+
+        if (invoice.status === Invoice_status_enum.CANCELLED) {
+            return invoice;
+        }
+
+        // Execute in transaction
+        return await prisma.$transaction(async (tx) => {
+            // Reverse stock for all items
+            for (const item of invoice.InvoiceItem) {
+                await stockService.addStock(
+                    invoice.id_factory,
+                    item.ProductType.code,
+                    Number(item.quantity),
+                    userId,
+                    'INVOICE_CANCELLED',
+                    invoice.id
+                );
+            }
+
+            // Update status
+            return await tx.invoice.update({
+                where: { id },
+                data: { status: Invoice_status_enum.CANCELLED }
+            });
+        });
     }
 
     /**

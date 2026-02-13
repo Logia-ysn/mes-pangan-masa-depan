@@ -165,3 +165,13 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - Modul dengan DB Ready biasanya effort lebih kecil (tidak perlu migration)
 - Urutan implementasi bisa disesuaikan dengan kebutuhan bisnis
 - Setiap modul yang selesai, update status di tabel dan checklist di atas
+
+---
+
+## Technical Debt & Fixes (v2.2.1)
+
+- [x] **Infrastruktur**: Sinkronisasi VITE_API_URL pada Vercel dan env local (-7abe suffix)
+- [x] **Integritas Data**: Implementasi stock reversal pada penghapusan Worksheet (Input & Output)
+- [x] **Integritas Data**: Implementasi stock reversal pada pembatalan Invoice (CANCELLED status)
+- [x] **Audit Log**: Perbaikan manual stock update agar melalui `StockService` (StockMovement audit)
+- [x] **Frontend**: Robustness check untuk API URL di production

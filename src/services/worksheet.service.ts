@@ -449,8 +449,75 @@ class WorksheetService {
         }
     }
 
-    async deleteWorksheet(id: number): Promise<boolean> {
-        return await worksheetRepository.delete(id);
+    /**
+     * Delete worksheet and reverse all stock movements
+     */
+    async deleteWorksheet(id: number, userId: number): Promise<boolean> {
+        return await prisma.$transaction(async (tx) => {
+            const worksheet = await tx.worksheet.findUnique({
+                where: { id },
+                include: {
+                    WorksheetInputBatch: { include: { Stock: { include: { ProductType: true } } } },
+                    WorksheetSideProduct: true
+                }
+            });
+
+            if (!worksheet) {
+                throw new NotFoundError('Worksheet', id);
+            }
+
+            // 1. Reverse Input Stock
+            // If it used batches
+            for (const batch of worksheet.WorksheetInputBatch) {
+                if (batch.Stock?.ProductType) {
+                    await this.createStockMovementTransactional(
+                        tx,
+                        batch.id_stock,
+                        userId,
+                        StockMovement_movement_type_enum.IN,
+                        Number(batch.quantity),
+                        'WORKSHEET_REVERSAL',
+                        worksheet.id,
+                        `Reversal input batch ${batch.id} from worksheet deletion`
+                    );
+                }
+            }
+
+            // If it used simple input (fallback)
+            if (worksheet.WorksheetInputBatch.length === 0) {
+                const inputProductCode = (worksheet as any).input_category_code || 'GKP';
+                const pt = await tx.productType.findFirst({ where: { code: inputProductCode } });
+                if (pt) {
+                    const stock = await tx.stock.findFirst({
+                        where: { id_factory: worksheet.id_factory, id_product_type: pt.id }
+                    });
+                    if (stock) {
+                        await this.createStockMovementTransactional(
+                            tx,
+                            stock.id,
+                            userId,
+                            StockMovement_movement_type_enum.IN,
+                            Number(worksheet.gabah_input),
+                            'WORKSHEET_REVERSAL',
+                            worksheet.id,
+                            `Reversal input from worksheet deletion`
+                        );
+                    }
+                }
+            }
+
+            // 2. Reverse Output Stock (Main + Side Products)
+            await this.revertOutputStocksTransactional(tx, worksheet.id);
+
+            // 3. Delete related records
+            await tx.worksheetInputBatch.deleteMany({ where: { id_worksheet: id } });
+            await tx.worksheetSideProduct.deleteMany({ where: { id_worksheet: id } });
+
+            // 4. Delete worksheet
+            await tx.worksheet.delete({ where: { id } });
+
+            return true;
+        });
     }
 
     async getWorksheetById(id: number): Promise<Worksheet> {
