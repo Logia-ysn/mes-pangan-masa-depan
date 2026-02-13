@@ -244,10 +244,10 @@ const Maintenance = () => {
                                         <th>Tanggal</th>
                                         <th>Mesin</th>
                                         <th>Tipe</th>
-                                        <th>Deskripsi</th>
+                                        <th className="hide-mobile">Deskripsi</th>
                                         <th>Biaya</th>
-                                        <th>Teknisi</th>
-                                        <th>Jadwal Berikutnya</th>
+                                        <th className="hide-mobile">Teknisi</th>
+                                        <th className="hide-mobile">Jadwal Berikutnya</th>
                                         <th style={{ textAlign: 'right' }}>Aksi</th>
                                     </tr>
                                 </thead>
@@ -271,14 +271,14 @@ const Maintenance = () => {
                                                         {type.label}
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td className="hide-mobile">
                                                     <div className="truncate" style={{ maxWidth: 200 }}>
                                                         {maintenance.description || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="font-mono">{formatCurrency(maintenance.cost || 0)}</td>
-                                                <td>{maintenance.user?.fullname || '-'}</td>
-                                                <td>{formatDate(maintenance.next_maintenance_date)}</td>
+                                                <td className="hide-mobile">{maintenance.user?.fullname || '-'}</td>
+                                                <td className="hide-mobile">{formatDate(maintenance.next_maintenance_date)}</td>
                                                 <td style={{ textAlign: 'right' }}>
                                                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                                         <button className="btn btn-ghost btn-sm" onClick={() => openModal(maintenance)}>

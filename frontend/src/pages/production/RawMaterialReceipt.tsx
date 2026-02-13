@@ -519,7 +519,7 @@ const RawMaterialReceipt = () => {
 
                     <div style={{ padding: 24 }}>
                         {/* Row 1 */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20 }}>
+                        <div className="grid-4" style={{ marginBottom: 20 }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Batch ID</label>
                                 <div className="input-group">
@@ -585,7 +585,7 @@ const RawMaterialReceipt = () => {
                         </div>
 
                         {/* Row 2 */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 20, marginBottom: 20 }}>
+                        <div className="grid-3" style={{ marginBottom: 20 }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Kategori Bahan</label>
                                 <select
@@ -657,7 +657,7 @@ const RawMaterialReceipt = () => {
                         </div>
 
                         {/* Row 3 - Weight & Other */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20, marginBottom: 20 }}>
+                        <div className="grid-3" style={{ marginBottom: 20 }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Net Weight (Kg)</label>
                                 <div className="input-group">
@@ -699,7 +699,7 @@ const RawMaterialReceipt = () => {
                         </div>
 
                         {/* Row 4: File Upload & Save */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+                        <div className="grid-2-1" style={{ gap: 20 }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Surat Jalan / Tanda Terima</label>
                                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -820,10 +820,10 @@ const RawMaterialReceipt = () => {
                                     <th>BATCH ID</th>
                                     <th>DATE</th>
                                     <th>SUPPLIER</th>
-                                    <th>MATERIAL</th>
-                                    <th>GRADE</th>
+                                    <th className="hide-mobile">MATERIAL</th>
+                                    <th className="hide-mobile">GRADE</th>
                                     <th>NET WEIGHT</th>
-                                    <th>MOISTURE</th>
+                                    <th className="hide-mobile">MOISTURE</th>
                                     <th>ACTIONS</th>
                                 </tr>
                             </thead>
@@ -840,16 +840,16 @@ const RawMaterialReceipt = () => {
                                             <td style={{ fontWeight: 500, color: 'var(--primary)' }}>{batch.batchId}</td>
                                             <td>{formatDate(batch.dateReceived)}</td>
                                             <td>{batch.supplier}</td>
-                                            <td>
+                                            <td className="hide-mobile">
                                                 <span className={`badge ${batch.materialType.includes('GKP') ? 'badge-success' :
                                                     batch.materialType.includes('Kering') ? 'badge-warning' : 'badge-default'
                                                     }`}>
                                                     {batch.materialType}
                                                 </span>
                                             </td>
-                                            <td>{batch.qualityGrade}</td>
+                                            <td className="hide-mobile">{batch.qualityGrade}</td>
                                             <td style={{ fontWeight: 600 }}>{formatNumber(batch.netWeight)} Kg</td>
-                                            <td>{batch.moistureContent}%</td>
+                                            <td className="hide-mobile">{batch.moistureContent}%</td>
                                             <td>
                                                 <div className="action-buttons">
                                                     <button

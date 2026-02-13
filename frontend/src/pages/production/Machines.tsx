@@ -317,11 +317,11 @@ const Machines = () => {
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Pabrik</th>
+                                        <th className="hide-mobile">Pabrik</th>
                                         <th>Kode</th>
                                         <th>Nama Mesin</th>
-                                        <th>Tipe</th>
-                                        <th>Serial Number</th>
+                                        <th className="hide-mobile">Tipe</th>
+                                        <th className="hide-mobile">Serial Number</th>
                                         <th>Kapasitas/Jam</th>
                                         <th>Status</th>
                                         <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -332,7 +332,7 @@ const Machines = () => {
                                         const status = statusConfig[machine.status];
                                         return (
                                             <tr key={machine.id}>
-                                                <td>
+                                                <td className="hide-mobile">
                                                     <span className="badge badge-muted">
                                                         {machine.otm_id_factory?.name || `Factory ${machine.id_factory}`}
                                                     </span>
@@ -343,8 +343,8 @@ const Machines = () => {
                                                     </span>
                                                 </td>
                                                 <td>{machine.name}</td>
-                                                <td>{machine.machine_type || '-'}</td>
-                                                <td>
+                                                <td className="hide-mobile">{machine.machine_type || '-'}</td>
+                                                <td className="hide-mobile">
                                                     <span className="font-mono" style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
                                                         {machine.serial_number || '-'}
                                                     </span>

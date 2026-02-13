@@ -225,8 +225,8 @@ const WorksheetDetail = () => {
                                             <th className="text-left">Tipe Produk</th>
                                             <th className="text-left">Kode Batch</th>
                                             <th className="text-right">Qty (Kg)</th>
-                                            <th className="text-right">Harga/Kg</th>
-                                            <th className="text-right">Total Biaya</th>
+                                            <th className="hide-mobile text-right">Harga/Kg</th>
+                                            <th className="hide-mobile text-right">Total Biaya</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -235,8 +235,8 @@ const WorksheetDetail = () => {
                                                 <td>{batch.otm_id_stock?.otm_id_product_type?.name || '-'}</td>
                                                 <td className="font-mono">{batch.otm_id_stock?.batch_code || '-'}</td>
                                                 <td className="text-right">{formatNumber(batch.quantity)}</td>
-                                                <td className="text-right">{formatCurrency(batch.unit_price)}</td>
-                                                <td className="text-right">{formatCurrency(batch.total_cost)}</td>
+                                                <td className="hide-mobile text-right">{formatCurrency(batch.unit_price)}</td>
+                                                <td className="hide-mobile text-right">{formatCurrency(batch.total_cost)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

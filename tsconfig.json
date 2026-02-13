@@ -28,6 +28,7 @@
   "exclude": [
     "frontend",
     "node_modules",
-    "dist"
+    "dist",
+    "backups"
   ]
 }

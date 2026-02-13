@@ -215,9 +215,9 @@ const Customers = () => {
                                     <tr>
                                         <th>Kode</th>
                                         <th>Nama</th>
-                                        <th>Kontak</th>
+                                        <th className="hide-mobile">Kontak</th>
                                         <th>Telepon</th>
-                                        <th>Email</th>
+                                        <th className="hide-mobile">Email</th>
                                         <th>Status</th>
                                         <th style={{ textAlign: 'right' }}>Aksi</th>
                                     </tr>
@@ -231,9 +231,9 @@ const Customers = () => {
                                                 </span>
                                             </td>
                                             <td>{customer.name}</td>
-                                            <td>{customer.contact_person || '-'}</td>
+                                            <td className="hide-mobile">{customer.contact_person || '-'}</td>
                                             <td>{customer.phone || '-'}</td>
-                                            <td>{customer.email || '-'}</td>
+                                            <td className="hide-mobile">{customer.email || '-'}</td>
                                             <td>
                                                 <span className={`badge ${customer.is_active ? 'badge-success' : 'badge-error'}`}>
                                                     {customer.is_active ? 'Aktif' : 'Tidak Aktif'}

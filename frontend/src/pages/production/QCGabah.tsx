@@ -71,9 +71,9 @@ const QCGabah = () => {
                 subtitle="Analisis kualitas gabah berbasis Machine Learning (Kadar Hijau)"
             />
 
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 24 }}>
+            <div className="grid-2" style={{ marginTop: 24 }}>
                 {/* Input Section */}
-                <div className="card" style={{ flex: 1, minWidth: 300, padding: 24 }}>
+                <div className="card" style={{ padding: 24 }}>
                     <h3 style={{ marginBottom: 20, fontSize: '1.1rem' }}>Upload Sampel</h3>
 
                     <div style={{ marginBottom: 16 }}>
@@ -159,7 +159,7 @@ const QCGabah = () => {
                 </div>
 
                 {/* Result Section */}
-                <div className="card" style={{ flex: 1, minWidth: 300, padding: 24 }}>
+                <div className="card" style={{ padding: 24 }}>
                     <h3 style={{ marginBottom: 20, fontSize: '1.1rem' }}>Hasil Analisis</h3>
 
                     {result ? (

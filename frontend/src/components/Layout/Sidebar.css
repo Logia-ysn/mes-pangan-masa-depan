@@ -102,3 +102,26 @@
 .nav-item .material-symbols-outlined {
     font-size: 22px;
 }
+/* ============ Mobile Polish ============ */
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 1000;
+    width: 85vw;
+    max-width: 320px;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar-overlay {
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar-footer {
+    padding: 12px;
+    font-size: 0.8125rem;
+  }
+
+  .nav-item, .nav-subitem {
+    min-height: 48px; /* Better touch target */
+  }
+}

@@ -7,6 +7,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.3.0] - 2026-02-13
+
+### Ditambahkan (Mobile Responsiveness & UI Modern)
+- **Sistem Grid Responsif**: Implementasi helper classes (`.grid-4`, `.grid-3`, `.grid-2`, `.grid-2-1`) yang adaptif untuk berbagai ukuran layar.
+- **Tabel Mobile-Friendly**: Penambahan fitur `hide-mobile` pada kolom tidak kritikal di modul Invoices, PO, Machines, Maintenance, Stocks, Worksheets, dan Customers.
+- **UI Bottom Sheet**: Transformasi modal menjadi *bottom sheet* pada layar mobile untuk aksesibilitas jempol yang lebih baik.
+- **Navigasi Drawer**: Optimasi sidebar sebagai drawer transisi halus pada perangkat mobile.
+- **Touch-Optimized UX**: Peningkatan ukuran target sentuh (tombol, input) dan perbaikan spacing global untuk kenyamanan penggunaan di smartphone.
+- **Optimasi Form Produksi**: Redesign tata letak form pada modul *Raw Material Receipt* dan *QC Gabah* agar tetap rapi di layar sempit.
+
 ## [2.2.1] - 2026-02-13
 
 ### Diperbaiki (Stabilitas Produksi & Integritas Data)

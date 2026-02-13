@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.2.0
+> **Current Version**: 2.3.0
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -132,10 +132,10 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 ### 3.4 Mobile-Responsive / PWA
 > Operator di lantai produksi butuh akses mobile.
 
-- [ ] Frontend: Responsive CSS untuk semua halaman
+- [x] Frontend: Responsive CSS untuk semua halaman (Invoices, Customers, Worksheets, Stocks, PO, Machines, etc)
 - [ ] Frontend: PWA manifest + service worker
 - [ ] Frontend: Offline-capable input worksheet
-- [ ] Testing: Test di berbagai ukuran layar
+- [x] Testing: Test di berbagai ukuran layar (480px, 768px, 1024px)
 
 ---
 
@@ -152,7 +152,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | User Management | `[ ]` Belum | Ya | 0% | 0% | - |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
-| Mobile/PWA | `[ ]` Belum | - | - | 0% | - |
+| Mobile/PWA | `[~]` Progress | - | - | 80% | v2.3.0 |
 | ~~Pengeluaran Harian~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 | ~~Absensi Karyawan~~ | `[-]` Dibatalkan | - | - | - | Out of scope |
 

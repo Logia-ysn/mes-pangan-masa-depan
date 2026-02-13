@@ -56,7 +56,7 @@ html.light {
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Mobile Breakpoint */
+/* Mobile Breakpoint (768px) */
 @media (max-width: 768px) {
   :root {
     --sidebar-width: 280px;
@@ -84,7 +84,9 @@ html.light {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 90;
+    z-index: 999;
+    /* Increased for mobile drawer */
+    backdrop-filter: blur(2px);
     animation: fadeIn 0.3s ease;
   }
 
@@ -95,21 +97,29 @@ html.light {
 
   .header-search {
     display: none;
-    /* Hide search on mobile for now, or make it an icon */
   }
 
   .menu-toggle {
     display: flex !important;
   }
 
+  .header .page-title {
+    font-size: 1.125rem;
+  }
+
   /* Grid & Cards */
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
+  .grid-2,
+  .grid-3,
+  .grid-4,
   .grid-2-1 {
     display: flex;
     flex-direction: column;
+    gap: 16px;
   }
 
   .card-header {
@@ -120,13 +130,217 @@ html.light {
 
   .card-header .btn {
     width: 100%;
+    justify-content: center;
   }
 
-  /* Tables */
-  th,
-  td {
+  /* Tables - Responsive Card View/Scroll */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container table {
+    min-width: 600px;
+  }
+
+  .table-container th.hide-mobile,
+  .table-container td.hide-mobile {
+    display: none;
+  }
+
+  .table-container th,
+  .table-container td {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* Modals - Mobile Bottom Sheet Style */
+  .modal-overlay {
+    align-items: flex-end;
+    z-index: 2000;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    min-height: 50vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    animation: slideUpModal 0.3s ease;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - 140px);
+    padding: 16px;
+  }
+
+  /* Forms */
+  .form-row,
+  .form-grid,
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px;
+    /* Prevent iOS zoom */
     padding: 12px;
-    font-size: 0.8125rem;
+  }
+
+  /* Notification Dropdown */
+  .notification-dropdown {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 60vh;
+    border-radius: 0 0 16px 16px;
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Detail Pages */
+  .detail-grid,
+  .detail-info,
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .detail-actions,
+  .page-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-actions .btn,
+  .page-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* Touch Interaction */
+  .btn,
+  .nav-link,
+  .sidebar-link,
+  .table-container td .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Report Filters */
+  .report-filters,
+  .filter-bar,
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-bar .form-input,
+  .filter-bar .form-select {
+    width: 100%;
+  }
+
+  .report-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .report-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Small Phone Breakpoint (480px) */
+@media (max-width: 480px) {
+  .page-content {
+    padding: 12px;
+  }
+
+  .stats-grid {
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-card-value {
+    font-size: 1.5rem;
+  }
+
+  .card {
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .card-header {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  h1,
+  .page-title {
+    font-size: 1.15rem;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+  }
+
+  h3,
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-actions .btn {
+    padding: 6px;
+  }
+
+  .header .page-subtitle {
+    display: none;
+  }
+
+  .modal {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -1229,6 +1443,37 @@ tbody tr:hover {
   color: var(--text-muted);
 }
 
+/* ============ Grid Helpers ============ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.grid-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .empty-state h3 {
   font-size: 1.125rem;
   font-weight: 600;
@@ -1445,7 +1690,7 @@ tbody tr:hover {
   white-space: nowrap;
 }
 
-/* ============ Responsive ============ */
+/* ============ Large Tablet & Desktop Refinements ============ */
 @media (max-width: 1024px) {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
@@ -1456,50 +1701,17 @@ tbody tr:hover {
   }
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .main-content {
-    margin-left: 0;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .grid-2,
-  .grid-3,
-  .grid-4,
-  .grid-1-2,
-  .grid-2-1 {
-    grid-template-columns: 1fr;
-  }
-
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-search {
-    display: none;
-  }
-}
-
-/* ============ Print ============ */
+/* ============ Print Styles ============ */
 @media print {
 
-  /* Hide UI Shell and Actions */
   .sidebar,
+  .sidebar-overlay,
   .header,
   .btn,
-  .badge-muted,
-  /* Often not needed in print */
+  .notification-dropdown,
+  .menu-toggle,
+  .filter-bar,
+  .report-actions,
   .no-print {
     display: none !important;
   }
@@ -1515,7 +1727,6 @@ tbody tr:hover {
     max-width: none !important;
   }
 
-  /* Reset Colors for Ink Saving */
   body {
     background: white !important;
     color: black !important;
@@ -1523,11 +1734,11 @@ tbody tr:hover {
 
   .card {
     box-shadow: none !important;
-    border: 1px solid #eee !important;
+    border: 1px solid #ddd !important;
     break-inside: avoid;
+    padding: 15px !important;
   }
 
-  /* Typography */
   h1,
   h2,
   h3,
@@ -1537,23 +1748,20 @@ tbody tr:hover {
     color: black !important;
   }
 
-  /* Layout adjustments */
+  table {
+    font-size: 10pt;
+    width: 100% !important;
+  }
+
   .grid-2,
   .grid-3,
-  .grid-4 {
-    display: block !important;
-    /* Stack for print usually, or keep grid if it fits */
-  }
-
+  .grid-4,
   .grid-2-1 {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    /* Stack columns */
-    gap: 20px;
+    display: block !important;
   }
 
-  /* Ensure full width */
   .table-container {
     overflow: visible !important;
+    border: none !important;
   }
 }

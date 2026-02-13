@@ -277,7 +277,7 @@ const Invoices = () => {
                                 <thead>
                                     <tr>
                                         <th>No. Invoice</th>
-                                        <th>Tanggal</th>
+                                        <th className="hide-mobile">Tanggal</th>
                                         <th>Customer</th>
                                         <th>Total</th>
                                         <th>Status</th>
@@ -294,7 +294,7 @@ const Invoices = () => {
                                                         {invoice.invoice_number}
                                                     </span>
                                                 </td>
-                                                <td>{formatDate(invoice.invoice_date)}</td>
+                                                <td className="hide-mobile">{formatDate(invoice.invoice_date)}</td>
                                                 <td>{invoice.Customer?.name || '-'}</td>
                                                 <td>
                                                     <span className="font-mono">{formatCurrency(invoice.total)}</span>

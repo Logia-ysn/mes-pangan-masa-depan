@@ -1107,12 +1107,12 @@ const Worksheets = () => {
                             <thead>
                                 <tr>
                                     <th>Tanggal</th>
-                                    <th>Batch</th>
+                                    <th className="hide-mobile">Batch</th>
                                     <th>Product</th>
                                     <th>Shift</th>
                                     <th style={{ textAlign: 'right' }}>Input</th>
                                     <th style={{ textAlign: 'right' }}>Output</th>
-                                    <th style={{ textAlign: 'right' }}>Yield</th>
+                                    <th className="hide-mobile" style={{ textAlign: 'right' }}>Yield</th>
                                     <th style={{ textAlign: 'right' }}>HPP</th>
                                     <th style={{ textAlign: 'center' }}>Aksi</th>
                                 </tr>
@@ -1125,7 +1125,7 @@ const Worksheets = () => {
                                 ) : worksheets.map(w => (
                                     <tr key={w.id}>
                                         <td>{formatDate(w.worksheet_date)}</td>
-                                        <td><span className="badge badge-default">{w.batch_code || '-'}</span></td>
+                                        <td className="hide-mobile"><span className="badge badge-default">{w.batch_code || '-'}</span></td>
                                         <td>
                                             <div style={{ fontWeight: 500 }}>
                                                 {w.otm_id_output_product?.name || '-'}
@@ -1144,7 +1144,7 @@ const Worksheets = () => {
                                         <td><span className={`badge ${shiftConfig[w.shift]?.class || 'badge-muted'}`}>{shiftConfig[w.shift]?.label.split(' ')[0] || w.shift}</span></td>
                                         <td style={{ textAlign: 'right' }}>{formatNumber(w.gabah_input)} kg</td>
                                         <td style={{ textAlign: 'right' }}>{formatNumber(w.beras_output)} kg</td>
-                                        <td style={{ textAlign: 'right' }}>
+                                        <td className="hide-mobile" style={{ textAlign: 'right' }}>
                                             <span className={`badge ${Number(w.rendemen) >= 60 ? 'badge-success' : 'badge-warning'}`}>
                                                 {Number(w.rendemen || 0).toFixed(1)}%
                                             </span>

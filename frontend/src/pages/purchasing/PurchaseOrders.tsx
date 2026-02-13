@@ -278,7 +278,7 @@ const PurchaseOrders = () => {
                                 <thead>
                                     <tr>
                                         <th>No. PO</th>
-                                        <th>Tanggal</th>
+                                        <th className="hide-mobile">Tanggal</th>
                                         <th>Supplier</th>
                                         <th>Total</th>
                                         <th>Status</th>
@@ -295,7 +295,7 @@ const PurchaseOrders = () => {
                                                         {po.po_number}
                                                     </span>
                                                 </td>
-                                                <td>{formatDate(po.order_date)}</td>
+                                                <td className="hide-mobile">{formatDate(po.order_date)}</td>
                                                 <td>{po.Supplier?.name || '-'}</td>
                                                 <td>
                                                     <span className="font-mono">{formatCurrency(po.total)}</span>

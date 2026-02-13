@@ -279,11 +279,11 @@ const Stocks = () => {
                                         <tr>
                                             <th>Kode</th>
                                             <th>Produk</th>
-                                            <th>Kategori</th>
+                                            <th className="hide-mobile">Kategori</th>
                                             <th>Stok Saat Ini</th>
-                                            <th>Min. Stok</th>
+                                            <th className="hide-mobile">Min. Stok</th>
                                             <th>Status</th>
-                                            <th>Terakhir Update</th>
+                                            <th className="hide-mobile">Terakhir Update</th>
                                             <th style={{ textAlign: 'right' }}>Aksi</th>
                                         </tr>
                                     </thead>
@@ -303,7 +303,7 @@ const Stocks = () => {
                                                             {stock.product_type?.name || productType?.name || `Product #${stock.id_product_type}`}
                                                         </div>
                                                     </td>
-                                                    <td>
+                                                    <td className="hide-mobile">
                                                         <span className="badge badge-muted">
                                                             {stock.product_type?.category || productType?.category || 'Umum'}
                                                         </span>
@@ -316,14 +316,14 @@ const Stocks = () => {
                                                             {formatNumber(stock.quantity)} {stock.unit}
                                                         </span>
                                                     </td>
-                                                    <td className="font-mono">{formatNumber(stock.min_quantity || 100)} {stock.unit}</td>
+                                                    <td className="hide-mobile font-mono">{formatNumber(stock.min_quantity || 100)} {stock.unit}</td>
                                                     <td>
                                                         <span className={`badge ${status.class}`}>
                                                             <span className="material-symbols-outlined icon-sm">{status.icon}</span>
                                                             {status.label}
                                                         </span>
                                                     </td>
-                                                    <td style={{ color: 'var(--text-muted)' }}>{formatDate(stock.last_updated)}</td>
+                                                    <td className="hide-mobile" style={{ color: 'var(--text-muted)' }}>{formatDate(stock.last_updated)}</td>
                                                     <td style={{ textAlign: 'right' }}>
                                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                                             <button className="btn btn-ghost btn-sm" onClick={() => openModal(stock)}>
