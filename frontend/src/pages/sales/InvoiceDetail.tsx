@@ -172,6 +172,24 @@ const InvoiceDetail = () => {
         }
     };
 
+    const handleDownloadPDF = async () => {
+        if (!invoice) return;
+        try {
+            const res = await invoiceApi.downloadPDF(invoice.id);
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${invoice.invoice_number}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            logger.error('Error downloading PDF:', error);
+        }
+    };
+
     const openEditModal = () => {
         if (!invoice) return;
         setEditForm({
@@ -234,6 +252,10 @@ const InvoiceDetail = () => {
                         Kembali
                     </button>
                     <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-primary" onClick={handleDownloadPDF}>
+                            <span className="material-symbols-outlined icon-sm">picture_as_pdf</span>
+                            Cetak PDF
+                        </button>
                         <button className="btn btn-secondary" onClick={openEditModal}>
                             <span className="material-symbols-outlined icon-sm">edit</span>
                             Edit

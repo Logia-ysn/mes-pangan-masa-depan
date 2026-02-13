@@ -184,6 +184,7 @@ export const invoiceApi = {
     delete: (id: number) => api.delete(`/invoices/${id}`),
     addItem: (invoiceId: number, data: Record<string, any>) => api.post(`/invoices/${invoiceId}/items`, data),
     deleteItem: (itemId: number) => api.delete(`/invoice-items/${itemId}`),
+    downloadPDF: (id: number) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
 };
 
 // Payments

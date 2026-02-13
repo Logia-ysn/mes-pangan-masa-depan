@@ -5,6 +5,8 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import { getUserFromToken } from './utility/auth';
+import { pdfService } from './src/services/pdf.service';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
@@ -73,6 +75,26 @@ server.express.use('/auth/register', authLimiter);
 // --- Health check ---
 server.express.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// --- Invoice PDF export ---
+server.express.get('/invoices/:id/pdf', async (req, res) => {
+  try {
+    await getUserFromToken(req);
+
+    const invoiceId = parseInt(req.params.id);
+    if (isNaN(invoiceId)) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid invoice ID' } });
+    }
+
+    const doc = await pdfService.generateInvoicePDF(invoiceId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${invoiceId}.pdf"`);
+    doc.pipe(res);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, error: { message: error.message || 'Failed to generate PDF' } });
+  }
 });
 
 // --- Logout (clears httpOnly cookie) ---
