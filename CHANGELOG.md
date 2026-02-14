@@ -7,6 +7,25 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.5.0] - 2026-02-14
+
+### Ditambahkan
+- **Halaman Form Worksheet Terpisah** (`WorksheetForm.tsx`): Form input produksi kini menjadi halaman standalone (~700 baris) yang diakses via routing, bukan embedded di halaman list.
+  - **Create Mode**: Route `/production/worksheets/new` — form kosong untuk membuat worksheet baru
+  - **Edit Mode**: Route `/production/worksheets/:id/edit` — form pre-filled dengan data worksheet yang sudah ada, dimuat via `worksheetApi.getById()`
+  - Semua fitur form dipertahankan: batch selection modal, add operator modal, auto-calculate side products (sekam 15%), HPP computation, yield display, factory-dependent data (stocks, output products)
+  - Lazy-loaded sebagai chunk terpisah (26.78 kB / 6.14 kB gzip) untuk performa optimal
+
+### Diubah
+- **`App.tsx`**: Menambahkan lazy import `WorksheetForm` dan 2 route baru (`worksheets/new`, `worksheets/:id/edit`). Route ditempatkan sebelum `worksheets/:id` agar "new" tidak di-match sebagai dynamic ID.
+- **`Worksheets.tsx`**: Refactor besar — dikurangi dari **1282 baris menjadi 278 baris** (~80% reduction):
+  - Dihapus: semua form-related state (`showForm`, `showBatchModal`, `formData`, dll), fungsi (`handleSubmit`, `handleEdit`, `calculateHPP`, dll), komponen (`BatchSelectionModal`, `AddOperatorModal`)
+  - Dihapus: import API yang tidak lagi dibutuhkan (`stockApi`, `machineApi`, `employeeApi`, `processCategoryApi`, `outputProductApi`)
+  - Diubah: tombol "New Entry" → `navigate('/production/worksheets/new')`, tombol "Edit" → `navigate(`/production/worksheets/${w.id}/edit`)`
+  - Dipertahankan: list view, stats grid (Total Worksheet/Input/Output/HPP), factory toggle, delete, export CSV
+
+---
+
 ## [2.4.1] - 2026-02-13
 
 ### Perbaikan Kritis (Hotfix)

@@ -1,8 +1,18 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 13.5 Complete — Critical Hotfixes (Production)
-**Date**: Feb 13, 2026
-**Current Version**: 2.4.1
+## 🟢 Status: Phase 14 Complete — Worksheet Form Extraction
+**Date**: Feb 14, 2026
+**Current Version**: 2.5.0
+
+### ✅ Phase 14: Worksheet Form Extraction (Feb 14, 2026)
+Extracted the production worksheet form from `Worksheets.tsx` (1282 lines) into a standalone page `WorksheetForm.tsx`, improving code separation and maintainability.
+
+1.  **Standalone Form Page** — Created `WorksheetForm.tsx` (~700 lines) as a dedicated page for creating and editing production worksheets. Supports both create mode (`/production/worksheets/new`) and edit mode (`/production/worksheets/:id/edit`).
+2.  **Edit Mode Support** — Form auto-detects edit mode via `useParams()`, loads existing worksheet data via `worksheetApi.getById()`, and pre-fills all fields including input batches, side products, operators, and process steps.
+3.  **Routing Update** — Added 2 new routes in `App.tsx` with lazy import. Routes placed before `worksheets/:id` to prevent "new" matching as a dynamic ID.
+4.  **Worksheets.tsx Cleanup** — Reduced from 1282 to 278 lines (~80% reduction). Removed all form-related state, functions, modals (BatchSelectionModal, AddOperatorModal), and unused imports. List view now uses `navigate()` for "New Entry" and "Edit" buttons.
+5.  **Preserved Features** — All existing functionality retained: factory toggle, stats grid, list view with yield badges, HPP per-kg display, side product sub-rows, export CSV, delete with confirmation.
+6.  **Build Verified** — `npm run build` passes with 0 TypeScript errors. WorksheetForm bundles as a separate chunk (26.78 kB / 6.14 kB gzip).
 
 ### ✅ Phase 13.5: Critical Hotfixes (Feb 13, 2026)
 Emergency fixes deployed to address production stability issues encountered during initial deployment to Vercel/Railway.
@@ -176,7 +186,8 @@ We have successfully migrated the entire data layer from TypeORM to Prisma. This
 - Excel export using ExcelJS with styled workbooks.
 
 ### 🛠 Active Workstream
-- **Prioritas 3**: User Management Page, Quality Trending/SPC, Audit Log, Mobile/PWA.
+- **Audit Fixes**: 27 tasks documented in `task-audit.md` (Critical → Low priority).
+- **Prioritas 3**: Quality Trending/SPC, Audit Log.
 - **Production Testing**: Verifying cross-domain cookie authentication and session persistence on Vercel/Railway.
 - **Optimization**: Monitoring Railway resource usage (Memory/CPU) for the ML Service.
 

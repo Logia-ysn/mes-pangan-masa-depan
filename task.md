@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
 > **Last Updated**: 2026-02-13
-> **Current Version**: 2.4.1
+> **Current Version**: 2.5.0
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -150,6 +150,7 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 | Notifikasi | `[x]` Selesai | Ya | 100% | 100% | v2.2.0 |
 | Export Excel | `[x]` Selesai | - | 100% | 100% | v2.2.0 |
 | User Management | `[x]` Selesai | Ya | 100% | 100% | v2.4.0 |
+| Worksheet Refactor | `[x]` Selesai | - | - | 100% | v2.5.0 |
 | Quality Trends | `[ ]` Belum | Ya | 0% | 0% | - |
 | Audit Log | `[ ]` Belum | Belum | 0% | 0% | - |
 | Mobile/PWA | `[x]` Selesai | - | - | 100% | v2.4.0 |
@@ -177,3 +178,5 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 - [x] **BigInt**: Patch serialization BigInt ke JSON untuk mencegah Error 500 (v2.4.1).
 - [x] **Stock Logic**: Fix duplikasi stok pada RawMaterialReceipt akibat format respon API (v2.4.1).
 - [x] **Auto-Seed**: Fix missing `code` saat auto-create Factory/ProductType di input pertama (v2.4.1).
+- [x] **Worksheet Form**: Ekstraksi form dari `Worksheets.tsx` ke `WorksheetForm.tsx` untuk kemudahan maintenance (v2.5.0).
+- [x] **Routing**: Implementasi lazy loading untuk halaman form baru (v2.5.0).

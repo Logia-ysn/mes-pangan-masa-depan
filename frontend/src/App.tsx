@@ -14,6 +14,7 @@ const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Worksheets = React.lazy(() => import('./pages/production/Worksheets'));
 const WorksheetDetail = React.lazy(() => import('./pages/production/WorksheetDetail'));
+const WorksheetForm = React.lazy(() => import('./pages/production/WorksheetForm'));
 const Stocks = React.lazy(() => import('./pages/production/Stocks'));
 const Machines = React.lazy(() => import('./pages/production/Machines'));
 const Maintenance = React.lazy(() => import('./pages/production/Maintenance'));
@@ -93,7 +94,9 @@ const AppRoutes = () => {
           {/* Production Module */}
           <Route path="production">
             <Route path="worksheets" element={<Worksheets />} />
+            <Route path="worksheets/new" element={<WorksheetForm />} />
             <Route path="worksheets/:id" element={<WorksheetDetail />} />
+            <Route path="worksheets/:id/edit" element={<WorksheetForm />} />
             <Route path="stocks" element={<Stocks />} />
             <Route path="raw-materials" element={<RawMaterialReceipt />} />
             <Route path="machines" element={<Machines />} />
