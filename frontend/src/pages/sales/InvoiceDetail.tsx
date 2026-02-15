@@ -172,21 +172,40 @@ const InvoiceDetail = () => {
         }
     };
 
-    const handleDownloadPDF = async () => {
+    const handlePrintPDF = async () => {
         if (!invoice) return;
         try {
             const res = await invoiceApi.downloadPDF(invoice.id);
             const blob = new Blob([res.data], { type: 'application/pdf' });
             const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${invoice.invoice_number}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+
+            // Create a hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.width = '1px';
+            iframe.style.height = '1px';
+            iframe.style.opacity = '0.01';
+            iframe.style.pointerEvents = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+
+            iframe.onload = () => {
+                setTimeout(() => {
+                    if (iframe.contentWindow) {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    }
+                    // Clean up
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                        window.URL.revokeObjectURL(url);
+                    }, 1000);
+                }, 200);
+            };
         } catch (error) {
-            logger.error('Error downloading PDF:', error);
+            logger.error('Error printing PDF:', error);
         }
     };
 
@@ -252,7 +271,7 @@ const InvoiceDetail = () => {
                         Kembali
                     </button>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-primary" onClick={handleDownloadPDF}>
+                        <button className="btn btn-primary" onClick={handlePrintPDF}>
                             <span className="material-symbols-outlined icon-sm">picture_as_pdf</span>
                             Cetak PDF
                         </button>

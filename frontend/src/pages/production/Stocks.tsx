@@ -4,6 +4,7 @@ import Header from '../../components/Layout/Header';
 import { stockApi, factoryApi } from '../../services/api';
 import api from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 import { logger } from '../../utils/logger';
 
 interface Stock {
@@ -53,9 +54,23 @@ const Stocks = () => {
         unit: 'kg'
     });
     const { theme } = useTheme();
+    const { showSuccess, showError } = useToast();
 
     const [factories, setFactories] = useState<Factory[]>([]);
     const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    // Transfer Modal States
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [allStocks, setAllStocks] = useState<Stock[]>([]);
+    const [transferForm, setTransferForm] = useState({
+        fromFactoryId: 0,
+        toFactoryId: 0,
+        productCode: '',
+        quantity: '',
+        notes: ''
+    });
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transfers, setTransfers] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchFactories = async () => {
@@ -76,7 +91,17 @@ const Stocks = () => {
 
     useEffect(() => {
         fetchData();
+        fetchTransfers();
     }, [selectedFactory]);
+
+    const fetchTransfers = async () => {
+        try {
+            const res = await api.get('/stock-movements', {
+                params: { reference_type: 'TRANSFER', limit: 10, movement_type: 'OUT' }
+            });
+            setTransfers(res.data?.data || []);
+        } catch (e) { logger.error(e); }
+    };
 
     const fetchData = async () => {
         try {
@@ -155,6 +180,78 @@ const Stocks = () => {
     const closeModal = () => {
         setShowModal(false);
         setEditingStock(null);
+    };
+
+    const openTransferModal = async (stock?: Stock) => {
+        // Fetch ALL stocks (tanpa filter factory) agar dropdown produk lengkap
+        try {
+            const res = await stockApi.getAll({ limit: 200 });
+            setAllStocks(res.data.data || res.data || []);
+        } catch (e) { logger.error(e); }
+
+        // Pre-fill jika dipanggil dari row tertentu
+        if (stock) {
+            setTransferForm({
+                fromFactoryId: stock.id_factory,
+                toFactoryId: factories.find(f => f.id !== stock.id_factory)?.id || 0,
+                productCode: stock.product_type?.code || '',
+                quantity: '',
+                notes: ''
+            });
+        } else {
+            setTransferForm({
+                fromFactoryId: selectedFactory || (factories[0]?.id || 0),
+                toFactoryId: factories.find(f => f.id !== selectedFactory)?.id || 0,
+                productCode: '',
+                quantity: '',
+                notes: ''
+            });
+        }
+        setShowTransferModal(true);
+    };
+
+    const handleTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (transferForm.fromFactoryId === transferForm.toFactoryId) {
+            showError('Validasi', 'Pabrik asal dan tujuan tidak boleh sama');
+            return;
+        }
+        if (!transferForm.productCode) {
+            showError('Validasi', 'Pilih produk yang akan ditransfer');
+            return;
+        }
+        const qty = parseFloat(transferForm.quantity);
+        if (!qty || qty <= 0) {
+            showError('Validasi', 'Jumlah transfer harus lebih dari 0');
+            return;
+        }
+
+        setTransferLoading(true);
+        try {
+            await stockApi.transfer({
+                fromFactoryId: transferForm.fromFactoryId,
+                toFactoryId: transferForm.toFactoryId,
+                productCode: transferForm.productCode,
+                quantity: qty,
+                notes: transferForm.notes || undefined
+            });
+
+            const fromFactory = factories.find(f => f.id === transferForm.fromFactoryId)?.name || 'Unknown';
+            const toFactory = factories.find(f => f.id === transferForm.toFactoryId)?.name || 'Unknown';
+
+            showSuccess('Transfer Berhasil',
+                `${formatNumber(qty)} kg ${transferForm.productCode} berhasil ditransfer dari ${fromFactory} ke ${toFactory}`
+            );
+
+            setShowTransferModal(false);
+            fetchData(); // Refresh stock data
+            fetchTransfers(); // Refresh transfer history
+        } catch (error: any) {
+            showError('Transfer Gagal', error.response?.data?.message || error.message);
+        } finally {
+            setTransferLoading(false);
+        }
     };
 
     const formatNumber = (num: number) =>
@@ -303,6 +400,11 @@ const Stocks = () => {
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
+                                <button className="btn btn-secondary" onClick={() => openTransferModal()}
+                                    style={{ background: 'var(--info)', color: 'white', border: 'none' }}>
+                                    <span className="material-symbols-outlined icon-sm">swap_horiz</span>
+                                    Transfer Stok
+                                </button>
                                 <button className="btn btn-primary" onClick={() => openModal()}>
                                     <span className="material-symbols-outlined icon-sm">add</span>
                                     Tambah Stok
@@ -379,6 +481,10 @@ const Stocks = () => {
                                                     <td className="hide-mobile" style={{ color: 'var(--text-muted)' }}>{formatDate(stock.last_updated)}</td>
                                                     <td style={{ textAlign: 'right' }}>
                                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                            <button className="btn btn-ghost btn-sm" onClick={() => openTransferModal(stock)}
+                                                                title="Transfer ke pabrik lain">
+                                                                <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--info)' }}>swap_horiz</span>
+                                                            </button>
                                                             <button className="btn btn-ghost btn-sm" onClick={() => openModal(stock)}>
                                                                 <span className="material-symbols-outlined icon-sm">edit</span>
                                                             </button>
@@ -438,9 +544,60 @@ const Stocks = () => {
                 </div>
             </div>
 
+            {/* Recent Transfers Card */}
+            <div className="card" style={{ marginTop: 24 }}>
+                <div className="card-header">
+                    <h3 className="card-title">
+                        <span className="material-symbols-outlined" style={{ marginRight: 8, verticalAlign: 'bottom' }}>history</span>
+                        Riwayat Transfer Terbaru
+                    </h3>
+                </div>
+                {transfers.length === 0 ? (
+                    <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                        Belum ada riwayat transfer.
+                    </div>
+                ) : (
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Produk</th>
+                                    <th>Jumlah</th>
+                                    <th>Dari</th>
+                                    <th>Ke</th>
+                                    <th>Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {transfers.map((t: any) => {
+                                    let notesObj: any = {};
+                                    try { notesObj = JSON.parse(t.notes || '{}'); } catch (e) { }
+                                    const toFactoryName = factories.find(f => f.id === notesObj.toFactory)?.name || `Factory #${notesObj.toFactory}`;
+                                    const fromFactoryName = t.Stock?.Factory?.name || t.factory?.name || '-';
+
+                                    return (
+                                        <tr key={t.id}>
+                                            <td>{formatDate(t.created_at)}</td>
+                                            <td><span className="font-mono font-bold">{notesObj.productCode || '-'}</span></td>
+                                            <td><span className="font-mono">{formatNumber(t.quantity)} kg</span></td>
+                                            <td>{fromFactoryName}</td>
+                                            <td>{toFactoryName}</td>
+                                            <td style={{ fontSize: '0.85rem' }}>{notesObj.userNotes || '-'}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
             {/* Modal */}
+            {/* ... code for existing modal remains, but I will add the transfer modal after it ... */}
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
+                    {/* ... existing modal code ... */}
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3 className="modal-title">
@@ -513,6 +670,161 @@ const Stocks = () => {
                                 <button type="submit" className="btn btn-primary">
                                     <span className="material-symbols-outlined icon-sm">save</span>
                                     {editingStock ? 'Simpan Perubahan' : 'Simpan'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Transfer Modal */}
+            {showTransferModal && (
+                <div className="modal-overlay" onClick={() => setShowTransferModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">
+                                <span className="material-symbols-outlined" style={{ marginRight: 8, color: 'var(--info)', verticalAlign: 'bottom' }}>swap_horiz</span>
+                                Transfer Stok Antar Pabrik
+                            </h3>
+                            <button className="modal-close" onClick={() => setShowTransferModal(false)}>
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <form onSubmit={handleTransfer}>
+                            <div className="modal-body">
+                                {/* Transfer Direction */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'end', marginBottom: 16 }}>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label className="form-label">Dari Pabrik</label>
+                                        <select
+                                            className="form-input form-select"
+                                            value={transferForm.fromFactoryId}
+                                            onChange={(e) => setTransferForm({ ...transferForm, fromFactoryId: parseInt(e.target.value) })}
+                                            required
+                                        >
+                                            <option value={0}>Pilih Pabrik Asal</option>
+                                            {factories.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ paddingBottom: 8 }}>
+                                        <span className="material-symbols-outlined" style={{ color: 'var(--info)', fontSize: 28 }}>arrow_forward</span>
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label className="form-label">Ke Pabrik</label>
+                                        <select
+                                            className="form-input form-select"
+                                            value={transferForm.toFactoryId}
+                                            onChange={(e) => setTransferForm({ ...transferForm, toFactoryId: parseInt(e.target.value) })}
+                                            required
+                                        >
+                                            <option value={0}>Pilih Pabrik Tujuan</option>
+                                            {factories.filter(f => f.id !== transferForm.fromFactoryId).map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Product Selection */}
+                                <div className="form-group">
+                                    <label className="form-label">Produk</label>
+                                    <select
+                                        className="form-input form-select"
+                                        value={transferForm.productCode}
+                                        onChange={(e) => setTransferForm({ ...transferForm, productCode: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Pilih Produk</option>
+                                        {/* Filter: hanya tampilkan product yang ada stock-nya di factory asal */}
+                                        {allStocks
+                                            .filter(s => s.id_factory === transferForm.fromFactoryId && s.quantity > 0)
+                                            .map(s => (
+                                                <option key={s.id} value={s.product_type?.code || ''}>
+                                                    {s.product_type?.code} - {s.product_type?.name} ({formatNumber(s.quantity)} {s.unit})
+                                                </option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+
+                                {/* Quantity + Available Stock Info */}
+                                <div className="form-group">
+                                    <label className="form-label">Jumlah Transfer (kg)</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={transferForm.quantity}
+                                        onChange={(e) => setTransferForm({ ...transferForm, quantity: e.target.value })}
+                                        placeholder="0"
+                                        step="0.01"
+                                        min="0.01"
+                                        required
+                                    />
+                                    {/* Show available stock */}
+                                    {transferForm.productCode && (() => {
+                                        const sourceStock = allStocks.find(
+                                            s => s.id_factory === transferForm.fromFactoryId &&
+                                                s.product_type?.code === transferForm.productCode
+                                        );
+                                        return sourceStock ? (
+                                            <small style={{ color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                                                Stok tersedia: <strong>{formatNumber(sourceStock.quantity)} {sourceStock.unit}</strong>
+                                            </small>
+                                        ) : null;
+                                    })()}
+                                </div>
+
+                                {/* Notes */}
+                                <div className="form-group">
+                                    <label className="form-label">Catatan (opsional)</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={transferForm.notes}
+                                        onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })}
+                                        placeholder="Contoh: Transfer PK untuk proses poles batch #123"
+                                    />
+                                </div>
+
+                                {/* Transfer Summary */}
+                                {transferForm.productCode && transferForm.quantity && parseFloat(transferForm.quantity) > 0 && (
+                                    <div style={{
+                                        background: 'rgba(19, 127, 236, 0.1)',
+                                        padding: 16,
+                                        borderRadius: 8,
+                                        marginTop: 8
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--info)' }}>
+                                            <span className="material-symbols-outlined icon-sm">info</span>
+                                            <strong>Ringkasan Transfer</strong>
+                                        </div>
+                                        <p style={{ fontSize: '0.875rem', marginTop: 8, color: 'var(--text-secondary)' }}>
+                                            <strong>{formatNumber(parseFloat(transferForm.quantity))} kg {transferForm.productCode}</strong> akan
+                                            dipindahkan dari <strong>{factories.find(f => f.id === transferForm.fromFactoryId)?.name}</strong> ke
+                                            <strong> {factories.find(f => f.id === transferForm.toFactoryId)?.name}</strong>.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowTransferModal(false)}>
+                                    Batal
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={transferLoading}
+                                    style={{ background: 'var(--info)', border: 'none' }}>
+                                    {transferLoading ? (
+                                        <>
+                                            <span className="material-symbols-outlined animate-spin icon-sm">sync</span>
+                                            Memproses...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined icon-sm">swap_horiz</span>
+                                            Transfer Stok
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

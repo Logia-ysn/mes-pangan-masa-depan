@@ -5,7 +5,7 @@ import { requireAuth } from "../utility/auth";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_deleteStockMovement: T_deleteStockMovement = apiWrapper(async (req, res) => {
-    await requireAuth(req, 'ADMIN');
+    await requireAuth(req, 'OPERATOR');
 
     const id = Number(req.params.id);
 

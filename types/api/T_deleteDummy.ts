@@ -1,25 +1,28 @@
 import { Response } from "express";
 import { IsNotEmpty, IsString } from "class-validator";
 
-export class T_resetDummy_headers {
+export class T_deleteDummy_headers {
     @IsNotEmpty({ message: 'authorization cannot be empty' })
     @IsString({ message: 'authorization must be a string' })
     authorization!: string
 }
 
-export type T_resetDummy = (request: {
-    headers: T_resetDummy_headers
+export type T_deleteDummy = (request: {
+    headers: T_deleteDummy_headers
 }, response: Response) => Promise<{
     status: string,
     deleted: {
-        inventory: number,
+        movements: number,
         worksheets: number,
-        transactions: number,
-        logs: number
+        maintenance: number,
+        invoices: number,
+        purchase_orders: number,
+        customers: number,
+        suppliers: number
     }
 }>;
 
 export const method = 'delete';
-export const url_path = '/admin/dummy/reset';
-export const alias = 'T_resetDummy';
+export const url_path = '/admin/dummy/delete';
+export const alias = 'T_deleteDummy';
 export const is_streaming = false;

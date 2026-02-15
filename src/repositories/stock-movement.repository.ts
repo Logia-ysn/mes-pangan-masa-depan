@@ -62,6 +62,7 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
             if (params.end_date) where.created_at.lte = params.end_date;
         }
 
+        console.log('StockMovementRepository.findWithFilters called with:', params);
         const [movements, total] = await Promise.all([
             this.model.findMany({
                 where,
@@ -69,7 +70,12 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
                 skip: params.offset || 0,
                 orderBy: { created_at: 'desc' },
                 include: {
-                    Stock: true,
+                    Stock: {
+                        include: {
+                            Factory: true,
+                            ProductType: true
+                        }
+                    },
                     User: true
                 }
             }),

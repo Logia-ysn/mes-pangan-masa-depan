@@ -87,6 +87,9 @@ export const stockApi = {
     create: (data: Record<string, any>) => api.post('/stocks', data),
     update: (id: number, data: Record<string, any>) => api.put(`/stocks/${id}`, data),
     delete: (id: number) => api.delete(`/stocks/${id}`),
+    // NEW: Transfer stock between factories
+    transfer: (data: { fromFactoryId: number; toFactoryId: number; productCode: string; quantity: number; notes?: string }) =>
+        api.post('/stocks/transfer', data),
 };
 
 // Product Types

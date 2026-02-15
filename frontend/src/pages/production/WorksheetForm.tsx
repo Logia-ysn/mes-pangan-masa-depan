@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import Header from '../../components/Layout/Header';
-import { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
+import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
 import { formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { logger } from '../../utils/logger';
 
@@ -17,6 +17,7 @@ interface Factory {
 interface Machine {
     id: number;
     name: string;
+    id_factory: number;
     id_process_category?: number;
 }
 
@@ -29,9 +30,11 @@ interface Employee {
 interface Stock {
     id: number;
     id_factory: number;
+    id_product_type: number;
     quantity: number;
     unit: string;
-    otm_id_product_type?: { code: string; name: string };
+    ProductType?: { id: number; code: string; name: string };
+    Factory?: { id: number; code: string; name: string };
 }
 
 interface ProcessCategory {
@@ -50,9 +53,10 @@ interface OutputProduct {
 
 interface InputBatch {
     id_stock: number;
-    stock_name: string;
+    stock_name: string;  // "BTC-2026-001 - Gabah Kering Panen"
     quantity: number;
     unit_price: number;
+    batch_id?: string;   // "BTC-2026-001" (untuk traceability)
 }
 
 interface SideProduct {
@@ -115,12 +119,12 @@ const WorksheetForm = () => {
         shift: '',
         id_output_product: '',
         selected_processes: [] as string[],
-        machine_id: '',
+        selected_machines: [] as number[],
         batch_code: '',
         input_batches: [] as InputBatch[],
         beras_output: '',
         side_products: [] as SideProduct[],
-        operator_id: '',
+        selected_operators: [] as number[],
         production_cost: '',
     });
 
@@ -237,16 +241,23 @@ const WorksheetForm = () => {
                 setFormData({
                     worksheet_date: new Date(ws.worksheet_date).toISOString().split('T')[0],
                     shift: ws.shift,
-                    id_output_product: ws.otm_id_output_product?.id ? String(ws.otm_id_output_product.id) : '',
+                    id_output_product: (ws.OutputProduct || ws.otm_id_output_product)?.id
+                        ? String((ws.OutputProduct || ws.otm_id_output_product).id) : '',
                     selected_processes: ws.process_steps ? JSON.parse(ws.process_steps) : [],
-                    machine_id: ws.otm_id_machine?.id ? String(ws.otm_id_machine.id) : '',
+                    selected_machines: ws.id_machines ? JSON.parse(ws.id_machines) : (ws.id_machine ? [ws.id_machine] : []),
+                    selected_operators: ws.id_operators ? JSON.parse(ws.id_operators) : (ws.notes?.includes('Operator ID:') ? [parseInt(ws.notes.split('Operator ID: ')[1])] : []),
                     batch_code: ws.batch_code || '',
-                    input_batches: (ws.input_batches || []).map((b: any) => ({
-                        id_stock: b.otm_id_stock.id,
-                        stock_name: b.otm_id_stock.otm_id_product_type.name,
-                        quantity: Number(b.quantity),
-                        unit_price: Number(b.unit_price || 0)
-                    })),
+                    input_batches: (ws.WorksheetInputBatch || ws.input_batches || []).map((b: any) => {
+                        const stock = b.Stock || b.otm_id_stock;
+                        return {
+                            id_stock: stock?.id || b.id_stock,
+                            stock_name: stock?.ProductType?.name
+                                || stock?.otm_id_product_type?.name
+                                || 'Unknown',
+                            quantity: Number(b.quantity),
+                            unit_price: Number(b.unit_price || 0)
+                        };
+                    }),
                     beras_output: String(ws.beras_output),
                     side_products: (ws.side_products || []).map((sp: any) => ({
                         product_code: sp.product_code,
@@ -255,7 +266,6 @@ const WorksheetForm = () => {
                         is_auto: sp.is_auto_calculated,
                         unit_price: Number(sp.unit_price || 0)
                     })),
-                    operator_id: (ws.notes || '').match(/Operator ID: (\d+)/)?.[1] || '',
                     production_cost: String(ws.production_cost || 0),
                 });
             } catch (error) {
@@ -318,12 +328,34 @@ const WorksheetForm = () => {
         });
     };
 
-    const addInputBatch = (stock: Stock, quantity: number, unitPrice: number) => {
+    const handleMachineToggle = (id: number) => {
+        setFormData(prev => {
+            const current = prev.selected_machines;
+            if (current.includes(id)) {
+                return { ...prev, selected_machines: current.filter(c => c !== id) };
+            } else {
+                return { ...prev, selected_machines: [...current, id] };
+            }
+        });
+    };
+
+    const handleOperatorToggle = (id: number) => {
+        setFormData(prev => {
+            const current = prev.selected_operators;
+            if (current.includes(id)) {
+                return { ...prev, selected_operators: current.filter(c => c !== id) };
+            } else {
+                return { ...prev, selected_operators: [...current, id] };
+            }
+        });
+    };
+
+    const addInputBatch = (stock: Stock, quantity: number, unitPrice: number, batchLabel?: string) => {
         const batch: InputBatch = {
             id_stock: stock.id,
-            stock_name: stock.otm_id_product_type?.name || 'Unknown',
+            stock_name: batchLabel || stock.ProductType?.name || 'Unknown',
             quantity,
-            unit_price: unitPrice
+            unit_price: unitPrice,
         };
         setFormData(prev => ({
             ...prev,
@@ -398,7 +430,8 @@ const WorksheetForm = () => {
                 id_factory: selectedFactory,
                 worksheet_date: formData.worksheet_date,
                 shift: formData.shift,
-                id_machine: parseInt(formData.machine_id) || null,
+                id_machine: formData.selected_machines.length > 0 ? formData.selected_machines[0] : null,
+                id_machines: formData.selected_machines,
                 id_output_product: parseInt(formData.id_output_product) || null,
                 process_steps: JSON.stringify(formData.selected_processes),
                 batch_code: formData.batch_code || generateBatchCode(),
@@ -416,7 +449,8 @@ const WorksheetForm = () => {
                 side_product_revenue: hppCalc.sideProductRevenue,
                 hpp: hppCalc.hpp,
                 hpp_per_kg: berasOutput > 0 ? hppCalc.hpp / berasOutput : 0,
-                notes: `Operator ID: ${formData.operator_id}`
+                id_operators: formData.selected_operators,
+                notes: formData.selected_operators.length > 0 ? `Operators: ${formData.selected_operators.join(', ')}` : ''
             };
 
             if (isEditMode) {
@@ -560,56 +594,66 @@ const WorksheetForm = () => {
                                     </select>
                                 </div>
 
-                                {/* Machine */}
-                                <div className="form-group" style={{ margin: 0 }}>
+                                <div className="form-group" style={{ gridColumn: 'span 2', margin: 0 }}>
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--success)' }}>precision_manufacturing</span>
-                                        Machine Unit
+                                        Machine Units (multiple selection)
                                     </label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.machine_id}
-                                        onChange={e => setFormData({ ...formData, machine_id: e.target.value })}
-                                        style={{ background: 'var(--bg-elevated)', border: '2px solid transparent' }}
-                                    >
-                                        <option value="">Choose machine...</option>
-                                        {machines.map(m => (
-                                            <option key={m.id} value={m.id}>{m.name}</option>
-                                        ))}
-                                    </select>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                        {machines.length === 0 ? (
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No machines available for this factory</div>
+                                        ) : (
+                                            machines.filter(m => !selectedFactory || m.id_factory === selectedFactory || true).map(m => (
+                                                <button
+                                                    key={m.id}
+                                                    type="button"
+                                                    onClick={() => handleMachineToggle(m.id)}
+                                                    className={`btn ${formData.selected_machines.includes(m.id) ? 'btn-primary' : 'btn-secondary'}`}
+                                                    style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                                                >
+                                                    {formData.selected_machines.includes(m.id) && (
+                                                        <span className="material-symbols-outlined icon-sm">check</span>
+                                                    )}
+                                                    {m.name}
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Operator */}
-                                <div className="form-group" style={{ margin: 0 }}>
+                                <div className="form-group" style={{ gridColumn: 'span 1', margin: 0 }}>
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--error)' }}>person</span>
-                                        Operator
+                                        Operators (multiple selection)
                                     </label>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <select
-                                            className="form-select"
-                                            value={formData.operator_id}
-                                            onChange={e => setFormData({ ...formData, operator_id: e.target.value })}
-                                            style={{ flex: 1, background: 'var(--bg-elevated)', border: '2px solid transparent' }}
-                                        >
-                                            <option value="">Choose operator...</option>
-                                            {employees.map(emp => (
-                                                <option key={emp.id} value={emp.id}>{emp.fullname}</option>
-                                            ))}
-                                        </select>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                                        {employees.map(emp => (
+                                            <button
+                                                key={emp.id}
+                                                type="button"
+                                                onClick={() => handleOperatorToggle(emp.id)}
+                                                className={`btn ${formData.selected_operators.includes(emp.id) ? 'btn-primary' : 'btn-secondary'}`}
+                                                style={{ fontSize: '0.75rem', padding: '6px 10px' }}
+                                            >
+                                                {formData.selected_operators.includes(emp.id) && (
+                                                    <span className="material-symbols-outlined icon-sm">check</span>
+                                                )}
+                                                {emp.fullname}
+                                            </button>
+                                        ))}
                                         <button
                                             type="button"
                                             className="btn btn-ghost"
                                             onClick={() => setShowAddOperatorModal(true)}
                                             style={{
-                                                padding: '0 12px',
+                                                padding: '0 8px',
                                                 background: 'rgba(59, 130, 246, 0.1)',
-                                                border: '2px solid rgba(59, 130, 246, 0.2)',
-                                                borderRadius: 8
+                                                border: '1px dashed var(--primary)',
+                                                borderRadius: 6
                                             }}
                                             title="Add new operator"
                                         >
-                                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--primary)' }}>person_add</span>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--primary)' }}>person_add</span>
                                         </button>
                                     </div>
                                 </div>
@@ -717,20 +761,22 @@ const WorksheetForm = () => {
                                             <table className="table" style={{ margin: 0 }}>
                                                 <thead>
                                                     <tr>
-                                                        <th>Material</th>
-                                                        <th style={{ textAlign: 'right' }}>Quantity</th>
-                                                        <th style={{ textAlign: 'right' }}>Price/kg</th>
-                                                        <th style={{ textAlign: 'right' }}>Total</th>
+                                                        <th>Batch / Material</th>
+                                                        <th style={{ textAlign: 'right' }}>Qty Pakai</th>
+                                                        <th style={{ textAlign: 'right' }}>Harga/kg</th>
+                                                        <th style={{ textAlign: 'right' }}>Total Biaya</th>
                                                         <th></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {formData.input_batches.map((batch, idx) => (
                                                         <tr key={idx}>
-                                                            <td>{batch.stock_name}</td>
-                                                            <td style={{ textAlign: 'right' }}>{formatNumber(batch.quantity)} kg</td>
-                                                            <td style={{ textAlign: 'right' }}>{formatCurrency(batch.unit_price)}</td>
-                                                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(batch.quantity * batch.unit_price)}</td>
+                                                            <td>
+                                                                <div style={{ fontWeight: 500 }}>{batch.stock_name}</div>
+                                                            </td>
+                                                            <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{formatNumber(batch.quantity)} kg</td>
+                                                            <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{formatCurrency(batch.unit_price)}</td>
+                                                            <td style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'monospace' }}>{formatCurrency(batch.quantity * batch.unit_price)}</td>
                                                             <td style={{ textAlign: 'center' }}>
                                                                 <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={() => removeInputBatch(idx)}>
                                                                     <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>delete</span>
@@ -740,9 +786,9 @@ const WorksheetForm = () => {
                                                     ))}
                                                     <tr style={{ background: 'var(--bg-elevated)' }}>
                                                         <td style={{ fontWeight: 600 }}>Total Input</td>
-                                                        <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatNumber(totalInputWeight)} kg</td>
+                                                        <td style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'monospace' }}>{formatNumber(totalInputWeight)} kg</td>
                                                         <td></td>
-                                                        <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary)' }}>{formatCurrency(hppCalc.rawMaterialCost)}</td>
+                                                        <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary)', fontFamily: 'monospace' }}>{formatCurrency(hppCalc.rawMaterialCost)}</td>
                                                         <td></td>
                                                     </tr>
                                                 </tbody>
@@ -909,6 +955,7 @@ const WorksheetForm = () => {
             {showBatchModal && (
                 <BatchSelectionModal
                     stocks={stocks}
+                    selectedFactory={selectedFactory}
                     onSelect={addInputBatch}
                     onClose={() => setShowBatchModal(false)}
                 />
@@ -966,95 +1013,279 @@ const WorksheetForm = () => {
 
 // --- Batch Selection Modal ---
 
-const BatchSelectionModal = ({ stocks, onSelect, onClose }: {
+interface ReceiptBatch {
+    id: number;              // StockMovement ID
+    id_stock: number;        // Stock ID (untuk link ke WorksheetInputBatch)
+    batchId: string;         // e.g. "BTC-2026-001"
+    supplier: string;        // e.g. "UD Padi Jaya"
+    category: string;        // e.g. "Padi/Gabah"
+    productName: string;     // e.g. "Gabah Kering Panen"
+    productCode: string;     // e.g. "GKP"
+    qualityGrade: string;    // e.g. "KW 1"
+    quantity: number;         // qty diterima (dari movement)
+    pricePerKg: number;      // harga per kg
+    otherCosts: number;      // biaya lain (bongkar dll)
+    dateReceived: string;    // tanggal penerimaan
+    stockQuantity: number;   // current stock available (aggregate)
+}
+
+const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
     stocks: Stock[];
-    onSelect: (stock: Stock, quantity: number, unitPrice: number) => void;
+    selectedFactory: number | null;
+    onSelect: (stock: Stock, quantity: number, unitPrice: number, batchLabel: string) => void;
     onClose: () => void;
 }) => {
-    const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+    const [receiptBatches, setReceiptBatches] = useState<ReceiptBatch[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedBatch, setSelectedBatch] = useState<ReceiptBatch | null>(null);
     const [quantity, setQuantity] = useState('');
-    const [unitPrice, setUnitPrice] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Fetch receipt batches on mount
+    useEffect(() => {
+        const fetchBatches = async () => {
+            try {
+                // Get all stock movements for this factory with reference_type = RAW_MATERIAL_RECEIPT
+                const params: any = {
+                    reference_type: 'RAW_MATERIAL_RECEIPT',
+                    movement_type: 'IN',
+                    limit: 200
+                };
+                const res = await api.get('/stock-movements', { params });
+                const movements = res.data?.data || [];
+
+                // Parse notes JSON and build batch list
+                const batches: ReceiptBatch[] = movements
+                    .filter((m: any) => {
+                        // Filter by factory via Stock relation
+                        const stock = m.Stock;
+                        return stock && (!selectedFactory || stock.id_factory === selectedFactory);
+                    })
+                    .map((m: any) => {
+                        let noteData: any = {};
+                        try {
+                            noteData = JSON.parse(m.notes || '{}');
+                        } catch { noteData = {}; }
+
+                        const stock = m.Stock;
+                        return {
+                            id: m.id,
+                            id_stock: m.id_stock,
+                            batchId: noteData.batchId || `MOV-${m.id}`,
+                            supplier: noteData.supplier || '-',
+                            category: noteData.category || '-',
+                            productName: stock?.ProductType?.name || noteData.category || 'Unknown',
+                            productCode: stock?.ProductType?.code || '-',
+                            qualityGrade: noteData.qualityGrade || '-',
+                            quantity: Number(m.quantity),
+                            pricePerKg: Number(noteData.pricePerKg) || 0,
+                            otherCosts: Number(noteData.otherCosts) || 0,
+                            dateReceived: m.created_at,
+                            stockQuantity: Number(stock?.quantity) || 0
+                        };
+                    });
+
+                setReceiptBatches(batches);
+            } catch (error) {
+                logger.error('Error fetching receipt batches:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchBatches();
+    }, [selectedFactory]);
+
+    // Filter batches by search
+    const filteredBatches = searchTerm
+        ? receiptBatches.filter(b =>
+            b.batchId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            b.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            b.productName.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : receiptBatches;
+
+    const handleSelectBatch = (batch: ReceiptBatch) => {
+        setSelectedBatch(batch);
+        setQuantity(''); // Reset qty
+    };
 
     const handleConfirm = () => {
-        if (selectedStock && quantity) {
-            onSelect(selectedStock, parseFloat(quantity), parseFloat(unitPrice) || 0);
-        }
+        if (!selectedBatch || !quantity) return;
+
+        // Find the Stock object for this batch
+        const stock = stocks.find(s => s.id === selectedBatch.id_stock);
+        if (!stock) return;
+
+        const qty = parseFloat(quantity);
+        const batchLabel = `${selectedBatch.batchId} - ${selectedBatch.productName}`;
+
+        // Kalkulasi Harga Landed (HPP Material) = Harga Beli + (Biaya Lain / Total Qty Received)
+        const basePrice = selectedBatch.pricePerKg || 0;
+        const totalOtherCosts = selectedBatch.otherCosts || 0;
+        const totalReceivedQty = selectedBatch.quantity || 1;
+        const overheadPerKg = totalOtherCosts / totalReceivedQty;
+        const landedPricePerKg = basePrice + overheadPerKg;
+
+        onSelect(stock, qty, landedPricePerKg, batchLabel);
     };
+
+    // Max available = aggregate stock quantity for this product
+    const maxAvailable = selectedBatch
+        ? stocks.find(s => s.id === selectedBatch.id_stock)?.quantity || 0
+        : 0;
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 750 }}>
                 <div className="modal-header">
-                    <h3 className="modal-title">Select Input Batch</h3>
+                    <h3 className="modal-title">Pilih Batch Bahan Baku</h3>
                     <button className="modal-close" onClick={onClose}>
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 <div className="modal-body">
-                    <div className="form-group">
-                        <label className="form-label">Available Stock</label>
-                        <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 8 }}>
-                            {stocks.length === 0 ? (
-                                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
-                                    No stock available
-                                </div>
-                            ) : stocks.map(stock => (
-                                <div
-                                    key={stock.id}
-                                    onClick={() => setSelectedStock(stock)}
-                                    style={{
-                                        padding: 12,
-                                        borderBottom: '1px solid var(--border-color)',
-                                        cursor: 'pointer',
-                                        background: selectedStock?.id === stock.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                    }}
-                                >
-                                    <div>
-                                        <div style={{ fontWeight: 500 }}>{stock.otm_id_product_type?.name || 'Unknown'}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stock.otm_id_product_type?.code}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontWeight: 600 }}>{formatNumber(stock.quantity)} {stock.unit}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Available</div>
-                                    </div>
-                                </div>
-                            ))}
+                    {/* Search */}
+                    <div className="form-group" style={{ marginBottom: 12 }}>
+                        <div style={{ position: 'relative' }}>
+                            <span className="material-symbols-outlined" style={{
+                                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                                color: 'var(--text-muted)', fontSize: 18
+                            }}>search</span>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Cari batch ID, supplier, atau material..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{ paddingLeft: 40 }}
+                            />
                         </div>
                     </div>
 
-                    {selectedStock && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
-                            <div className="form-group">
-                                <label className="form-label">Quantity (kg) *</label>
+                    {/* Batch List */}
+                    <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 8 }}>
+                        {loading ? (
+                            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+                                <span className="material-symbols-outlined animate-spin" style={{ display: 'inline-block' }}>sync</span>
+                                <p>Memuat data batch...</p>
+                            </div>
+                        ) : filteredBatches.length === 0 ? (
+                            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 32 }}>inventory</span>
+                                <p>Tidak ada batch penerimaan ditemukan</p>
+                            </div>
+                        ) : (
+                            <table className="table" style={{ margin: 0 }}>
+                                <thead>
+                                    <tr>
+                                        <th>Batch ID</th>
+                                        <th>Material</th>
+                                        <th>Supplier</th>
+                                        <th>Grade</th>
+                                        <th style={{ textAlign: 'right' }}>Qty Terima</th>
+                                        <th style={{ textAlign: 'right' }}>Harga/kg</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredBatches.map(batch => (
+                                        <tr
+                                            key={batch.id}
+                                            onClick={() => handleSelectBatch(batch)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                background: selectedBatch?.id === batch.id
+                                                    ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                                borderLeft: selectedBatch?.id === batch.id
+                                                    ? '3px solid var(--primary)' : '3px solid transparent'
+                                            }}
+                                        >
+                                            <td>
+                                                <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{batch.batchId}</span>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                    {new Date(batch.dateReceived).toLocaleDateString('id-ID')}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>{batch.productCode}</span>
+                                                {' '}{batch.productName}
+                                            </td>
+                                            <td style={{ fontSize: '0.85rem' }}>{batch.supplier}</td>
+                                            <td>
+                                                <span className="badge badge-muted">{batch.qualityGrade}</span>
+                                            </td>
+                                            <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
+                                                {formatNumber(batch.quantity)} kg
+                                            </td>
+                                            <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                                                {batch.pricePerKg > 0 ? formatCurrency(batch.pricePerKg) : '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    {/* Selected Batch Detail + Qty Input */}
+                    {selectedBatch && (
+                        <div style={{
+                            marginTop: 16, padding: 16, borderRadius: 8,
+                            border: '2px solid var(--primary)',
+                            background: 'rgba(59, 130, 246, 0.03)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                                <div>
+                                    <strong>{selectedBatch.batchId}</strong> — {selectedBatch.productName}
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                        Supplier: {selectedBatch.supplier} | Grade: {selectedBatch.qualityGrade}
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                                        {formatCurrency(selectedBatch.pricePerKg + (selectedBatch.otherCosts / (selectedBatch.quantity || 1)))}/kg
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                        Base: {formatCurrency(selectedBatch.pricePerKg)} | Biaya: {formatCurrency(selectedBatch.otherCosts / (selectedBatch.quantity || 1))}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                        Stok tersedia: {formatNumber(maxAvailable)} kg
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Jumlah yang dipakai (kg) *</label>
                                 <input
                                     type="number"
                                     className="form-input"
                                     value={quantity}
                                     onChange={e => setQuantity(e.target.value)}
-                                    max={selectedStock.quantity}
-                                    placeholder={`Max: ${selectedStock.quantity}`}
+                                    max={maxAvailable}
+                                    placeholder={`Max: ${formatNumber(maxAvailable)} kg`}
+                                    step="0.01"
+                                    style={{ fontSize: '1.1rem', fontWeight: 600 }}
+                                    autoFocus
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Price per kg (Rp)</label>
-                                <input
-                                    type="number"
-                                    className="form-input"
-                                    value={unitPrice}
-                                    onChange={e => setUnitPrice(e.target.value)}
-                                    placeholder="5500"
-                                />
+                                {quantity && parseFloat(quantity) > 0 && (
+                                    <small style={{ color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                                        Total biaya: <strong style={{ color: 'var(--primary)' }}>
+                                            {formatCurrency(parseFloat(quantity) * selectedBatch.pricePerKg)}
+                                        </strong>
+                                    </small>
+                                )}
                             </div>
                         </div>
                     )}
                 </div>
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary" onClick={handleConfirm} disabled={!selectedStock || !quantity}>
-                        Add Batch
+                    <button className="btn btn-secondary" onClick={onClose}>Batal</button>
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleConfirm}
+                        disabled={!selectedBatch || !quantity || parseFloat(quantity) <= 0}
+                    >
+                        <span className="material-symbols-outlined icon-sm">add</span>
+                        Tambah Batch
                     </button>
                 </div>
             </div>

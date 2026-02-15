@@ -89,7 +89,7 @@ interface RawMaterialBatch {
 ```
 
 **Layout halaman:**
-1. Factory Toggle Buttons (Semua / PMD 1 / PMD Pusat)
+1. Factory Toggle Buttons (Semua / PMD 1 / PMD 2)
 2. Form Card "New Batch Entry" — inline form (bukan modal)
 3. Table Card "Recent Received Batches" — tabel dengan kolom:
    - BATCH ID | DATE | SUPPLIER | MATERIAL | GRADE | NET WEIGHT | MOISTURE | ACTIONS

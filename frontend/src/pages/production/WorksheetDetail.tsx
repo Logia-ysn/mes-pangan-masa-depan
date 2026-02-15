@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Layout';
-import { worksheetApi } from '../../services/api';
+import { worksheetApi, machineApi, employeeApi } from '../../services/api';
 import ProductionProgress from '../../components/Production/ProductionProgress';
 import type { ProductionStep } from '../../components/Production/ProductionProgress';
 import { printPage } from '../../utils/printUtils';
@@ -44,12 +44,16 @@ interface Worksheet {
     hpp?: number;
     hpp_per_kg?: number;
     input_batches?: InputBatch[];
+    id_machines?: string;
+    id_operators?: string;
 }
 
 const WorksheetDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [worksheet, setWorksheet] = useState<Worksheet | null>(null);
+    const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
+    const [employees, setEmployees] = useState<{ id: number; fullname: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -82,8 +86,15 @@ const WorksheetDetail = () => {
 
     const fetchWorksheet = async (wsId: number) => {
         try {
-            const res = await worksheetApi.getById(wsId);
-            setWorksheet(res.data.data || res.data);
+            const [wsRes, machRes, empRes] = await Promise.all([
+                worksheetApi.getById(wsId),
+                machineApi.getAll().catch(() => ({ data: { data: [] } })),
+                employeeApi.getAll().catch(() => ({ data: { data: [] } }))
+            ]);
+
+            setWorksheet(wsRes.data.data || wsRes.data);
+            setMachines(machRes.data?.data || machRes.data || []);
+            setEmployees(empRes.data?.data || empRes.data || []);
         } catch (err) {
             logger.error('Error:', err);
             setError('Gagal memuat data worksheet');
@@ -182,12 +193,58 @@ const WorksheetDetail = () => {
                                 <div className="text-lg font-medium">{formatDate(worksheet.worksheet_date)}</div>
                             </div>
                             <div>
-                                <label className="text-secondary text-sm">Mesin</label>
-                                <div className="text-lg font-medium">{worksheet.otm_id_machine?.name || '-'}</div>
+                                <label className="text-secondary text-sm">Mesin / Unit</label>
+                                <div className="text-lg font-medium">
+                                    {worksheet.id_machines ? (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                            {(() => {
+                                                try {
+                                                    const ids = JSON.parse(worksheet.id_machines) as number[];
+                                                    if (!Array.isArray(ids) || ids.length === 0) return worksheet.otm_id_machine?.name || '-';
+                                                    return ids.map(id => {
+                                                        const m = machines.find(m => m.id === id);
+                                                        return (
+                                                            <span key={id} className="badge badge-secondary" style={{ fontSize: '0.75rem', fontWeight: 500, padding: '4px 8px' }}>
+                                                                {m ? m.name : `Mesin #${id}`}
+                                                            </span>
+                                                        );
+                                                    });
+                                                } catch (e) {
+                                                    return worksheet.otm_id_machine?.name || '-';
+                                                }
+                                            })()}
+                                        </div>
+                                    ) : (
+                                        worksheet.otm_id_machine?.name || '-'
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="text-secondary text-sm">Operator</label>
-                                <div className="text-lg font-medium">{worksheet.otm_id_user?.fullname || '-'}</div>
+                                <div className="text-lg font-medium">
+                                    {worksheet.id_operators ? (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                            {(() => {
+                                                try {
+                                                    const ids = JSON.parse(worksheet.id_operators) as number[];
+                                                    if (!Array.isArray(ids) || ids.length === 0) return worksheet.otm_id_user?.fullname || '-';
+                                                    return ids.map(id => {
+                                                        const emp = employees.find(e => e.id === id);
+                                                        return (
+                                                            <span key={id} className="badge badge-info" style={{ fontSize: '0.75rem', fontWeight: 500, padding: '4px 8px' }}>
+                                                                {emp ? emp.fullname : `Operator #${id}`}
+                                                            </span>
+                                                        );
+                                                    });
+                                                } catch (e) {
+                                                    return worksheet.otm_id_user?.fullname || '-';
+                                                }
+                                            })()}
+                                        </div>
+                                    ) : (
+                                        worksheet.otm_id_user?.fullname || '-'
+                                    )}
+                                </div>
                             </div>
 
                             <hr style={{ gridColumn: '1 / -1', borderColor: 'var(--border-color)', margin: 0 }} />

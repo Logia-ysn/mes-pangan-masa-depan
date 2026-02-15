@@ -65,6 +65,8 @@ export interface CreateWorksheetDTO {
     hpp_per_kg?: number;
     input_batches?: InputBatchDTO[];
     side_products?: SideProductDTO[];
+    id_machines?: number[];
+    id_operators?: number[];
 }
 
 export interface UpdateWorksheetDTO extends Partial<CreateWorksheetDTO> {
@@ -149,6 +151,9 @@ class WorksheetService {
             side_product_revenue: dto.side_product_revenue || 0,
             hpp: dto.hpp || 0,
             hpp_per_kg: dto.hpp_per_kg || 0,
+            process_steps: dto.process_steps,
+            id_machines: dto.id_machines ? JSON.stringify(dto.id_machines) : null,
+            id_operators: dto.id_operators ? JSON.stringify(dto.id_operators) : null,
         };
     }
 
@@ -388,6 +393,9 @@ class WorksheetService {
             if (dto.side_product_revenue !== undefined) updateData.side_product_revenue = dto.side_product_revenue;
             if (dto.hpp !== undefined) updateData.hpp = dto.hpp;
             if (dto.hpp_per_kg !== undefined) updateData.hpp_per_kg = dto.hpp_per_kg;
+            if (dto.process_steps !== undefined) updateData.process_steps = dto.process_steps;
+            if (dto.id_machines !== undefined) updateData.id_machines = dto.id_machines ? JSON.stringify(dto.id_machines) : null;
+            if (dto.id_operators !== undefined) updateData.id_operators = dto.id_operators ? JSON.stringify(dto.id_operators) : null;
 
             if (dto.gabah_input !== undefined || dto.beras_output !== undefined) {
                 updateData.rendemen = this.calculateRendemen(

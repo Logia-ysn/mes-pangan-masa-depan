@@ -41,7 +41,9 @@ export interface CreateWorksheetDTO {
     hpp_per_kg?: number;
     input_batches?: any[];
     side_products?: any[];
-    id_machine?: number; // Added missing field
+    id_machine?: number; // Primary machine (legacy support)
+    id_machines?: number[]; // Multiple machines
+    id_operators?: number[]; // Multiple operators
     id_user: number; // Added missing field
 }
 
@@ -192,6 +194,16 @@ export class CreateWorksheetSchema implements CreateWorksheetDTO {
     @IsOptional()
     @IsNumber()
     id_machine?: number;
+
+    @IsOptional()
+    @IsArray()
+    @IsNumber({}, { each: true })
+    id_machines?: number[];
+
+    @IsOptional()
+    @IsArray()
+    @IsNumber({}, { each: true })
+    id_operators?: number[];
 }
 
 export interface UpdateWorksheetDTO extends Partial<CreateWorksheetDTO> {

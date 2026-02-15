@@ -41,6 +41,7 @@ const Settings = () => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [varieties, setVarieties] = useState<Variety[]>([]);
+    const [confirmText, setConfirmText] = useState('');
 
     // Add forms
     const [newSupplier, setNewSupplier] = useState({ code: '', name: '', contact_person: '', phone: '' });
@@ -90,20 +91,32 @@ const Settings = () => {
         setModalConfig({
             isOpen: true,
             title: 'Generate Data Dummy',
-            message: 'Apakah Anda yakin ingin membuat data dummy? Ini akan menambahkan data sampel ke database.',
+            message: 'Apakah Anda yakin ingin membuat data dummy? Ini akan menambahkan data sampel ke database (Multi-Factory, Sales, Purchasing).',
             type: 'info',
             onConfirm: performSeed,
             showCancel: true
         });
     };
 
-    const handleResetClick = () => {
+    const handleDeleteDummyClick = () => {
         setModalConfig({
             isOpen: true,
-            title: 'Hapus Semua Data',
-            message: 'PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA dummy? Tindakan ini tidak dapat dibatalkan.',
+            title: 'Hapus Data Dummy',
+            message: 'Apakah Anda yakin ingin menghapus data dummy? Data asli (non-dummy) akan tetap aman.',
+            type: 'info',
+            onConfirm: performDeleteDummy,
+            showCancel: true
+        });
+    };
+
+    const handleHardResetClick = () => {
+        setConfirmText('');
+        setModalConfig({
+            isOpen: true,
+            title: 'Hard Reset',
+            message: 'BAHAYA: Ini akan MENGHAPUS SEMUA DATA (transaksi + master data) kecuali User dan Factory. Tindakan ini TIDAK DAPAT dibatalkan.',
             type: 'danger',
-            onConfirm: performReset,
+            onConfirm: performHardReset,
             showCancel: true
         });
     };
@@ -113,8 +126,10 @@ const Settings = () => {
         setLoading(true);
         try {
             const res = await api.post('/admin/dummy/generate');
-            showSuccess("Berhasil", `Data Dummy berhasil dibuat! Worksheets: ${res.data.created.worksheets}, Transaksi: ${res.data.created.transactions}`);
-            // Refresh lists
+            const c = res.data.created;
+            showSuccess("Berhasil",
+                `Data dummy berhasil dibuat! ${c.worksheets} worksheets, ${c.transactions} movements, ${c.sales} invoices, ${c.purchasing} POs.`
+            );
             fetchSuppliers();
             fetchCategories();
             fetchVarieties();
@@ -125,24 +140,38 @@ const Settings = () => {
         }
     };
 
-    const performReset = async () => {
+    const performDeleteDummy = async () => {
         closeModal();
         setLoading(true);
         try {
-            const res = await api.delete('/admin/dummy/reset');
-            showSuccess("Berhasil", `Data transaksi berhasil dihapus. Item terhapus: ${res.data.deleted.transactions} transaksi, ${res.data.deleted.worksheets} worksheets.`);
-            // Clear lists
-            setSuppliers([]);
-            setCategories([]);
-            setVarieties([]);
-            // Since we don't delete categories via resetAll() anymore (as per requirement to keep config), 
-            // actually we should probably re-fetch them instead of clearing local state if they are kept.
-            // But if resetAll() keeps them, we should fetch them.
-            fetchSuppliers(); // Assuming suppliers might be reset or kept (DummyService keeps master, so fetch)
+            const res = await api.delete('/admin/dummy/delete');
+            const d = res.data.deleted;
+            showSuccess("Berhasil",
+                `Data dummy berhasil dihapus! ${d.worksheets} worksheets, ${d.movements} movements, ${d.invoices} invoices, ${d.purchase_orders} POs.`
+            );
+            fetchSuppliers();
             fetchCategories();
             fetchVarieties();
         } catch (error: any) {
-            showError("Gagal menghapus data", error.response?.data?.message || error.message);
+            showError("Gagal menghapus data dummy", error.response?.data?.message || error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const performHardReset = async () => {
+        closeModal();
+        setLoading(true);
+        try {
+            const res = await api.delete('/admin/hard-reset');
+            const totalDeleted = Object.values(res.data.deleted as Record<string, number>)
+                .reduce((sum, val) => sum + val, 0);
+            showSuccess("Hard Reset Berhasil", `${totalDeleted} records berhasil dihapus.`);
+            setSuppliers([]);
+            setCategories([]);
+            setVarieties([]);
+        } catch (error: any) {
+            showError("Gagal melakukan hard reset", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -277,11 +306,16 @@ const Settings = () => {
                         <div style={{ padding: 24, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                             <button className="btn btn-primary" onClick={handleSeedClick} disabled={loading}>
                                 <span className="material-symbols-outlined icon-sm">dataset</span>
-                                Generate Data Dummy
+                                Generate Dummy
                             </button>
-                            <button className="btn btn-error" onClick={handleResetClick} disabled={loading}>
+                            <button className="btn btn-warning" onClick={handleDeleteDummyClick} disabled={loading}
+                                style={{ background: 'var(--warning)', color: '#000' }}>
+                                <span className="material-symbols-outlined icon-sm">delete_sweep</span>
+                                Hapus Dummy
+                            </button>
+                            <button className="btn btn-error" onClick={handleHardResetClick} disabled={loading}>
                                 <span className="material-symbols-outlined icon-sm">delete_forever</span>
-                                Hapus Semua Data
+                                Hard Reset
                             </button>
                             {loading && (
                                 <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -297,8 +331,9 @@ const Settings = () => {
                                     <div>
                                         <h4 style={{ fontWeight: 600, marginBottom: 4 }}>Informasi</h4>
                                         <p style={{ fontSize: '0.875rem' }}>
-                                            <strong>Generate Data:</strong> Membuat sample Karyawan, Pelanggan, Stok, Worksheet, dan Transaksi.<br />
-                                            <strong>Hapus Data:</strong> Membersihkan semua data transaksi, stok, dan master data dummy.
+                                            <strong>Generate Dummy:</strong> Membuat data sample produksi (PMD 1 &amp; PMD 2), stok, worksheet, invoice, dan purchase order.<br />
+                                            <strong>Hapus Dummy:</strong> Menghapus HANYA data dummy yang di-generate. Data asli tetap aman.<br />
+                                            <strong>Hard Reset:</strong> Menghapus SEMUA data transaksi dan master data (kecuali User &amp; Factory). HATI-HATI!
                                         </p>
                                     </div>
                                 </div>
@@ -515,6 +550,20 @@ const Settings = () => {
                         </div>
                         <div className="modal-body">
                             <p>{modalConfig.message}</p>
+                            {/* Hard Reset double confirmation */}
+                            {modalConfig.title === 'Hard Reset' && (
+                                <div style={{ marginTop: 16 }}>
+                                    <label className="form-label">Ketik <strong>HARD RESET</strong> untuk konfirmasi:</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="HARD RESET"
+                                        value={confirmText}
+                                        onChange={e => setConfirmText(e.target.value)}
+                                        style={{ marginTop: 8 }}
+                                    />
+                                </div>
+                            )}
                         </div>
                         <div className="modal-footer">
                             {modalConfig.showCancel && (
@@ -523,6 +572,7 @@ const Settings = () => {
                             <button
                                 className={`btn ${modalConfig.type === 'danger' ? 'btn-error' : modalConfig.type === 'success' ? 'btn-success' : 'btn-primary'}`}
                                 onClick={modalConfig.onConfirm || closeModal}
+                                disabled={modalConfig.title === 'Hard Reset' && confirmText !== 'HARD RESET'}
                             >
                                 {modalConfig.type === 'success' ? 'OK' : 'Konfirmasi'}
                             </button>

@@ -15,9 +15,10 @@ export type T_generateDummy = (request: {
         products: number,
         inventory: number,
         worksheets: number,
-        schedules: number,
         transactions: number,
-        machine_logs: number
+        machine_logs: number,
+        sales: number,
+        purchasing: number
     }
 }>;
 

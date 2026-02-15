@@ -95,10 +95,10 @@ server.express.get('/invoices/:id/pdf', async (req, res) => {
       return res.status(400).json({ success: false, error: { message: 'Invalid invoice ID' } });
     }
 
-    const doc = await pdfService.generateInvoicePDF(invoiceId);
+    const buffer = await pdfService.generateInvoicePDF(invoiceId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="invoice-${invoiceId}.pdf"`);
-    doc.pipe(res);
+    res.send(buffer);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({ success: false, error: { message: error.message || 'Failed to generate PDF' } });

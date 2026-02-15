@@ -53,7 +53,7 @@ const Machines = () => {
     const [selectedFactory, setSelectedFactory] = useState<number>(1);
 
     const [formData, setFormData] = useState({
-        id_factory: 1,
+        id_factory: selectedFactory || 1,
         code: '',
         name: '',
         machine_type: '',

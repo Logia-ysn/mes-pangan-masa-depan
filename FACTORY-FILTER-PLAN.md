@@ -4,7 +4,7 @@
 
 PMD memiliki **2 plant produksi** dengan alur berbeda:
 - **PMD 1** (`code: 'PMD-1'`): Padi → Drying → GKG → Pecah Kulit (PK) → Glosor (jika dipoles). Atau input PK → Glosor.
-- **PMD Pusat** (`code: 'PMD-P'`): PK/Glosor → Poles Batu → Poles Kebi → Sorter → Grading → Beras Akhir (Medium Super, Premium) → Finished Good.
+- **PMD 2** (`code: 'PMD-2'`): PK/Glosor → Poles Batu → Poles Kebi → Sorter → Grading → Beras Akhir (Medium Super, Premium) → Finished Good.
 
 Beberapa modul sudah punya factory toggle (Worksheets, Machines, 4 Report pages), tapi banyak yang belum. **Backend sudah mendukung `id_factory` filtering di hampir semua API** — yang perlu dikerjakan hanya **frontend factory toggle/filter UI**.
 
@@ -508,13 +508,13 @@ Icon:        .material-symbols-outlined, .icon-sm
 Buka dan pelajari file-file ini sebagai referensi sebelum mulai:
 
 1. **`frontend/src/pages/production/Worksheets.tsx`** — Factory toggle buttons (lines 128-155)
-   - Toggle buttons: Semua / PMD 1 / PMD Pusat
+   - Toggle buttons: Semua / PMD 1 / PMD 2
    - Default ke PMD-1
    - Re-fetch saat factory berubah
    - Tombol "New Entry" hanya muncul jika factory dipilih
 
 2. **`frontend/src/pages/production/Machines.tsx`** — Factory toggle buttons (lines 210-230)
-   - Toggle buttons: Semua / PMD 1 / PMD Pusat
+   - Toggle buttons: Semua / PMD 1 / PMD 2
    - Client-side filter: `machines.filter(m => m.id_factory === selectedFactory)`
    - Form create default ke `selectedFactory`
 
@@ -540,7 +540,7 @@ Buka dan pelajari file-file ini sebagai referensi sebelum mulai:
 
 Setelah semua task selesai:
 
-1. ✅ Setiap halaman yang dimodifikasi menampilkan factory toggle buttons (Semua / PMD 1 / PMD Pusat)
+1. ✅ Setiap halaman yang dimodifikasi menampilkan factory toggle buttons (Semua / PMD 1 / PMD 2)
 2. ✅ Default selected factory = PMD-1 (atau factory pertama yang ditemukan)
 3. ✅ Klik toggle → data langsung berubah sesuai factory yang dipilih
 4. ✅ Klik "Semua" → menampilkan data dari semua factory

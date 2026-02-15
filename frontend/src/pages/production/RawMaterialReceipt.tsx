@@ -20,12 +20,14 @@ interface RawMaterialBatch {
     moistureContent: number;
     netWeight: number;
     pricePerKg: number;
+    otherCosts: number;
     notes: string;
     deliveryNoteUrl?: string;
     createdAt: string;
     supplierId?: string;
     categoryId?: string;
     varietyId?: string;
+    factoryName?: string;
 }
 
 interface Supplier {
@@ -98,6 +100,7 @@ const RawMaterialReceipt = () => {
         density: '',
         netWeight: '',
         pricePerKg: '',
+        otherCosts: '0',
         notes: ''
     });
 
@@ -106,7 +109,8 @@ const RawMaterialReceipt = () => {
             ...formData,
             moistureContent: data.moisture,
             density: data.density,
-            qualityGrade: data.qualityGrade
+            qualityGrade: data.qualityGrade,
+            otherCosts: formData.otherCosts // Keep existing
         });
         setShowAnalysisModal(false);
     };
@@ -219,7 +223,12 @@ const RawMaterialReceipt = () => {
                 const filtered = movements.filter((m: any) => {
                     const isReceipt = m.reference_type === 'RAW_MATERIAL_RECEIPT' && m.movement_type === 'IN';
                     if (!isReceipt) return false;
-                    if (selectedFactory && m.otm_id_stock?.id_factory !== selectedFactory) return false;
+
+                    const stock = m.Stock || m.otm_id_stock || m.stock;
+                    const factoryId = stock?.id_factory || stock?.otm_id_factory?.id || m.id_factory;
+
+                    // Use Number() to avoid string/number mismatch
+                    if (selectedFactory && Number(factoryId) !== Number(selectedFactory)) return false;
                     return true;
                 });
                 logger.log('Filtered movements:', filtered);
@@ -232,6 +241,10 @@ const RawMaterialReceipt = () => {
                         details = { notes: m.notes };
                     }
 
+                    const stock = m.Stock || m.otm_id_stock || m.stock;
+                    const factory = stock?.Factory || stock?.factory || stock?.otm_id_factory || stock?.otm_factory;
+                    const productType = stock?.ProductType || stock?.product_type || stock?.otm_id_product_type || stock?.otm_product_type;
+
                     return {
                         id: m.id,
                         batchId: details.batchId || `BATCH-${m.id}`,
@@ -239,14 +252,16 @@ const RawMaterialReceipt = () => {
                         dateReceived: m.created_at,
                         supplier: details.supplier || 'Unknown',
                         supplierId: details.supplierId || '',
-                        materialType: m.otm_id_stock?.otm_id_product_type?.name || details.category || 'Unknown',
+                        materialType: productType?.name || details.category || 'Unknown',
                         categoryId: details.categoryId || '',
                         varietyId: details.varietyId || '',
                         qualityGrade: details.qualityGrade || '-',
                         moistureContent: details.moistureContent || 0,
                         netWeight: m.quantity,
                         pricePerKg: details.pricePerKg || 0,
+                        otherCosts: details.otherCosts || 0,
                         notes: details.notes || '',
+                        factoryName: factory?.name || 'Unknown',
                         createdAt: m.created_at
                     };
                 });
@@ -268,53 +283,72 @@ const RawMaterialReceipt = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.batchId || !formData.netWeight || !formData.categoryId) {
-            showError("Validasi", "Harap lengkapi field yang wajib (Batch ID, Kategori, Berat Netto)");
+        if (!selectedFactory) {
+            showError("Validasi", "Pilih pabrik tujuan terlebih dahulu");
+            return;
+        }
+
+        if (!formData.batchId || !formData.netWeight || !formData.categoryId || !formData.supplierId) {
+            showError("Validasi", "Harap lengkapi field yang wajib (Batch ID, Supplier, Kategori, Berat Netto)");
             return;
         }
 
         setLoading(true);
         try {
-            // 1. Try to find an existing stock, or create a generic one for raw materials
-            const stocksResponse = await stockApi.getAll();
+            // 1. Determine the correct product type based on selected category
+            // Map category to product type (e.g., "Padi/Gabah" → GKP)
+            const selectedCategory = categories.find(c => c.id === parseInt(formData.categoryId));
+
+            // Find matching product type by category name/code
+            const productTypesResponse = await productTypeApi.getAll();
+            const allProductTypes = productTypesResponse.data?.data || productTypesResponse.data || [];
+
+            // Try to match product type by category code or name
+            let matchedProductType = allProductTypes.find((pt: any) =>
+                pt.code === selectedCategory?.code ||
+                pt.name === selectedCategory?.name
+            );
+
+            // Fallback: use GKP as default for raw material
+            if (!matchedProductType) {
+                matchedProductType = allProductTypes.find((pt: any) => pt.code === 'GKP');
+            }
+
+            // If still no product type, create GKP
+            if (!matchedProductType) {
+                const newTypeRes = await productTypeApi.create({
+                    code: selectedCategory?.code || 'GKP',
+                    name: selectedCategory?.name || 'Gabah Kering Panen',
+                    unit: 'kg'
+                });
+                matchedProductType = newTypeRes.data?.data || newTypeRes.data;
+            }
+
+            // 2. Find or create stock for THIS factory + THIS product type
+            const factoryId = selectedFactory;
+            if (!factoryId) {
+                showError("Error", "Pilih pabrik terlebih dahulu");
+                setLoading(false);
+                return;
+            }
+
+            // Search for existing stock matching factory + product type
+            const stocksResponse = await stockApi.getAll({
+                id_factory: factoryId,
+                id_product_type: matchedProductType.id
+            });
             const stocks = Array.isArray(stocksResponse.data) ? stocksResponse.data : stocksResponse.data?.data || [];
-            let targetStock = stocks.length > 0 ? stocks[0] : null;
 
-            // If no stock exists, create a generic one for raw material receipt
+            // Filter to exact match (in case API doesn't filter precisely)
+            let targetStock = stocks.find((s: any) =>
+                s.id_factory === factoryId && s.id_product_type === matchedProductType.id
+            );
+
+            // If no matching stock exists, create one
             if (!targetStock) {
-                // First, get or create a product type for raw materials
-                const productTypesResponse = await productTypeApi.getAll();
-                let rawMaterialType = productTypesResponse.data?.data?.find((pt: any) => pt.code === 'GKP');
-
-                if (!rawMaterialType) {
-                    // Create a basic product type for raw material
-                    const newTypeRes = await productTypeApi.create({
-                        code: 'GKP',
-                        name: 'Gabah Kering Panen',
-                        unit: 'kg'
-                    });
-                    rawMaterialType = newTypeRes.data?.data || newTypeRes.data;
-                }
-
-                // Get factory (assume first one or create if needed)
-                const factoriesResponse = await api.get('/factories');
-                let factory = factoriesResponse.data?.data?.[0] || factoriesResponse.data?.[0];
-
-                if (!factory) {
-                    // Create a basic factory
-                    const newFactoryRes = await api.post('/factories', {
-                        code: 'F001',
-                        name: 'Pabrik Utama',
-                        address: 'Alamat Pabrik',
-                        phone: '000000'
-                    });
-                    factory = newFactoryRes.data?.data || newFactoryRes.data;
-                }
-
-                // Create new stock
                 const newStockRes = await api.post('/stocks', {
-                    id_factory: selectedFactory || 1,
-                    id_product_type: rawMaterialType.id,
+                    id_factory: factoryId,
+                    id_product_type: matchedProductType.id,
                     quantity: 0,
                     unit: 'kg'
                 });
@@ -325,7 +359,6 @@ const RawMaterialReceipt = () => {
             const quantity = parseFloat(formData.netWeight);
             // Get supplier, category, variety names from IDs
             const selectedSupplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
-            const selectedCategory = categories.find(c => c.id === parseInt(formData.categoryId));
             const selectedVariety = varieties.find(v => v.id === parseInt(formData.varietyId));
             const notesPayload = JSON.stringify({
                 batchId: formData.batchId,
@@ -340,6 +373,7 @@ const RawMaterialReceipt = () => {
                 moistureContent: parseFloat(formData.moistureContent),
                 density: parseFloat(formData.density),
                 pricePerKg: parseFloat(formData.pricePerKg),
+                otherCosts: parseFloat(formData.otherCosts || '0'),
                 notes: formData.notes
             });
 
@@ -396,6 +430,7 @@ const RawMaterialReceipt = () => {
                 density: '',
                 netWeight: '',
                 pricePerKg: '',
+                otherCosts: '0',
                 notes: ''
             });
             fetchData();
@@ -529,6 +564,7 @@ const RawMaterialReceipt = () => {
             density: '', // Density might not be stored in batch root? It was in notes.
             netWeight: String(batch.netWeight),
             pricePerKg: String(batch.pricePerKg),
+            otherCosts: String(batch.otherCosts || 0),
             notes: batch.notes
         });
         // Scroll to top
@@ -576,301 +612,336 @@ const RawMaterialReceipt = () => {
                         </button>
                     ))}
                 </div>
-                {/* Form Card */}
-                <div className="card mb-6">
-                    <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>add_circle</span>
-                            <h3 className="card-title">New Batch Entry</h3>
-                        </div>
-                        <span className="badge badge-default">Draft</span>
-                    </div>
 
-                    <div style={{ padding: 24 }}>
-                        {/* Row 1 */}
-                        <div className="grid-4" style={{ marginBottom: 20 }}>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Batch ID</label>
-                                <div className="input-group">
-                                    <div className="input-icon-wrapper">
-                                        <span className="input-icon material-symbols-outlined">qr_code</span>
+                {/* Form Card — hanya tampil jika factory dipilih */}
+                {!selectedFactory && (
+                    <div style={{
+                        padding: '24px',
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        borderRadius: 'var(--border-radius)',
+                        marginBottom: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        color: '#b45309'
+                    }}>
+                        <span className="material-symbols-outlined">info</span>
+                        <span>Silakan pilih pabrik terlebih dahulu untuk menambah penerimaan bahan baku.</span>
+                    </div>
+                )}
+
+                {selectedFactory && (
+                    <div className="card mb-6">
+                        <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>add_circle</span>
+                                <h3 className="card-title">New Batch Entry</h3>
+                            </div>
+                            <span className="badge badge-default">Draft</span>
+                        </div>
+
+                        <div style={{ padding: 24 }}>
+                            {/* Row 1 */}
+                            <div className="grid-4" style={{ marginBottom: 20 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Batch ID</label>
+                                    <div className="input-group">
+                                        <div className="input-icon-wrapper">
+                                            <span className="input-icon material-symbols-outlined">qr_code</span>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="BTC-2023-001"
+                                                value={formData.batchId}
+                                                onChange={e => setFormData({ ...formData, batchId: e.target.value })}
+                                            />
+                                        </div>
+                                        <button className="btn btn-secondary" onClick={handleGenerateBatchId} title="Generate ID" style={{ padding: '0 12px' }}>
+                                            <span className="material-symbols-outlined icon-sm">auto_awesome</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">PO Number</label>
+                                    <div className="input-group">
+                                        <span className="input-addon">
+                                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span>
+                                        </span>
                                         <input
                                             type="text"
                                             className="form-input"
-                                            placeholder="BTC-2023-001"
-                                            value={formData.batchId}
-                                            onChange={e => setFormData({ ...formData, batchId: e.target.value })}
+                                            placeholder="PO-88421"
+                                            value={formData.poNumber}
+                                            onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
                                         />
                                     </div>
-                                    <button className="btn btn-secondary" onClick={handleGenerateBatchId} title="Generate ID" style={{ padding: '0 12px' }}>
-                                        <span className="material-symbols-outlined icon-sm">auto_awesome</span>
-                                    </button>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Date Received</label>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        value={formData.dateReceived}
+                                        onChange={e => setFormData({ ...formData, dateReceived: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Supplier</label>
+                                    <div className="input-group">
+                                        <span className="input-addon">
+                                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_shipping</span>
+                                        </span>
+                                        <select
+                                            className="form-input form-select"
+                                            value={formData.supplierId}
+                                            onChange={e => handleSupplierChange(e.target.value)}
+                                        >
+                                            <option value="">Select Supplier</option>
+                                            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Supplier Baru</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">PO Number</label>
-                                <div className="input-group">
-                                    <span className="input-addon">
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span>
-                                    </span>
+                            {/* Row 2 */}
+                            <div className="grid-3" style={{ marginBottom: 20 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Kategori Bahan</label>
+                                    <select
+                                        className="form-input form-select"
+                                        value={formData.categoryId}
+                                        onChange={e => handleCategoryChange(e.target.value)}
+                                    >
+                                        <option value="">Pilih Kategori</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                        <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Kategori Baru</option>
+                                    </select>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Jenis / Varietas</label>
+                                    <select
+                                        className="form-input form-select"
+                                        value={formData.varietyId}
+                                        onChange={e => handleVarietyChange(e.target.value)}
+                                    >
+                                        <option value="">Pilih Jenis</option>
+                                        {varieties.map(v => (
+                                            <option key={v.id} value={v.id}>{v.name}</option>
+                                        ))}
+                                        <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Varietas Baru</option>
+                                    </select>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Quality Analysis</label>
+                                    {formData.qualityGrade === '-' || !formData.qualityGrade ? (
+                                        <button
+                                            className="btn btn-secondary"
+                                            style={{ width: '100%', border: '1px dashed var(--border-color)', height: 44, justifyContent: 'center' }}
+                                            onClick={() => {
+                                                if (!formData.varietyId) {
+                                                    showWarning("Perhatian", "Pilih Varietas terlebih dahulu");
+                                                    return;
+                                                }
+                                                setShowAnalysisModal(true);
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined icon-sm">science</span>
+                                            Perform Analysis
+                                        </button>
+                                    ) : (
+                                        <div
+                                            style={{
+                                                display: 'flex', gap: 12, alignItems: 'center',
+                                                background: 'var(--bg-surface)', border: '1px solid var(--border-color)',
+                                                borderRadius: 8, padding: '8px 12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => setShowAnalysisModal(true)}
+                                        >
+                                            <div className={`badge ${formData.qualityGrade === 'KW 1' ? 'badge-success' :
+                                                formData.qualityGrade === 'REJECT' ? 'badge-error' : 'badge-warning'
+                                                }`}>
+                                                {formData.qualityGrade}
+                                            </div>
+                                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                                M: {formData.moistureContent}% | D: {formData.density} g/L
+                                            </div>
+                                            <span className="material-symbols-outlined icon-sm" style={{ marginLeft: 'auto' }}>edit</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Row 3 - Weight & Other */}
+                            <div className="grid-4" style={{ marginBottom: 20 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Net Weight (Kg)</label>
+                                    <div className="input-group">
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="5000"
+                                            value={formData.netWeight}
+                                            onChange={e => setFormData({ ...formData, netWeight: e.target.value })}
+                                        />
+                                        <span className="input-addon">Kg</span>
+                                    </div>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Other Details / Notes</label>
                                     <input
                                         type="text"
                                         className="form-input"
-                                        placeholder="PO-88421"
-                                        value={formData.poNumber}
-                                        onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
+                                        placeholder="Catatan..."
+                                        value={formData.notes}
+                                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Date Received</label>
-                                <input
-                                    type="date"
-                                    className="form-input"
-                                    value={formData.dateReceived}
-                                    onChange={e => setFormData({ ...formData, dateReceived: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Supplier</label>
-                                <div className="input-group">
-                                    <span className="input-addon">
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_shipping</span>
-                                    </span>
-                                    <select
-                                        className="form-input form-select"
-                                        value={formData.supplierId}
-                                        onChange={e => handleSupplierChange(e.target.value)}
-                                    >
-                                        <option value="">Select Supplier</option>
-                                        {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Supplier Baru</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 2 */}
-                        <div className="grid-3" style={{ marginBottom: 20 }}>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Kategori Bahan</label>
-                                <select
-                                    className="form-input form-select"
-                                    value={formData.categoryId}
-                                    onChange={e => handleCategoryChange(e.target.value)}
-                                >
-                                    <option value="">Pilih Kategori</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                    <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Kategori Baru</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Jenis / Varietas</label>
-                                <select
-                                    className="form-input form-select"
-                                    value={formData.varietyId}
-                                    onChange={e => handleVarietyChange(e.target.value)}
-                                >
-                                    <option value="">Pilih Jenis</option>
-                                    {varieties.map(v => (
-                                        <option key={v.id} value={v.id}>{v.name}</option>
-                                    ))}
-                                    <option value="__add_new__" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Tambah Varietas Baru</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Quality Analysis</label>
-                                {formData.qualityGrade === '-' || !formData.qualityGrade ? (
-                                    <button
-                                        className="btn btn-secondary"
-                                        style={{ width: '100%', border: '1px dashed var(--border-color)', height: 44, justifyContent: 'center' }}
-                                        onClick={() => {
-                                            if (!formData.varietyId) {
-                                                showWarning("Perhatian", "Pilih Varietas terlebih dahulu");
-                                                return;
-                                            }
-                                            setShowAnalysisModal(true);
-                                        }}
-                                    >
-                                        <span className="material-symbols-outlined icon-sm">science</span>
-                                        Perform Analysis
-                                    </button>
-                                ) : (
-                                    <div
-                                        style={{
-                                            display: 'flex', gap: 12, alignItems: 'center',
-                                            background: 'var(--bg-surface)', border: '1px solid var(--border-color)',
-                                            borderRadius: 8, padding: '8px 12px', cursor: 'pointer'
-                                        }}
-                                        onClick={() => setShowAnalysisModal(true)}
-                                    >
-                                        <div className={`badge ${formData.qualityGrade === 'KW 1' ? 'badge-success' :
-                                            formData.qualityGrade === 'REJECT' ? 'badge-error' : 'badge-warning'
-                                            }`}>
-                                            {formData.qualityGrade}
-                                        </div>
-                                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                            M: {formData.moistureContent}% | D: {formData.density} g/L
-                                        </div>
-                                        <span className="material-symbols-outlined icon-sm" style={{ marginLeft: 'auto' }}>edit</span>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Price per Kg</label>
+                                    <div className="input-group">
+                                        <span className="input-addon">Rp</span>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="5500"
+                                            value={formData.pricePerKg}
+                                            onChange={e => setFormData({ ...formData, pricePerKg: e.target.value })}
+                                        />
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
 
-                        {/* Row 3 - Weight & Other */}
-                        <div className="grid-3" style={{ marginBottom: 20 }}>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Net Weight (Kg)</label>
-                                <div className="input-group">
-                                    <input
-                                        type="number"
-                                        className="form-input"
-                                        placeholder="5000"
-                                        value={formData.netWeight}
-                                        onChange={e => setFormData({ ...formData, netWeight: e.target.value })}
-                                    />
-                                    <span className="input-addon">Kg</span>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Biaya Lain-lain</label>
+                                    <div className="input-group">
+                                        <span className="input-addon">Rp</span>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="0"
+                                            value={formData.otherCosts}
+                                            onChange={e => setFormData({ ...formData, otherCosts: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Other Details / Notes</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g. Empty weight details, specific handling instructions"
-                                    value={formData.notes}
-                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Price per Kg</label>
-                                <div className="input-group">
-                                    <span className="input-addon">Rp</span>
-                                    <input
-                                        type="number"
-                                        className="form-input"
-                                        placeholder="5500"
-                                        value={formData.pricePerKg}
-                                        onChange={e => setFormData({ ...formData, pricePerKg: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 4: File Upload & Save */}
-                        <div className="grid-2-1" style={{ gap: 20 }}>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label className="form-label">Surat Jalan / Tanda Terima</label>
-                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*,.pdf"
-                                        onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                setDeliveryNoteFile(e.target.files[0]);
-                                            }
-                                        }}
-                                        style={{ display: 'none' }}
-                                        id="delivery-note-upload"
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        style={{ flex: '0 0 auto' }}
-                                    >
-                                        <span className="material-symbols-outlined icon-sm">upload_file</span>
-                                        Upload File
-                                    </button>
-                                    {deliveryNoteFile && (
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            padding: '8px 12px',
-                                            background: 'var(--bg-elevated)',
-                                            borderRadius: 'var(--border-radius-sm)',
-                                            flex: 1,
-                                            minWidth: 0
-                                        }}>
-                                            <span className="material-symbols-outlined" style={{ color: 'var(--success)', fontSize: 18 }}>
-                                                check_circle
-                                            </span>
-                                            <span style={{
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                fontSize: '0.875rem'
+                            {/* Row 4: File Upload & Save */}
+                            <div className="grid-2-1" style={{ gap: 20 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Surat Jalan / Tanda Terima</label>
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setDeliveryNoteFile(e.target.files[0]);
+                                                }
+                                            }}
+                                            style={{ display: 'none' }}
+                                            id="delivery-note-upload"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            style={{ flex: '0 0 auto' }}
+                                        >
+                                            <span className="material-symbols-outlined icon-sm">upload_file</span>
+                                            Upload File
+                                        </button>
+                                        {deliveryNoteFile && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 12px',
+                                                background: 'var(--bg-elevated)',
+                                                borderRadius: 'var(--border-radius-sm)',
+                                                flex: 1,
+                                                minWidth: 0
                                             }}>
-                                                {deliveryNoteFile.name}
+                                                <span className="material-symbols-outlined" style={{ color: 'var(--success)', fontSize: 18 }}>
+                                                    check_circle
+                                                </span>
+                                                <span style={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    fontSize: '0.875rem'
+                                                }}>
+                                                    {deliveryNoteFile.name}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-ghost btn-icon"
+                                                    onClick={() => {
+                                                        setDeliveryNoteFile(null);
+                                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                                    }}
+                                                    style={{ marginLeft: 'auto', padding: 4 }}
+                                                >
+                                                    <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                        {!deliveryNoteFile && (
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                                Format: JPG, PNG, PDF (Max 5MB)
                                             </span>
-                                            <button
-                                                type="button"
-                                                className="btn btn-ghost btn-icon"
-                                                onClick={() => {
-                                                    setDeliveryNoteFile(null);
-                                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                                }}
-                                                style={{ marginLeft: 'auto', padding: 4 }}
-                                            >
-                                                <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                    {!deliveryNoteFile && (
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                                            Format: JPG, PNG, PDF (Max 5MB)
-                                        </span>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-                                {editingId && (
-                                    <button
-                                        className="btn btn-secondary"
-                                        onClick={() => {
-                                            setEditingId(null);
-                                            setFormData({
-                                                batchId: '',
-                                                poNumber: '',
-                                                dateReceived: new Date().toISOString().split('T')[0],
-                                                supplierId: '',
-                                                categoryId: '',
-                                                varietyId: '',
-                                                qualityGrade: '-',
-                                                moistureContent: '',
-                                                density: '',
-                                                netWeight: '',
-                                                pricePerKg: '',
-                                                notes: ''
-                                            });
-                                        }}
-                                        disabled={loading}
-                                        style={{ height: 44 }}
-                                    >
-                                        Cancel
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+                                    {editingId && (
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => {
+                                                setEditingId(null);
+                                                setFormData({
+                                                    batchId: '',
+                                                    poNumber: '',
+                                                    dateReceived: new Date().toISOString().split('T')[0],
+                                                    supplierId: '',
+                                                    categoryId: '',
+                                                    varietyId: '',
+                                                    qualityGrade: '-',
+                                                    moistureContent: '',
+                                                    density: '',
+                                                    netWeight: '',
+                                                    pricePerKg: '',
+                                                    otherCosts: '0',
+                                                    notes: ''
+                                                });
+                                            }}
+                                            disabled={loading}
+                                            style={{ height: 44 }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                    <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ width: '100%', height: 44 }}>
+                                        <span className="material-symbols-outlined icon-sm">save</span>
+                                        {editingId ? 'Update Entry' : 'Save Entry'}
                                     </button>
-                                )}
-                                <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ width: '100%', height: 44 }}>
-                                    <span className="material-symbols-outlined icon-sm">save</span>
-                                    {editingId ? 'Update Entry' : 'Save Entry'}
-                                </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* List Table */}
                 <div className="card">
@@ -893,6 +964,7 @@ const RawMaterialReceipt = () => {
                                     <th className="hide-mobile">GRADE</th>
                                     <th>NET WEIGHT</th>
                                     <th className="hide-mobile">MOISTURE</th>
+                                    <th className="hide-mobile">LOCATION</th>
                                     <th>ACTIONS</th>
                                 </tr>
                             </thead>
@@ -919,6 +991,12 @@ const RawMaterialReceipt = () => {
                                             <td className="hide-mobile">{batch.qualityGrade}</td>
                                             <td style={{ fontWeight: 600 }}>{formatNumber(batch.netWeight)} Kg</td>
                                             <td className="hide-mobile">{batch.moistureContent}%</td>
+                                            <td className="hide-mobile">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span className="material-symbols-outlined icon-xs" style={{ color: 'var(--text-muted)' }}>factory</span>
+                                                    <span className="badge badge-default" style={{ fontWeight: 500 }}>{batch.factoryName}</span>
+                                                </div>
+                                            </td>
                                             <td>
                                                 <div className="action-buttons">
                                                     <button

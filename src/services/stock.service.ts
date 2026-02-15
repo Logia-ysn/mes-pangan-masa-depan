@@ -189,7 +189,8 @@ class StockService {
         toFactoryId: number,
         productCode: string,
         quantity: number,
-        userId: number
+        userId: number,
+        notes?: string
     ): Promise<{ from: Stock | null; to: Stock | null }> {
         const productType = await productTypeRepository.findByCode(productCode);
         if (!productType) {
@@ -245,7 +246,12 @@ class StockService {
                     quantity,
                     reference_type: 'TRANSFER',
                     reference_id: toFactoryId,
-                    notes: JSON.stringify({ type: 'TRANSFER_OUT', productCode, toFactory: toFactoryId })
+                    notes: JSON.stringify({
+                        type: 'TRANSFER_OUT',
+                        productCode,
+                        toFactory: toFactoryId,
+                        userNotes: notes || ''
+                    })
                 }
             });
 
@@ -257,7 +263,12 @@ class StockService {
                     quantity,
                     reference_type: 'TRANSFER',
                     reference_id: fromFactoryId,
-                    notes: JSON.stringify({ type: 'TRANSFER_IN', productCode, fromFactory: fromFactoryId })
+                    notes: JSON.stringify({
+                        type: 'TRANSFER_IN',
+                        productCode,
+                        fromFactory: fromFactoryId,
+                        userNotes: notes || ''
+                    })
                 }
             });
 

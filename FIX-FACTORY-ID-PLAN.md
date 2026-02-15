@@ -19,7 +19,7 @@ const stocks = ...;
 let targetStock = stocks.length > 0 ? stocks[0] : null;
 ```
 
-Stock movement yang dibuat terhubung ke `id_stock` milik factory lain (misal PMD Pusat), sehingga:
+Stock movement yang dibuat terhubung ke `id_stock` milik factory lain (misal PMD 2), sehingga:
 - Filter `m.otm_id_stock?.id_factory !== selectedFactory` menyingkirkan batch ini dari view PMD 1
 - WorksheetForm yang filter `stockApi.getAll({ id_factory: selectedFactory })` juga tidak menemukan batch ini
 
@@ -255,11 +255,11 @@ Setelah save:
 1. ✅ Toggle ke "PMD 1"
 2. ✅ Input penerimaan padi (GKP), isi form, Save
 3. ✅ Batch muncul di tabel "Recent Received Batches" saat filter PMD 1
-4. ✅ Batch TIDAK muncul saat filter PMD Pusat (karena disimpan di stock PMD 1)
+4. ✅ Batch TIDAK muncul saat filter PMD 2 (karena disimpan di stock PMD 1)
 5. ✅ Batch muncul saat filter "Semua"
 6. ✅ Buka Worksheet Form → pilih factory PMD 1 → "Add Batch" → batch padi muncul di daftar available stocks
 7. ✅ Form entry tersembunyi saat toggle "Semua" (harus pilih factory dulu)
-8. ✅ Test di PMD Pusat: input PK → disimpan di stock PMD Pusat → muncul di filter PMD Pusat
+8. ✅ Test di PMD 2: input PK → disimpan di stock PMD 2 → muncul di filter PMD 2
 9. ✅ `npm run build` — no TypeScript errors
 
 ---

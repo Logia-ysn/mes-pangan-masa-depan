@@ -5,8 +5,8 @@ import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_getInvoice: T_getInvoice = apiWrapper(async (req, res) => {
     await requireAuth(req, 'OPERATOR');
-    const { id } = req.path;
+    const id = Number(req.path.id);
     const invoice = await invoiceRepository.findById(id);
-    if (!invoice) throw new Error('Invoice not found');
+    if (!invoice) return res.status(404).json({ success: false, error: { message: 'Invoice not found' } });
     return invoice as any;
 });
