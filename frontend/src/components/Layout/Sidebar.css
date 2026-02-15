@@ -106,12 +106,17 @@
 /* ============ Mobile Polish ============ */
 @media (max-width: 768px) {
     .sidebar {
-        z-index: 2000;
-        /* Highest level */
+        z-index: 9999 !important;
+        /* Absolute highest level */
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
         width: 280px;
         max-width: 85vw;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
-        background: var(--bg-sidebar);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+        background: #ffffff !important;
+        /* Solid white to block blur underlying */
         border-right: 1px solid var(--border-color);
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -126,7 +131,8 @@
     .sidebar-overlay {
         position: fixed;
         inset: 0;
-        z-index: 1000;
+        z-index: 9998 !important;
+        /* Just below sidebar */
         background: rgba(15, 23, 42, 0.5);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);

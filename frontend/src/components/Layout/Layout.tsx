@@ -22,12 +22,12 @@ const Layout = () => {
     return (
         <LayoutContext.Provider value={{ isSidebarOpen, toggleSidebar, closeSidebar }}>
             <div className="app">
-                <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-
                 {/* Mobile Overlay */}
                 {isSidebarOpen && (
                     <div className="sidebar-overlay" onClick={closeSidebar}></div>
                 )}
+
+                <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
                 <div className="main-container">
                     <Header title={title} subtitle={subtitle} />
