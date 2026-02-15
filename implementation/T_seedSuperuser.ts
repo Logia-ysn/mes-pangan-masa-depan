@@ -11,8 +11,8 @@ const SEED_SECRET = process.env.SEED_SECRET || 'P4ng4nM4s4D3p4nJ4y4!';
 const ROOT_EMAIL = 'root@pangan.com';
 
 export const t_seedSuperuser: T_seedSuperuser = apiWrapper(async (req, res) => {
-    // 0. Require SUPERUSER authentication
-    await requireAuth(req, 'SUPERUSER');
+    // 0. Require ADMIN authentication
+    await requireAuth(req, 'ADMIN');
 
     // 1. Verify Secret Key
     if (req.body.secretKey !== SEED_SECRET) {

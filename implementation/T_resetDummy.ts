@@ -4,7 +4,7 @@ import { requireAuth } from "../utility/auth";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_resetDummy: T_resetDummy = apiWrapper(async (req, res) => {
-    await requireAuth(req, 'SUPERUSER');
+    await requireAuth(req, 'ADMIN');
 
     const result = await DummyService.resetAll();
     return result;

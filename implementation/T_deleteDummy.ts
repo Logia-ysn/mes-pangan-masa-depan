@@ -4,7 +4,7 @@ import { requireAuth } from "../utility/auth";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_deleteDummy: T_deleteDummy = apiWrapper(async (req, res) => {
-    await requireAuth(req, 'SUPERUSER');
+    await requireAuth(req, 'ADMIN');
     const result = await DummyService.deleteDummy();
     return result;
 });
