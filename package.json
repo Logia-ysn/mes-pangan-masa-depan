@@ -11,7 +11,7 @@
     "prebuild": "prisma generate",
     "build": "rm -rf dist && tsc",
     "postinstall": "prisma generate",
-    "start": "node dist",
+    "start": "npx prisma migrate deploy && node dist/index.js",
     "dev": "npm run build && npm start",
     "seed-admin": "npx ts-node ./seed-admin.ts",
     "prisma:generate": "prisma generate",
