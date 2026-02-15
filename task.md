@@ -1,7 +1,7 @@
 # Task List — ERP Pangan Masa Depan
 
-> **Last Updated**: 2026-02-13
-> **Current Version**: 2.5.0
+> **Last Updated**: 2026-02-15
+> **Current Version**: 2.14.0
 
 Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
@@ -169,8 +169,11 @@ Legend: `[ ]` Belum | `[~]` Sedang Dikerjakan | `[x]` Selesai | `[-]` Dibatalkan
 
 ---
 
-## Technical Debt & Fixes (v2.4.0 - v2.4.1)
+## Technical Debt & Fixes (v2.4.0 - v2.14.0)
 
+- [x] **Data Integrity**: Migrasi multi-selection (mesin/operator) ke tipe data Json native PostgreSQL (v2.14.0).
+- [x] **Concurrency**: Fix race condition pada penomoran dokumen PO/GR dengan random suffix (v2.14.0).
+- [x] **Data Integrity**: Quick employee creation fix — auto-generate code untuk penambahan operator via modal (v2.14.0).
 - [x] **Framework**: Perbaikan registrasi endpoint NAIV (case-sensitive method & T_ prefix alias).
 - [x] **Framework**: Implementasi `apiWrapper` return pattern pada modul User Management untuk mencegah header collision.
 - [x] **Frontend**: Robust error handling untuk ekstraksi pesan error dari backend Railway.

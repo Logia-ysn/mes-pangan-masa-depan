@@ -152,8 +152,8 @@ class WorksheetService {
             hpp: dto.hpp || 0,
             hpp_per_kg: dto.hpp_per_kg || 0,
             process_steps: dto.process_steps,
-            id_machines: dto.id_machines ? JSON.stringify(dto.id_machines) : null,
-            id_operators: dto.id_operators ? JSON.stringify(dto.id_operators) : null,
+            id_machines: dto.id_machines || null,
+            id_operators: dto.id_operators || null,
         };
     }
 
@@ -235,8 +235,13 @@ class WorksheetService {
     private async updateStockFromProductionTransactional(tx: any, worksheet: Worksheet, userId: number) {
         // Fallback for non-batch production
         const inputProductCode = (worksheet as any).input_category_code || 'GKP';
+        
+        // Validation: ensure we have a valid input code
         const productType = await tx.productType.findFirst({ where: { code: inputProductCode } });
-        if (!productType) return;
+        if (!productType) {
+            console.error(`Production Fallback Error: ProductType ${inputProductCode} not found for Worksheet ${worksheet.id}`);
+            return;
+        }
 
         const stock = await tx.stock.findFirst({
             where: {

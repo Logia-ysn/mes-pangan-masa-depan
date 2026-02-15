@@ -407,8 +407,8 @@ model Worksheet {
   raw_material_cost    Decimal?               @db.Decimal(15, 2)
   side_product_revenue Decimal?               @db.Decimal(15, 2)
   process_steps        String?
-  id_machines          String?
-  id_operators         String?
+  id_machines          Json?
+  id_operators         Json?
   hpp                  Decimal?               @db.Decimal(15, 2)
   hpp_per_kg           Decimal?               @db.Decimal(15, 2)
   ProductType          ProductType?           @relation(fields: [id_output_product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_10ff9fd85814d58f9a6d74a5a7e")

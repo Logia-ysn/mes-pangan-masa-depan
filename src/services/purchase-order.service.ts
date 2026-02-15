@@ -57,7 +57,8 @@ class PurchaseOrderService {
         });
 
         const seq = (poCountToday + 1).toString().padStart(4, '0');
-        const po_number = `PO-${dateStr}-${seq}`;
+        const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+        const po_number = `PO-${dateStr}-${seq}-${randomSuffix}`;
 
         const subtotal = data.items.reduce(
             (sum, item) => sum + item.quantity * item.unit_price,
@@ -337,7 +338,8 @@ class PurchaseOrderService {
         });
 
         const seq = (grCountToday + 1).toString().padStart(4, '0');
-        const receipt_number = `GR-${dateStr}-${seq}`;
+        const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+        const receipt_number = `GR-${dateStr}-${seq}-${randomSuffix}`;
 
         // Create goods receipt and update stock in transaction
         const receipt = await prisma.$transaction(async (tx) => {

@@ -1,11 +1,13 @@
 # Changelog
 
-## [2.13.0] - 2026-02-15
+## [2.14.0] - 2026-02-15
 
-### Infrastruktur & Keamanan
-- **Auto-Migration Deployment**: Sistem sekarang otomatis menjalankan migrasi database Prisma saat *startup* di Railway untuk mencegah error skema.
-- **Enhanced CORS Policy**: Dukungan untuk beberapa origin sekaligus, memungkinkan koneksi aman baik dari URL produksi maupun URL preview Vercel.
-- **Permission Refactor**: Mengubah syarat akses fitur pemeliharaan (Dummy Generator, Reset) dari `SUPERUSER` ke `ADMIN` untuk mempermudah operasional pengujian.
+### Keamanan & Integritas Data
+- **Data Type Migration**: Mengubah tipe data `id_machines` dan `id_operators` di tabel `Worksheet` dari String menjadi **Json** native PostgreSQL. Ini memungkinkan query yang lebih efisien dan terstruktur untuk pelacakan penggunaan mesin dan personel.
+- **Race Condition Protection**: Menambahkan suffix random (3 karakter) pada pembuatan nomor **Purchase Order (PO)** dan **Goods Receipt (GR)**. Hal ini mencegah kegagalan transaksi (*unique constraint violation*) jika terdapat pembuatan dokumen di detik yang sama oleh beberapa user.
+- **Service Optimization**: Menghapus redundant `JSON.stringify` pada logic pemetaan Worksheet karena sekarang menggunakan tipe data Json native Prisma.
+- **Quick Operator Creation Fix**: Backend sekarang otomatis menghasilkan `employee_code` jika tidak diisi, memungkinkan penambahan operator baru secara instan melalui modal di form Worksheet tanpa error validasi database.
+- **Bug Fix**: Menambahkan log error yang lebih deskriptif pada fallback update stok produksi jika tipe produk tidak ditemukan.
 
 ## [2.12.0] - 2026-02-15
 
