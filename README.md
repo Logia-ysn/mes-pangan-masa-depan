@@ -32,6 +32,7 @@ HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 | **Pembelian (v2.2.0)** | Selesai | Purchase Order, Goods Receipt, Stock Integration |
 | **Authentication** | Selesai | Login, Register, Role-based Access (5 level) |
 | **Multi-Factory** | Selesai | Support PMD-1 & PMD-2 |
+| **Mobile UX (v2.17.0)** | Selesai | Horizontal scroll factory selector, typography scaling |
 | **Settings** | Selesai | Supplier, Product Type, Quality Config |
 
 ---

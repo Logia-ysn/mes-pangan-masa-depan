@@ -112,29 +112,6 @@ h3 {
     margin-left: 0;
   }
 
-  .sidebar {
-    transform: translateX(-100%);
-    box-shadow: none;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-    box-shadow: var(--shadow-xl);
-  }
-
-  .sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    /* Increased for mobile drawer */
-    backdrop-filter: blur(2px);
-    animation: fadeIn 0.3s ease;
-  }
-
   /* Header */
   .header {
     padding: 0 16px;

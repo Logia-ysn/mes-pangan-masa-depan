@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.17.0] - 2026-02-15
+
+### Ditambahkan
+- **Mobile-Responsive Architecture**: Implementasi pola *horizontal scroll* pada penyeleksi pabrik (Factory Selector) di seluruh aplikasi (10+ halaman) untuk navigasi mobile yang lebih bersih tanpa tumpang tindih.
+- **Typography Scaling**: Sistem penskalaan otomatis (Dynamic Sizing) untuk judul (h1-h3) guna mengoptimalkan keterbacaan dan estetika pada perangkat layar kecil.
+
+### Diubah
+- **Dashboard Mobile Optimization**: Penyesuaian padding kartu dan tata letak grid dashboard agar lebih fungsional dan premium di perangkat mobile.
+- **Header Mobile Behavior**: Menyembunyikan elemen sekunder (pencarian, sub-judul) pada resolusi tertentu untuk mencegah penumpukan elemen di header.
+
+### Diperbaiki
+- **Penerimaan Bahan Baku (Full Fields)**: Melengkapi field Nomor Telepon, Kontak Person, dan Kode pada fitur tambah cepat Supplier, Kategori, dan Varietas.
+- **Production Build Integrity**: Membersihkan variabel tidak terpakai dan unused imports untuk menjamin kelancaran build Vercel/Railway.
+
 ## [2.16.0] - 2026-02-15
 
 ### Ditambahkan
