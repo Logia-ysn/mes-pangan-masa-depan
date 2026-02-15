@@ -111,7 +111,7 @@ const Worksheets = () => {
         <div className="page-content">
             {/* Factory Toggle */}
             <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="factory-selector-scroll">
                     <button
                         className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => { setSelectedFactory(null); setPage(1); }}

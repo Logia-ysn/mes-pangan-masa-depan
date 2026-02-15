@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { purchaseOrderApi, supplierApi, factoryApi, productTypeApi } from '../../services/api';
+import { purchaseOrderApi, supplierApi, productTypeApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import { useToast } from '../../contexts/ToastContext';
 import { useFactory } from '../../hooks/useFactory';
@@ -30,11 +30,7 @@ interface Supplier {
     name: string;
 }
 
-interface Factory {
-    id: number;
-    code: string;
-    name: string;
-}
+
 
 interface ProductType {
     id: number;
@@ -229,7 +225,7 @@ const PurchaseOrders = () => {
     return (
         <div className="page-content">
             {/* Factory Toggle */}
-            <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="factory-selector-scroll">
                 <button
                     className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => { setSelectedFactory(null); setPage(1); }}

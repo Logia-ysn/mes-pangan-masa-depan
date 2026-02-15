@@ -60,6 +60,47 @@ html.light {
   --shadow-card: 0 1px 20px rgba(0, 0, 0, 0.03);
 }
 
+/* ============ Typography Scaling ============ */
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
+}
+
 /* Mobile Breakpoint (768px) */
 @media (max-width: 768px) {
   :root {
@@ -100,7 +141,19 @@ html.light {
   }
 
   .header-search {
+    display: none !important;
+  }
+
+  .header-subtitle {
     display: none;
+  }
+
+  .header-title h2 {
+    font-size: 1.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
   }
 
   .menu-toggle {
@@ -691,10 +744,16 @@ html.dark .nav-item.active {
   gap: 16px;
 }
 
+.header-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .header-title h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-subtitle {
@@ -2026,6 +2085,32 @@ tbody tr:hover {
   .header-actions-mobile div {
     grid-column: span 2;
   }
+}
+
+/* Factory Selector Mobile - Modern Scrollable Behavior */
+.factory-selector-scroll {
+  display: flex !important;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.factory-selector-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.factory-selector-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+.factory-selector-scroll .btn {
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 0.875rem;
 }
 
 .no-scrollbar::-webkit-scrollbar {

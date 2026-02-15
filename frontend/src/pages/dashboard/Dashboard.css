@@ -648,6 +648,10 @@
         border-radius: 12px;
     }
 
+    .card {
+        padding: 16px !important;
+    }
+
     .panel-header {
         flex-direction: column;
         align-items: flex-start;
@@ -658,8 +662,13 @@
     .page-header-responsive {
         flex-direction: column;
         align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 24px;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .page-header-content p {
+        font-size: 0.825rem;
+        margin-top: 4px;
     }
 
     .page-header-actions {
