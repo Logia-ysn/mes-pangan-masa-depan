@@ -4,6 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
 import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi, factoryApi } from '../../services/api';
 import { formatDate, formatNumber } from '../../utils/formatUtils';
+import { printElement } from '../../utils/printUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '../../utils/logger';
 
@@ -82,6 +83,7 @@ const RawMaterialReceipt = () => {
     // Analysis Modal
     const [showAnalysisModal, setShowAnalysisModal] = useState(false);
     const [selectedBatchForAnalysis, setSelectedBatchForAnalysis] = useState<RawMaterialBatch | null>(null);
+    const [printingBatch, setPrintingBatch] = useState<RawMaterialBatch | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -533,6 +535,20 @@ const RawMaterialReceipt = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handlePrint = (batch: RawMaterialBatch) => {
+        setPrintingBatch(batch);
+        // Small delay to ensure printable element is rendered
+        setTimeout(() => {
+            const onAfterPrint = () => {
+                setPrintingBatch(null);
+                window.removeEventListener('afterprint', onAfterPrint);
+            };
+            window.addEventListener('afterprint', onAfterPrint);
+
+            printElement('receipt-print', `Tanda Terima - ${batch.batchId}`);
+        }, 500);
+    };
+
     const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
 
     return (
@@ -915,6 +931,13 @@ const RawMaterialReceipt = () => {
                                                     >
                                                         <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--primary)' }}>science</span>
                                                     </button>
+                                                    <button
+                                                        className="btn btn-ghost btn-icon"
+                                                        title="Print Tanda Terima"
+                                                        onClick={() => handlePrint(batch)}
+                                                    >
+                                                        <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--info)' }}>print</span>
+                                                    </button>
                                                     <button className="btn btn-ghost btn-icon" onClick={() => handleEdit(batch)}>
                                                         <span className="material-symbols-outlined icon-sm">edit</span>
                                                     </button>
@@ -1120,6 +1143,95 @@ const RawMaterialReceipt = () => {
                                 Simpan Varietas
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== Printable Receipt — hidden on screen, only visible during print ===== */}
+            {printingBatch && (
+                <div id="receipt-print" className="print-receipt">
+                    {/* Header Perusahaan */}
+                    <div className="receipt-header">
+                        <h2>PT. Pangan Masa Depan</h2>
+                        <h3>Tanda Terima Penerimaan Bahan Baku</h3>
+                    </div>
+
+                    {/* Info Batch */}
+                    <table className="receipt-info">
+                        <tbody>
+                            <tr>
+                                <td className="receipt-label">No. Batch</td>
+                                <td>: {printingBatch.batchId}</td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">No. PO</td>
+                                <td>: {printingBatch.poNumber || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">Tanggal Terima</td>
+                                <td>: {formatDate(printingBatch.dateReceived)}</td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">Supplier</td>
+                                <td>: {printingBatch.supplier}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {/* Tabel Detail Bahan */}
+                    <h4 style={{ marginBottom: 8 }}>Detail Bahan</h4>
+                    <table className="receipt-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Jenis Bahan</th>
+                                <th>Grade Kualitas</th>
+                                <th>Kadar Air</th>
+                                <th>Berat Bersih</th>
+                                <th>Harga/Kg</th>
+                                <th>Total Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{printingBatch.materialType}</td>
+                                <td>{printingBatch.qualityGrade}</td>
+                                <td>{printingBatch.moistureContent}%</td>
+                                <td>{formatNumber(printingBatch.netWeight)} Kg</td>
+                                <td>Rp {formatNumber(printingBatch.pricePerKg)}</td>
+                                <td>Rp {formatNumber(printingBatch.netWeight * printingBatch.pricePerKg)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {/* Catatan */}
+                    {printingBatch.notes && (
+                        <div className="receipt-notes">
+                            <strong>Catatan:</strong> {printingBatch.notes}
+                        </div>
+                    )}
+
+                    {/* Kolom Tanda Tangan */}
+                    <div className="receipt-signatures">
+                        <div className="signature-box">
+                            <p>Pengirim / Supplier</p>
+                            <div className="signature-line"></div>
+                            <p>({printingBatch.supplier})</p>
+                        </div>
+                        <div className="signature-box">
+                            <p>Penerima</p>
+                            <div className="signature-line"></div>
+                            <p>(________________)</p>
+                        </div>
+                        <div className="signature-box">
+                            <p>Mengetahui</p>
+                            <div className="signature-line"></div>
+                            <p>(________________)</p>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="receipt-footer">
+                        <p>Dicetak pada: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
             )}

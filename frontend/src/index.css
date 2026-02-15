@@ -1782,6 +1782,142 @@ tbody tr:hover {
   }
 }
 
+/* ===== Receipt Print Styles ===== */
+.print-receipt {
+  display: none;
+}
+
+@media print {
+
+  /* Saat printing receipt, tampilkan receipt dan hide semua yang lain */
+  .print-receipt {
+    display: block !important;
+    width: 100%;
+    background: white;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    color: black !important;
+  }
+
+  /* Hide main content components saat body punya class is-printing */
+  body.is-printing .sidebar,
+  body.is-printing .header,
+  body.is-printing .page-content,
+  body.is-printing .modal-overlay,
+  body.is-printing .modal {
+    display: none !important;
+  }
+
+  body.is-printing .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  body.is-printing .app {
+    display: block !important;
+  }
+
+  /* Receipt Header */
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 24px;
+    border-bottom: 2px solid black;
+    padding-bottom: 12px;
+  }
+
+  .receipt-header h2 {
+    font-size: 18pt;
+    margin: 0;
+    color: black;
+  }
+
+  .receipt-header h3 {
+    font-size: 13pt;
+    margin: 4px 0 0;
+    font-weight: normal;
+    color: black;
+  }
+
+  /* Receipt Info Table (No. Batch, PO, Supplier, dll) */
+  .receipt-info {
+    width: auto;
+    margin-bottom: 20px;
+    border: none !important;
+  }
+
+  .receipt-info td {
+    padding: 3px 12px 3px 0;
+    border: none !important;
+    font-size: 11pt;
+    color: black;
+  }
+
+  .receipt-label {
+    font-weight: bold;
+    width: 140px;
+  }
+
+  /* Receipt Detail Table (Jenis Bahan, Grade, Berat, Harga) */
+  .receipt-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+
+  .receipt-detail-table th,
+  .receipt-detail-table td {
+    border: 1px solid black !important;
+    padding: 8px 10px;
+    font-size: 10pt;
+    color: black;
+    text-align: left;
+  }
+
+  .receipt-detail-table th {
+    background: #f0f0f0 !important;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Catatan */
+  .receipt-notes {
+    margin-bottom: 24px;
+    font-size: 10pt;
+    padding: 8px;
+    border: 1px dashed #999 !important;
+  }
+
+  /* 3 Kolom Tanda Tangan */
+  .receipt-signatures {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 48px;
+  }
+
+  .signature-box {
+    text-align: center;
+    width: 30%;
+    font-size: 10pt;
+  }
+
+  .signature-line {
+    border-bottom: 1px solid black !important;
+    height: 60px;
+    margin: 8px 0;
+  }
+
+  /* Footer (timestamp) */
+  .receipt-footer {
+    margin-top: 32px;
+    font-size: 8pt;
+    color: #666 !important;
+    text-align: right;
+  }
+}
+
 /* ============ Premium UI Enhancements ============ */
 .premium-card {
   background: var(--bg-surface);

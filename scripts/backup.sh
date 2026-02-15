@@ -3,7 +3,7 @@
 # Configuration
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_ROOT="backups"
-BACKUP_NAME="full_v2.6.0_factory_filter_$TIMESTAMP"
+BACKUP_NAME="full_v2.7.0_print_receipt_$TIMESTAMP"
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_NAME"
 
 # Create backup directory

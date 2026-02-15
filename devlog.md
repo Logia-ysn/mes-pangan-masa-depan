@@ -1,8 +1,25 @@
 # 🪵 Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 14 Complete — Worksheet Form Extraction
-**Date**: Feb 14, 2026
-**Current Version**: 2.5.0
+## 🟢 Status: Phase 16 Complete — Print Receipt Implementation
+**Date**: Feb 15, 2026
+**Current Version**: 2.7.0
+
+### ✅ Phase 16: Print Receipt Implementation (Feb 15, 2026)
+Implemented a professional browser-based printing system for raw material receipts, allowing users to generate physical documentation of incoming batches.
+
+1.  **Printable Receipt Component** — Created a dedicated, high-fidelity printable layout for raw material receipts in `RawMaterialReceipt.tsx`. Includes company branding, batch details, itemized material info, and a professional 3-column signature section.
+2.  **Advanced Print Styles** — Added specialized CSS `@media print` rules in `index.css` to force a clean print layout (forced white background, removed app shell/nav, optimized typography for A4).
+3.  **Stability Fixes** — Implemented an `afterprint` lifecycle listener and adjusted CSS selector hierarchy to resolve issues where the print preview appeared empty due to parent container hiding.
+4.  **UX Integration** — Added a dedicated print action button to the recent batches table with a smooth 500ms render-to-print transition.
+
+### ✅ Phase 15: Factory Filter Implementation (Feb 15, 2026)
+Implemented global factory filtering to support multi-plant operations across all core ERP modules.
+
+1.  **Global Toggle UI** — Added factory toggle buttons (Semua, PMD 1, PMD Pusat) to Dashboard, Stocks, Maintenance, OEE, Invoices, and Purchase Orders.
+2.  **Dynamic Filtering** — Updated frontend API calls to include `id_factory` as a query parameter, ensuring all data (stats, lists, charts) reflects the selected factory.
+3.  **Form Data Sync** — Modified creation modals across modules to automatically default the factory to the currently selected filter, preventing data entry errors.
+4.  **Header Subtitle Sync** — Implemented dynamic header subtitles that display the active factory name globally.
+5.  **Infrastructure Calibration** — Fixed a port mismatch in `api.ts` (port 3000 to 3005) and seeded initial PMD factory data for feature verification.
 
 ### ✅ Phase 14: Worksheet Form Extraction (Feb 14, 2026)
 Extracted the production worksheet form from `Worksheets.tsx` (1282 lines) into a standalone page `WorksheetForm.tsx`, improving code separation and maintainability.
@@ -179,11 +196,9 @@ We have successfully migrated the entire data layer from TypeORM to Prisma. This
 - **ML Service**: Rewritten to v2.0.0 with multi-color support. In-memory calibration resets on restart (no persistence yet).
 
 ### 🚀 Recent Changes
-- Completed **Production Stability & Integrity** (v2.2.1): Auto-reversal for deleted worksheets & cancelled invoices, audit logs for manual updates, and Vercel build fixes.
-- Completed **Operational Excellence** (Prioritas 2): Report pages, Notifications, Excel export.
-- 4 report pages with charts, KPI cards, and export functionality.
-- Full notification system with persistent alerts and header dropdown.
-- Excel export using ExcelJS with styled workbooks.
+- Completed **Print Receipt Implementation** (v2.7.0): High-fidelity browser printing for raw material receipts with professional layout and signature sections.
+- Completed **Factory Filter Implementation** (Global): Multi-plant filtering for all core modules with state persistence and form synchronization.
+- Completed **Worksheet Form Extraction** (v2.5.0): Extracted form to a standalone page, reducing `Worksheets.tsx` size by 80%.
 
 ### 🛠 Active Workstream
 - **Audit Fixes**: 27 tasks documented in `task-audit.md` (Critical → Low priority).

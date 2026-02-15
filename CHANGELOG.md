@@ -9,6 +9,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-02-15
+
+### Ditambahkan
+- **Fitur Cetak Tanda Terima (Raw Material Receipt)**: Implementasi sistem pencetakan berbasis browser yang profesional untuk bukti penerimaan bahan baku.
+  - **Printable Layout**: Desain tanda terima high-fidelity dengan header perusahaan, info batch detail, tabel itemized, dan kolom tanda tangan 3-pihak.
+  - **Dynamic Printing Lifecycle**: Menggunakan event `afterprint` untuk memastikan data tetap tersedia di layar hingga proses cetak selesai.
+  - **Custom Print CSS**: Penyesuaian `@media print` untuk memaksimalkan keterbacaan pada kertas A4 dan menyembunyikan elemen UI aplikasi.
+
 ## [2.6.0] - 2026-02-15
 
 ### Ditambahkan
