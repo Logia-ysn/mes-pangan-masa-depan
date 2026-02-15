@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Header from '../../components/Layout/Header';
-import api from '../../services/api';
+import api, { factoryApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
 interface Maintenance {
@@ -15,6 +15,7 @@ interface Maintenance {
         id: number;
         code: string;
         name: string;
+        id_factory?: number;
     };
     user?: {
         fullname: string;
@@ -22,6 +23,13 @@ interface Maintenance {
 }
 
 interface Machine {
+    id: number;
+    code: string;
+    name: string;
+    id_factory: number;
+}
+
+interface Factory {
     id: number;
     code: string;
     name: string;
@@ -48,6 +56,26 @@ const Maintenance = () => {
         parts_replaced: '',
         next_maintenance_date: ''
     });
+
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
+                setFactories(pmdFactories);
+                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error fetching factories:', error);
+            }
+        };
+        fetchFactories();
+    }, []);
 
     useEffect(() => {
         fetchMaintenances();
@@ -158,17 +186,49 @@ const Maintenance = () => {
         }).format(amount);
     };
 
+    const filteredMaintenances = useMemo(() => {
+        if (!selectedFactory) return maintenances;
+        return maintenances.filter(m => m.machine?.id_factory === selectedFactory);
+    }, [maintenances, selectedFactory]);
+
+    const filteredMachines = useMemo(() => {
+        if (!selectedFactory) return machines;
+        return machines.filter(m => m.id_factory === selectedFactory);
+    }, [machines, selectedFactory]);
+
     // Stats
-    const totalMaintenances = maintenances.length;
-    const totalCost = maintenances.reduce((sum, m) => sum + (m.cost || 0), 0);
-    const preventiveCount = maintenances.filter(m => m.maintenance_type === 'PREVENTIVE').length;
-    const emergencyCount = maintenances.filter(m => m.maintenance_type === 'EMERGENCY').length;
+    const totalMaintenances = filteredMaintenances.length;
+    const totalCost = filteredMaintenances.reduce((sum, m) => sum + (m.cost || 0), 0);
+    const preventiveCount = filteredMaintenances.filter(m => m.maintenance_type === 'PREVENTIVE').length;
+    const emergencyCount = filteredMaintenances.filter(m => m.maintenance_type === 'EMERGENCY').length;
+
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
 
     return (
         <>
-            <Header title="Maintenance" subtitle="Riwayat dan jadwal perawatan mesin" />
+            <Header title="Maintenance" subtitle={`Riwayat dan jadwal perawatan mesin — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
                 {/* Stats Grid */}
                 <div className="stats-grid">
                     <div className="stat-card">
@@ -228,7 +288,7 @@ const Maintenance = () => {
                             </div>
                             <h3>Memuat data...</h3>
                         </div>
-                    ) : maintenances.length === 0 ? (
+                    ) : filteredMaintenances.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-state-icon">
                                 <span className="material-symbols-outlined">build</span>
@@ -252,7 +312,7 @@ const Maintenance = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {maintenances.map((maintenance) => {
+                                    {filteredMaintenances.map((maintenance) => {
                                         const type = typeConfig[maintenance.maintenance_type];
                                         return (
                                             <tr key={maintenance.id}>
@@ -322,7 +382,7 @@ const Maintenance = () => {
                                         required
                                     >
                                         <option value="">Pilih Mesin</option>
-                                        {machines.map((m) => (
+                                        {filteredMachines.map((m) => (
                                             <option key={m.id} value={m.id}>{m.code} - {m.name}</option>
                                         ))}
                                     </select>

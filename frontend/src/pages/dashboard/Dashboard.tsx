@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Header from '../../components/Layout/Header';
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, factoryApi } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import KPICard from '../../components/Dashboard/KPICard';
 import MachinePanel from '../../components/Dashboard/MachinePanel';
@@ -71,16 +71,45 @@ interface ExecutiveDashboardData {
     maintenance: MaintenancePanelData;
 }
 
+interface Factory {
+    id: number;
+    code: string;
+    name: string;
+}
+
 const Dashboard = () => {
     const [data, setData] = useState<ExecutiveDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'7' | '30'>('7');
     const { theme } = useTheme();
 
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
+                setFactories(pmdFactories);
+                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error:', error);
+            }
+        };
+        fetchFactories();
+    }, []);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await dashboardApi.getExecutive();
+                setLoading(true);
+                const response = await dashboardApi.getExecutive(
+                    selectedFactory ? { id_factory: selectedFactory } : undefined
+                );
                 setData(response.data);
             } catch (error) {
                 logger.error('Error fetching executive dashboard:', error);
@@ -89,7 +118,7 @@ const Dashboard = () => {
             }
         };
         fetchData();
-    }, []);
+    }, [selectedFactory]);
 
     const formatNumber = (num: number) =>
         new Intl.NumberFormat('id-ID').format(Number(num));
@@ -190,11 +219,33 @@ const Dashboard = () => {
         return 'Perlu Perbaikan';
     };
 
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+
     return (
         <>
-            <Header title="Dashboard" subtitle="Selamat datang di ERP Pangan Masa Depan" />
+            <Header title="Dashboard" subtitle={`Selamat datang di ERP Pangan Masa Depan — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
                 {/* Page Header */}
                 <div className="page-header page-header-responsive">
                     <div className="page-header-content">

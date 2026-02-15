@@ -68,6 +68,7 @@ const PurchaseOrders = () => {
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
 
     const [formData, setFormData] = useState({
         id_factory: 0,
@@ -81,7 +82,26 @@ const PurchaseOrders = () => {
     const [items, setItems] = useState<POItemForm[]>([{ id_product_type: 0, quantity: '', unit_price: '' }]);
 
     useEffect(() => {
+        const fetchPMDFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: any) => f.code.startsWith('PMD'));
+                const pmd1 = pmdFactories.find((f: any) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error fetching factories:', error);
+            }
+        };
+        fetchPMDFactories();
+    }, []);
+
+    useEffect(() => {
         fetchPurchaseOrders();
+    }, [selectedFactory]);
+
+    useEffect(() => {
         fetchSuppliers();
         fetchFactories();
         fetchProductTypes();
@@ -89,7 +109,10 @@ const PurchaseOrders = () => {
 
     const fetchPurchaseOrders = async () => {
         try {
-            const response = await purchaseOrderApi.getAll({ limit: 500 });
+            const response = await purchaseOrderApi.getAll({
+                limit: 500,
+                id_factory: selectedFactory || undefined
+            });
             const data = response.data?.data || response.data || [];
             setPurchaseOrders(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -98,6 +121,12 @@ const PurchaseOrders = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchSuppliers();
+        fetchFactories();
+        fetchProductTypes();
+    }, []);
 
     const fetchSuppliers = async () => {
         try {
@@ -167,7 +196,7 @@ const PurchaseOrders = () => {
 
     const openModal = () => {
         setFormData({
-            id_factory: factories.length > 0 ? factories[0].id : 0,
+            id_factory: selectedFactory || (factories.length > 0 ? factories[0].id : 0),
             id_supplier: 0,
             order_date: new Date().toISOString().split('T')[0],
             expected_date: '',
@@ -212,11 +241,34 @@ const PurchaseOrders = () => {
         return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+
     return (
         <>
-            <Header title="Purchase Order" subtitle="Kelola pembelian bahan baku" />
+            <Header title="Purchase Order" subtitle={`Kelola pembelian bahan baku — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.filter(f => f.code.startsWith('PMD')).map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Stats Grid */}
                 <div className="stats-grid">
                     <div className="stat-card">

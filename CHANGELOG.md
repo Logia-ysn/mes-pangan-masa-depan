@@ -7,6 +7,24 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [Unreleased]
+
+## [2.6.0] - 2026-02-15
+
+### Ditambahkan
+- **Implementasi Factory Filter (Global)**: Menambahkan tombol toggle pabrik (Semua, PMD 1, PMD Pusat) di berbagai modul utama untuk mendukung multi-plant operations.
+  - **Dashboard**: Filter KPI, grafik produksi, dan status mesin berdasarkan pabrik yang dipilih.
+  - **Stok & Inventory**: Filter daftar stok per pabrik dan perbaikan bug ID pabrik yang sebelumnya di-*hardcode*.
+  - **Maintenance**: Filter riwayat perawatan dan dropdown mesin otomatis menyesuaikan pabrik terpilih.
+  - **OEE Monitor**: Sinkronisasi data OEE dan status mesin dengan filter pabrik.
+  - **Invoices & Purchase Orders**: Filter transaksi penjualan/pembelian dan pengaturan otomatis pabrik pada form pembuatan baru.
+  - **Penerimaan Bahan Baku**: Filter riwayat penerimaan dan sinkronisasi penambahan stok ke pabrik yang benar.
+- **Header Subtitle Dinamis**: Subtitle pada header kini menampilkan nama pabrik yang sedang aktif (misal: "PMD 1").
+
+### Diperbaiki
+- **API Port Fallback**: Memperbaiki fallback port API di frontend dari `3000` ke `3005` untuk konsistensi dengan server backend.
+- **Create Form Sync**: Memastikan form "Tambah Baru" di modul Stok, Invoice, dan PO secara otomatis terisi dengan ID pabrik yang sedang dipilih di filter.
+
 ## [2.5.0] - 2026-02-14
 
 ### Ditambahkan

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Header from '../../components/Layout/Header';
-import { stockApi } from '../../services/api';
+import { stockApi, factoryApi } from '../../services/api';
 import api from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { logger } from '../../utils/logger';
@@ -32,6 +32,12 @@ interface ProductType {
     category: string;
 }
 
+interface Factory {
+    id: number;
+    code: string;
+    name: string;
+}
+
 const Stocks = () => {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
@@ -41,20 +47,42 @@ const Stocks = () => {
     const [filterCategory, setFilterCategory] = useState('all');
     const [formData, setFormData] = useState({
         id_product_type: '',
+        id_factory: 0 as number | string,
         quantity: '',
         min_quantity: '',
         unit: 'kg'
     });
     const { theme } = useTheme();
 
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
+                setFactories(pmdFactories);
+                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error fetching factories:', error);
+            }
+        };
+        fetchFactories();
+    }, []);
+
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [selectedFactory]);
 
     const fetchData = async () => {
         try {
+            setLoading(true);
             const [stocksRes, productTypesRes] = await Promise.all([
-                stockApi.getAll({ limit: 100 }),
+                stockApi.getAll({ limit: 100, id_factory: selectedFactory || undefined }),
                 api.get('/product-types')
             ]);
             setStocks(stocksRes.data.data || stocksRes.data || []);
@@ -75,7 +103,7 @@ const Stocks = () => {
                 id_product_type: parseInt(formData.id_product_type),
                 quantity: parseFloat(formData.quantity) || 0,
                 min_quantity: parseFloat(formData.min_quantity) || 0,
-                id_factory: 1
+                id_factory: selectedFactory || 1
             };
 
             if (editingStock) {
@@ -105,15 +133,17 @@ const Stocks = () => {
         if (stock) {
             setEditingStock(stock);
             setFormData({
-                id_product_type: stock.id_product_type?.toString() || '',
-                quantity: stock.quantity?.toString() || '',
-                min_quantity: stock.min_quantity?.toString() || '',
+                id_product_type: stock.id_product_type.toString(),
+                id_factory: stock.id_factory,
+                quantity: stock.quantity.toString(),
+                min_quantity: (stock.min_quantity || '').toString(),
                 unit: stock.unit || 'kg'
             });
         } else {
             setEditingStock(null);
             setFormData({
                 id_product_type: productTypes[0]?.id?.toString() || '',
+                id_factory: selectedFactory || (factories.length > 0 ? factories[0].id : 0),
                 quantity: '',
                 min_quantity: '100',
                 unit: 'kg'
@@ -177,11 +207,34 @@ const Stocks = () => {
         tooltipBg: theme === 'dark' ? '#182430' : '#ffffff',
     };
 
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+
     return (
         <>
-            <Header title="Stok & Inventory" subtitle="Kelola stok produk dan bahan baku" />
+            <Header title="Stok & Inventory" subtitle={`Kelola stok produk dan bahan baku — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Stats Grid */}
                 <div className="stats-grid">
                     <div className="stat-card">

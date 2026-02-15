@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Layout/Header';
 import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
-import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi } from '../../services/api';
+import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi, factoryApi } from '../../services/api';
 import { formatDate, formatNumber } from '../../utils/formatUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '../../utils/logger';
@@ -49,6 +49,12 @@ interface RawMaterialCategory {
 }
 
 interface RawMaterialVariety {
+    id: number;
+    code: string;
+    name: string;
+}
+
+interface Factory {
     id: number;
     code: string;
     name: string;
@@ -103,13 +109,33 @@ const RawMaterialReceipt = () => {
         setShowAnalysisModal(false);
     };
 
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
+                setFactories(pmdFactories);
+                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error fetching factories:', error);
+            }
+        };
+        fetchFactories();
+    }, []);
+
     useEffect(() => {
         fetchData();
         fetchProductTypes();
         fetchSuppliers();
         fetchCategories();
         fetchVarieties();
-    }, []);
+    }, [selectedFactory]);
 
     const fetchSuppliers = async () => {
         try {
@@ -188,7 +214,12 @@ const RawMaterialReceipt = () => {
             logger.log('Movements array:', movements);
 
             if (movements && Array.isArray(movements)) {
-                const filtered = movements.filter((m: any) => m.reference_type === 'RAW_MATERIAL_RECEIPT' && m.movement_type === 'IN');
+                const filtered = movements.filter((m: any) => {
+                    const isReceipt = m.reference_type === 'RAW_MATERIAL_RECEIPT' && m.movement_type === 'IN';
+                    if (!isReceipt) return false;
+                    if (selectedFactory && m.otm_id_stock?.id_factory !== selectedFactory) return false;
+                    return true;
+                });
                 logger.log('Filtered movements:', filtered);
 
                 const receipts = filtered.map((m: any) => {
@@ -280,7 +311,7 @@ const RawMaterialReceipt = () => {
 
                 // Create new stock
                 const newStockRes = await api.post('/stocks', {
-                    id_factory: factory.id,
+                    id_factory: selectedFactory || 1,
                     id_product_type: rawMaterialType.id,
                     quantity: 0,
                     unit: 'kg'
@@ -502,11 +533,33 @@ const RawMaterialReceipt = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+
     return (
         <>
-            <Header title="Penerimaan Bahan Baku" subtitle="Manage incoming raw material batches for Flow Plan 1 & 2." />
+            <Header title="Penerimaan Bahan Baku" subtitle={`Manage incoming raw material batches — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
                 {/* Form Card */}
                 <div className="card mb-6">
                     <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 16 }}>

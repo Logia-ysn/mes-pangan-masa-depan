@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Header from '../../components/Layout/Header';
-import api from '../../services/api';
+import api, { factoryApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
 interface Worksheet {
@@ -24,21 +24,48 @@ interface Machine {
     capacity_per_hour: number;
 }
 
+interface Factory {
+    id: number;
+    code: string;
+    name: string;
+}
+
 const OEE = () => {
     const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState('daily');
 
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchFactories = async () => {
+            try {
+                const res = await factoryApi.getAll();
+                const data = res.data?.data || res.data || [];
+                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
+                setFactories(pmdFactories);
+                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
+                if (pmd1) setSelectedFactory(pmd1.id);
+                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+            } catch (error) {
+                logger.error('Error fetching factories:', error);
+            }
+        };
+        fetchFactories();
+    }, []);
+
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [selectedFactory]);
 
     const fetchData = async () => {
         try {
+            setLoading(true);
             const [worksheetsRes, machinesRes] = await Promise.all([
-                api.get('/worksheets'),
-                api.get('/machines')
+                api.get('/worksheets', { params: { limit: 100, id_factory: selectedFactory || undefined } }),
+                api.get('/machines', { params: { id_factory: selectedFactory || undefined } })
             ]);
             // Handle both array and paginated response formats
             const worksheetsData = worksheetsRes.data?.data || worksheetsRes.data || [];
@@ -132,11 +159,34 @@ const OEE = () => {
         );
     }
 
+    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+
     return (
         <>
-            <Header title="OEE Monitor" subtitle="Overall Equipment Effectiveness" />
+            <Header title="OEE Monitor" subtitle={`Overall Equipment Effectiveness — ${selectedFactoryName || 'Semua Pabrik'}`} />
 
             <div className="page-content">
+                {/* Factory Toggle */}
+                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedFactory(null)}
+                    >
+                        <span className="material-symbols-outlined icon-sm">apps</span>
+                        Semua
+                    </button>
+                    {factories.map(factory => (
+                        <button
+                            key={factory.id}
+                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedFactory(factory.id)}
+                        >
+                            <span className="material-symbols-outlined icon-sm">factory</span>
+                            {factory.name}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Period Selector */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div>
