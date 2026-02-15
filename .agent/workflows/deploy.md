@@ -17,14 +17,14 @@ Workflow ini memastikan sinkronisasi antara development lokal dan aplikasi live 
 // turbo
 ```bash
 # Start backend (port 3000)
-cd /Users/yay/Software\ Engineer/erp-pangan-masa-depan
+cd /Users/yay/Project/erp-pangan-masa-depan
 npm run dev
 ```
 
 // turbo
 ```bash
 # Start frontend (port 5173)
-cd /Users/yay/Software\ Engineer/erp-pangan-masa-depan/frontend
+cd /Users/yay/Project/erp-pangan-masa-depan/frontend
 npm run dev
 ```
 
@@ -34,7 +34,7 @@ npm run dev
 
 ### 3. Commit & Push ke GitHub
 ```bash
-cd /Users/yay/Software\ Engineer/erp-pangan-masa-depan
+cd /Users/yay/Project/erp-pangan-masa-depan
 git add .
 git commit -m "feat/fix/chore: deskripsi perubahan"
 git push origin main
@@ -71,6 +71,7 @@ VITE_API_URL=https://erp-pangan-masa-depan-production.up.railway.app
 ```
 
 ## Tips
-- Selalu jalankan `npm run build` untuk memastikan tidak ada error TypeScript sebelum push
-- Update CHANGELOG.md setiap ada perubahan signifikan (gunakan `/changelog`)
-- Jangan commit file .env ke repository
+- **PENTING**: Selalu jalankan `npm run build` di folder `frontend` sebelum push. Ini akan mendeteksi error TypeScript atau *unused imports* (linting) yang bisa menyebabkan build di Vercel/Railway gagal.
+- Update `CHANGELOG.md` setiap ada perubahan signifikan (gunakan `/changelog`).
+- Pastikan versi di `package.json` dan `CHANGELOG.md` sinkron sebelum deployment major.
+- Jangan commit file `.env` ke repository.
