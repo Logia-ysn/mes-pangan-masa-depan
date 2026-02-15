@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.0] - 2026-02-15
+
+### Infrastruktur & Keamanan
+- **Auto-Migration Deployment**: Sistem sekarang otomatis menjalankan migrasi database Prisma saat *startup* di Railway untuk mencegah error skema.
+- **Enhanced CORS Policy**: Dukungan untuk beberapa origin sekaligus, memungkinkan koneksi aman baik dari URL produksi maupun URL preview Vercel.
+- **Permission Refactor**: Mengubah syarat akses fitur pemeliharaan (Dummy Generator, Reset) dari `SUPERUSER` ke `ADMIN` untuk mempermudah operasional pengujian.
+
 ## [2.12.0] - 2026-02-15
 
 ### Ditambahkan
