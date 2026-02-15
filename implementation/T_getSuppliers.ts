@@ -11,7 +11,7 @@ export const t_getSuppliers: T_getSuppliers = apiWrapper(async (req, res) => {
         limit: limit ? Number(limit) : 100,
         offset: offset ? Number(offset) : 0,
         search: search as string,
-        is_active: is_active !== undefined ? Boolean(is_active) : undefined
+        is_active: is_active !== undefined ? String(is_active) === 'true' : undefined
     });
 
     return { data: data as any, total };

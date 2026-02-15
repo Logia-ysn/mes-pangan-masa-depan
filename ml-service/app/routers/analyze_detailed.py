@@ -11,6 +11,9 @@ from app.services.calibration_store import calibration_store
 
 router = APIRouter()
 
+import logging
+logger = logging.getLogger(__name__)
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 @router.post("/analyze-detailed")
 async def analyze_detailed(request: AnalyzeDetailedRequest):
@@ -21,6 +24,9 @@ async def analyze_detailed(request: AnalyzeDetailedRequest):
         rules = request.grading_rules or calibration_store.get_grading().rules
 
         image_bytes = decode_base64(request.image_base64)
+        if len(image_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="Image too large. Max 10MB.")
+            
         hsv, mask, valid_count = preprocess(image_bytes)
         colors = detect_colors(hsv, mask, valid_count, profile)
         grade, level, status = determine_grade(colors.green_percentage, rules)
@@ -44,5 +50,8 @@ async def analyze_detailed(request: AnalyzeDetailedRequest):
             grading_rules_used=rules,
             processing_time_ms=elapsed_ms,
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Detailed analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal analysis error")

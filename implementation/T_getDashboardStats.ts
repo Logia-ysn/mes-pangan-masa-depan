@@ -24,17 +24,14 @@ export const t_getDashboardStats: T_getDashboardStats = apiWrapper(async (req, r
     end_date: end_date as string
   });
 
-  // 4. Get employee count
-  const totalEmployees = await employeeRepository.count();
-
-  // 5. Return response in expected format
+  // 4. Return response in expected format
   return {
     total_gabah_input: stats.totalProduction,
     total_beras_output: stats.totalYield,
     average_rendemen: stats.avgRendemen,
     total_revenue: stats.totalRevenue,
     total_expenses: stats.totalExpenses,
-    total_employees: totalEmployees,
+    total_employees: stats.totalEmployees,
     production_trend: productionSummary.map(item => ({
       date: item.date,
       gabah_input: item.total_input,

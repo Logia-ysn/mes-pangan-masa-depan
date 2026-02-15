@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import Header from '../../components/Layout/Header';
-import api, { factoryApi, supplierApi } from '../../services/api';
+import api, { supplierApi } from '../../services/api';
 import { logger } from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
+import { useFactory } from '../../hooks/useFactory';
+import Pagination from '../../components/UI/Pagination';
+import { formatNumber } from '../../utils/formatUtils';
 
 interface Machine {
     id: number;
@@ -25,12 +28,6 @@ interface Machine {
     };
 }
 
-interface Factory {
-    id: number;
-    code: string;
-    name: string;
-}
-
 interface Supplier {
     id: number;
     code: string;
@@ -44,16 +41,27 @@ const statusConfig = {
 };
 
 const Machines = () => {
+    const { showSuccess, showError } = useToast();
     const [machines, setMachines] = useState<Machine[]>([]);
-    const [factories, setFactories] = useState<Factory[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
-    const [selectedFactory, setSelectedFactory] = useState<number>(1);
+
+    // Pagination & Factory hook
+    const [page, setPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 20;
+
+    const {
+        selectedFactory,
+        setSelectedFactory,
+        factories,
+        loading: factoryLoading
+    } = useFactory();
 
     const [formData, setFormData] = useState({
-        id_factory: selectedFactory || 1,
+        id_factory: 0,
         code: '',
         name: '',
         machine_type: '',
@@ -68,33 +76,35 @@ const Machines = () => {
     });
 
     useEffect(() => {
-        fetchMachines();
-        fetchFactories();
+        if (!factoryLoading) {
+            fetchMachines();
+        }
+    }, [selectedFactory, page, factoryLoading]);
+
+    useEffect(() => {
         fetchSuppliers();
     }, []);
 
     const fetchMachines = async () => {
         try {
-            const response = await api.get('/machines');
-            const machinesData = response.data?.data || response.data || [];
-            setMachines(Array.isArray(machinesData) ? machinesData : []);
+            setLoading(true);
+            const response = await api.get('/machines', {
+                params: {
+                    limit: ITEMS_PER_PAGE,
+                    offset: (page - 1) * ITEMS_PER_PAGE,
+                    id_factory: selectedFactory || undefined
+                }
+            });
+            const data = response.data?.data || response.data || [];
+            const total = response.data?.total || data.length;
+
+            setMachines(Array.isArray(data) ? data : []);
+            setTotalItems(total);
         } catch (error) {
             logger.error('Error fetching machines:', error);
+            showError('Error', 'Gagal memuat data mesin');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchFactories = async () => {
-        try {
-            const response = await factoryApi.getAll();
-            const factoriesData = response.data?.data || response.data || [];
-            setFactories(Array.isArray(factoriesData) ? factoriesData : []);
-            if (factoriesData.length > 0) {
-                setSelectedFactory(factoriesData[0].id);
-            }
-        } catch (error) {
-            logger.error('Error fetching factories:', error);
         }
     };
 
@@ -112,7 +122,7 @@ const Machines = () => {
         e.preventDefault();
         try {
             const payload = {
-                id_factory: formData.id_factory,
+                id_factory: formData.id_factory || selectedFactory || 1,
                 code: formData.code,
                 name: formData.name,
                 machine_type: formData.machine_type,
@@ -128,13 +138,16 @@ const Machines = () => {
 
             if (editingMachine) {
                 await api.put(`/machines/${editingMachine.id}`, payload);
+                showSuccess('Berhasil', 'Data mesin berhasil diperbarui');
             } else {
                 await api.post('/machines', payload);
+                showSuccess('Berhasil', 'Mesin baru berhasil ditambahkan');
             }
             fetchMachines();
             closeModal();
         } catch (error) {
             logger.error('Error saving machine:', error);
+            showError('Gagal', 'Terjadi kesalahan saat menyimpan data');
         }
     };
 
@@ -142,9 +155,11 @@ const Machines = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus mesin ini?')) {
             try {
                 await api.delete(`/machines/${id}`);
+                showSuccess('Berhasil', 'Mesin berhasil dihapus');
                 fetchMachines();
             } catch (error) {
                 logger.error('Error deleting machine:', error);
+                showError('Gagal', 'Gagal menghapus mesin');
             }
         }
     };
@@ -168,10 +183,9 @@ const Machines = () => {
             });
         } else {
             setEditingMachine(null);
-            // Auto-generate code
-            const nextCode = `MSN-${String(machines.length + 1).padStart(3, '0')}`;
+            const nextCode = `MSN-${String(totalItems + 1).padStart(3, '0')}`;
             setFormData({
-                id_factory: selectedFactory,
+                id_factory: selectedFactory || (factories.length > 0 ? factories[0].id : 0),
                 code: nextCode,
                 name: '',
                 machine_type: '',
@@ -193,126 +207,105 @@ const Machines = () => {
         setEditingMachine(null);
     };
 
-    // Filter machines by selected factory
-    const filteredMachines = machines.filter(m =>
-        selectedFactory === 0 || m.id_factory === selectedFactory
-    );
-
     // Stats calculations
-    const totalMachines = filteredMachines.length;
-    const activeMachines = filteredMachines.filter(m => m.status === 'ACTIVE').length;
-    const maintenanceMachines = filteredMachines.filter(m => m.status === 'MAINTENANCE').length;
-    const inactiveMachines = filteredMachines.filter(m => m.status === 'INACTIVE').length;
+    const activeMachines = machines.filter(m => m.status === 'ACTIVE').length;
+    const maintenanceMachines = machines.filter(m => m.status === 'MAINTENANCE').length;
+    const inactiveMachines = machines.filter(m => m.status === 'INACTIVE').length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
-        <>
-            <Header title="Mesin Produksi" subtitle="Kelola mesin dan peralatan produksi" />
+        <div className="page-content">
+            {/* Factory Toggle */}
+            <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                    className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setSelectedFactory(null); setPage(1); }}
+                >
+                    <span className="material-symbols-outlined icon-sm">apps</span>
+                    Semua
+                </button>
+                {factories.map(factory => (
+                    <button
+                        key={factory.id}
+                        className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => { setSelectedFactory(factory.id); setPage(1); }}
+                    >
+                        <span className="material-symbols-outlined icon-sm">factory</span>
+                        {factory.name}
+                    </button>
+                ))}
+            </div>
 
-            <div className="page-content">
-                {/* Factory Toggle */}
-                <div className="card" style={{ marginBottom: 24, padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>Lokasi Pabrik:</span>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                                className={`btn ${selectedFactory === 0 ? 'btn-primary' : 'btn-secondary'}`}
-                                onClick={() => setSelectedFactory(0)}
-                                style={{ minWidth: 100 }}
-                            >
-                                Semua
-                            </button>
-                            {factories.map(factory => (
-                                <button
-                                    key={factory.id}
-                                    className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => setSelectedFactory(factory.id)}
-                                    style={{ minWidth: 100 }}
-                                >
-                                    <span className="material-symbols-outlined icon-sm">
-                                        {factory.code === 'PMD-1' ? 'factory' : 'warehouse'}
-                                    </span>
-                                    {factory.name}
-                                </button>
-                            ))}
-                        </div>
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total Mesin</span>
+                        <span className="material-symbols-outlined stat-card-icon">precision_manufacturing</span>
                     </div>
+                    <div className="stat-card-value">{totalItems}</div>
+                    <span className="badge badge-muted">Unit</span>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total Mesin</span>
-                            <span className="material-symbols-outlined stat-card-icon">precision_manufacturing</span>
-                        </div>
-                        <div className="stat-card-value">{totalMachines}</div>
-                        <span className="badge badge-muted">Unit</span>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Mesin Aktif (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">check_circle</span>
                     </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Mesin Aktif</span>
-                            <span className="material-symbols-outlined stat-card-icon">check_circle</span>
-                        </div>
-                        <div className="stat-card-value">{activeMachines}</div>
-                        <span className="badge badge-success">
-                            <span className="material-symbols-outlined icon-sm">trending_up</span>
-                            {totalMachines > 0 ? Math.round((activeMachines / totalMachines) * 100) : 0}%
-                        </span>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Sedang Maintenance</span>
-                            <span className="material-symbols-outlined stat-card-icon">build</span>
-                        </div>
-                        <div className="stat-card-value">{maintenanceMachines}</div>
-                        <span className="badge badge-warning">Dalam Perbaikan</span>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Tidak Aktif</span>
-                            <span className="material-symbols-outlined stat-card-icon">cancel</span>
-                        </div>
-                        <div className="stat-card-value">{inactiveMachines}</div>
-                        <span className="badge badge-error">Perlu Perhatian</span>
-                    </div>
+                    <div className="stat-card-value">{activeMachines}</div>
+                    <span className="badge badge-success">
+                        {machines.length > 0 ? Math.round((activeMachines / machines.length) * 100) : 0}%
+                    </span>
                 </div>
 
-                {/* Machine List */}
-                <div className="card">
-                    <div className="card-header">
-                        <div>
-                            <h3 className="card-title">Daftar Mesin</h3>
-                            <p className="card-subtitle">
-                                {selectedFactory === 0
-                                    ? 'Semua mesin di semua pabrik'
-                                    : `Mesin di ${factories.find(f => f.id === selectedFactory)?.name || 'Pabrik'}`}
-                            </p>
-                        </div>
-                        <button className="btn btn-primary" onClick={() => openModal()}>
-                            <span className="material-symbols-outlined icon-sm">add</span>
-                            Tambah Mesin
-                        </button>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Maintenance (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">build</span>
                     </div>
+                    <div className="stat-card-value">{maintenanceMachines}</div>
+                    <span className="badge badge-warning">Proses</span>
+                </div>
 
-                    {loading ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                            </div>
-                            <h3>Memuat data...</h3>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Tidak Aktif (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">cancel</span>
+                    </div>
+                    <div className="stat-card-value">{inactiveMachines}</div>
+                </div>
+            </div>
+
+            {/* Machine List */}
+            <div className="card">
+                <div className="card-header">
+                    <div>
+                        <h3 className="card-title">Daftar Mesin</h3>
+                        <p className="card-subtitle">Kelola mesin dan peralatan produksi</p>
+                    </div>
+                    <button className="btn btn-primary" onClick={() => openModal()}>
+                        <span className="material-symbols-outlined icon-sm">add</span>
+                        Tambah Mesin
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
                         </div>
-                    ) : filteredMachines.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined">precision_manufacturing</span>
-                            </div>
-                            <h3>Belum ada mesin</h3>
-                            <p>Klik tombol "Tambah Mesin" untuk menambahkan mesin baru</p>
+                        <h3>Memuat data...</h3>
+                    </div>
+                ) : machines.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined">precision_manufacturing</span>
                         </div>
-                    ) : (
+                        <h3>Belum ada mesin</h3>
+                        <p>Klik tombol "Tambah Mesin" untuk menambahkan mesin baru</p>
+                    </div>
+                ) : (
+                    <>
                         <div className="table-container">
                             <table>
                                 <thead>
@@ -328,7 +321,7 @@ const Machines = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredMachines.map((machine) => {
+                                    {machines.map((machine) => {
                                         const status = statusConfig[machine.status];
                                         return (
                                             <tr key={machine.id}>
@@ -350,7 +343,7 @@ const Machines = () => {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span className="font-mono">{machine.capacity_per_hour || 0}</span> kg
+                                                    <span className="font-mono">{formatNumber(machine.capacity_per_hour)}</span> kg
                                                 </td>
                                                 <td>
                                                     <span className={`badge ${status.class}`}>
@@ -374,11 +367,18 @@ const Machines = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalItems={totalItems}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                        />
+                    </>
+                )}
             </div>
 
-            {/* Modal Form - Redesigned */}
+            {/* Modal Form */}
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
@@ -400,55 +400,26 @@ const Machines = () => {
                             <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                 {/* Section 1: Informasi Umum & Teknis */}
                                 <div style={{ marginBottom: 24 }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 8,
-                                        marginBottom: 16,
-                                        paddingBottom: 8,
-                                        borderBottom: '1px solid var(--border)'
-                                    }}>
-                                        <span style={{
-                                            background: 'var(--primary)',
-                                            color: 'white',
-                                            borderRadius: '50%',
-                                            width: 24,
-                                            height: 24,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: 12,
-                                            fontWeight: 600
-                                        }}>1</span>
-                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>
-                                            INFORMASI UMUM & TEKNIS
-                                        </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                        <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>1</span>
+                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>INFORMASI UMUM & TEKNIS</span>
                                     </div>
 
-                                    {/* Lokasi Pabrik */}
                                     <div className="form-group">
-                                        <label className="form-label">
-                                            Lokasi Pabrik <span style={{ color: 'var(--error)' }}>*</span>
-                                        </label>
-                                        <div style={{ display: 'flex', gap: 8 }}>
-                                            {factories.map(factory => (
-                                                <button
-                                                    key={factory.id}
-                                                    type="button"
-                                                    className={`btn ${formData.id_factory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
-                                                    onClick={() => setFormData({ ...formData, id_factory: factory.id })}
-                                                    style={{ flex: 1, padding: '10px 16px' }}
-                                                >
-                                                    <span className="material-symbols-outlined icon-sm">
-                                                        {factory.code === 'PMD-1' ? 'factory' : 'warehouse'}
-                                                    </span>
-                                                    {factory.name}
-                                                </button>
+                                        <label className="form-label">Lokasi Pabrik <span style={{ color: 'var(--error)' }}>*</span></label>
+                                        <select
+                                            className="form-input form-select"
+                                            value={formData.id_factory}
+                                            onChange={(e) => setFormData({ ...formData, id_factory: parseInt(e.target.value) })}
+                                            required
+                                        >
+                                            <option value={0}>Pilih Pabrik</option>
+                                            {factories.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
-                                        </div>
+                                        </select>
                                     </div>
 
-                                    {/* Kode & Nama - 2 columns */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div className="form-group">
                                             <label className="form-label">Kode Mesin</label>
@@ -459,7 +430,6 @@ const Machines = () => {
                                                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                                                 placeholder="MSN-001"
                                                 required
-                                                style={{ color: 'var(--primary)', fontWeight: 500 }}
                                             />
                                         </div>
                                         <div className="form-group">
@@ -475,7 +445,6 @@ const Machines = () => {
                                         </div>
                                     </div>
 
-                                    {/* Tipe & Serial - 2 columns */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div className="form-group">
                                             <label className="form-label">Tipe Mesin</label>
@@ -499,46 +468,38 @@ const Machines = () => {
                                         </div>
                                     </div>
 
-                                    {/* Tahun, Kapasitas, Status - 3 columns */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                                         <div className="form-group">
-                                            <label className="form-label">Tahun Manufaktur</label>
+                                            <label className="form-label">Thn Manufaktur</label>
                                             <input
                                                 type="number"
                                                 className="form-input"
                                                 value={formData.manufacture_year}
                                                 onChange={(e) => setFormData({ ...formData, manufacture_year: e.target.value })}
                                                 placeholder="YYYY"
-                                                min="1990"
-                                                max="2030"
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label">
-                                                Kapasitas/Jam <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>KG</span>
-                                            </label>
-                                            <div className="input-group">
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    value={formData.capacity_per_hour}
-                                                    onChange={(e) => setFormData({ ...formData, capacity_per_hour: e.target.value })}
-                                                    placeholder="1000"
-                                                    step="0.01"
-                                                />
-                                                <span className="input-addon">kg</span>
-                                            </div>
+                                            <label className="form-label">Kapasitas (kg/j)</label>
+                                            <input
+                                                type="number"
+                                                className="form-input"
+                                                value={formData.capacity_per_hour}
+                                                onChange={(e) => setFormData({ ...formData, capacity_per_hour: e.target.value })}
+                                                placeholder="1000"
+                                                step="0.01"
+                                            />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label">Status Operasional</label>
+                                            <label className="form-label">Status</label>
                                             <select
                                                 className="form-input form-select"
                                                 value={formData.status}
                                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                             >
-                                                <option value="ACTIVE">● Aktif</option>
-                                                <option value="MAINTENANCE">● Maintenance</option>
-                                                <option value="INACTIVE">● Tidak Aktif</option>
+                                                <option value="ACTIVE">Aktif</option>
+                                                <option value="MAINTENANCE">Maintenance</option>
+                                                <option value="INACTIVE">Tidak Aktif</option>
                                             </select>
                                         </div>
                                     </div>
@@ -546,35 +507,14 @@ const Machines = () => {
 
                                 {/* Section 2: Informasi Pembelian */}
                                 <div>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 8,
-                                        marginBottom: 16,
-                                        paddingBottom: 8,
-                                        borderBottom: '1px solid var(--border)'
-                                    }}>
-                                        <span style={{
-                                            background: 'var(--primary)',
-                                            color: 'white',
-                                            borderRadius: '50%',
-                                            width: 24,
-                                            height: 24,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: 12,
-                                            fontWeight: 600
-                                        }}>2</span>
-                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>
-                                            INFORMASI PEMBELIAN
-                                        </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                        <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>2</span>
+                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>INFORMASI PEMBELIAN</span>
                                     </div>
 
-                                    {/* Tanggal & Vendor - 2 columns */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div className="form-group">
-                                            <label className="form-label">Tanggal Pembelian</label>
+                                            <label className="form-label">Tanggal Beli</label>
                                             <input
                                                 type="date"
                                                 className="form-input"
@@ -583,60 +523,45 @@ const Machines = () => {
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label">Vendor/Supplier</label>
+                                            <label className="form-label">Vendor</label>
                                             <select
                                                 className="form-input form-select"
                                                 value={formData.vendor_id}
                                                 onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
                                             >
                                                 <option value="">Pilih Vendor</option>
-                                                {suppliers.map(supplier => (
-                                                    <option key={supplier.id} value={supplier.id}>
-                                                        {supplier.name}
-                                                    </option>
-                                                ))}
+                                                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                             </select>
                                         </div>
                                     </div>
 
-                                    {/* Harga & Garansi - 2 columns */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                         <div className="form-group">
-                                            <label className="form-label">Harga Beli</label>
-                                            <div className="input-group">
-                                                <span className="input-addon">Rp</span>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    value={formData.purchase_price}
-                                                    onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
-                                                    placeholder="0"
-                                                    min="0"
-                                                />
-                                            </div>
+                                            <label className="form-label">Harga (Rp)</label>
+                                            <input
+                                                type="number"
+                                                className="form-input"
+                                                value={formData.purchase_price}
+                                                onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
+                                                placeholder="0"
+                                            />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label">Masa Garansi</label>
-                                            <div className="input-group">
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    value={formData.warranty_months}
-                                                    onChange={(e) => setFormData({ ...formData, warranty_months: e.target.value })}
-                                                    placeholder="12"
-                                                    min="0"
-                                                />
-                                                <span className="input-addon">Bulan</span>
-                                            </div>
+                                            <label className="form-label">Garansi (Bulan)</label>
+                                            <input
+                                                type="number"
+                                                className="form-input"
+                                                value={formData.warranty_months}
+                                                onChange={(e) => setFormData({ ...formData, warranty_months: e.target.value })}
+                                                placeholder="12"
+                                            />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={closeModal}>
-                                    Batal
-                                </button>
+                                <button type="button" className="btn btn-secondary" onClick={closeModal}>Batal</button>
                                 <button type="submit" className="btn btn-primary">
                                     <span className="material-symbols-outlined icon-sm">save</span>
                                     {editingMachine ? 'Simpan Perubahan' : 'Tambah Mesin'}
@@ -646,7 +571,7 @@ const Machines = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

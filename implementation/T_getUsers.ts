@@ -6,6 +6,7 @@ import { T_getUsers } from "../types/api/T_getUsers";
 import { userService } from "../src/services/user.service";
 import { requireAuth } from "../utility/auth";
 import { apiWrapper } from "../src/utils/apiWrapper";
+import { sanitizeUser } from "../utility/auth";
 
 export const t_getUsers: T_getUsers = apiWrapper(async (req, res) => {
   // 0. Auth check - ADMIN required
@@ -24,7 +25,7 @@ export const t_getUsers: T_getUsers = apiWrapper(async (req, res) => {
 
   // 3. Return response
   return {
-    data: users,
+    data: users.map(sanitizeUser),
     total,
     limit: limit ? Number(limit) : 10,
     offset: offset ? Number(offset) : 0

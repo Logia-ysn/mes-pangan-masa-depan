@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.16.0] - 2026-02-15
+
+### Ditambahkan
+- **Fitur Quick Add Lengkap**: Menambahkan field Kontak Person, Telepon, dan Deskripsi pada modal tambah cepat Supplier, Kategori, dan Varietas di modul Penerimaan Bahan Baku agar sinkron dengan menu Pengaturan.
+
+### Diubah
+- **Responsive Full-Width Layout**: Mengoptimasi `.main-container` dan `.page-content` di `index.css` untuk tampilan layar penuh yang lebih luas dan responsif (menghapus batasan lebar 1600px).
+- **Finalisasi Sentralisasi Header**: Menghapus duplikasi komponen Header lokal di 11+ halaman (Settings, InvoiceDetail, PurchaseOrderDetail, dll) untuk menggunakan Header global yang dikelola secara terpusat di `Layout.tsx`.
+
+### Diperbaiki
+- **Bug Code Duplication**: Memperbaiki issue duplikasi `return` dan error linting pada `Users.tsx` dan `RawMaterialReceipt.tsx`.
+- **UI Overflow Fix**: Memperbaiki masalah teks overlap pada sidebar dan konten utama saat resolusi layar menengah.
+
+## [2.15.5] - 2026-02-15
+
+### Diubah
+- **Refaktor Global UI & UX**: Melakukan standarisasi tampilan pada halaman utama (Worksheets, Stocks, Customers, Machines, Maintenance, Invoices, Purchase Orders, Raw Material Receipt, QC Gabah).
+- **Implementasi Server-Side Pagination**: Menambahkan fitur paginasi sisi server pada seluruh tabel data utama untuk mengoptimasi performa saat menangani dataset besar.
+- **Sentralisasi Header**: Menghapus deklarasi header lokal di setiap halaman dan menggunakan komponen `Header` global yang dikelola melalui `Layout` dan `routeUtils`.
+- **Standardisasi Format Data**: Mengintegrasikan `formatUtils` di seluruh aplikasi untuk konsistensi penulisan mata uang (Rupiah), tanggal, dan angka.
+- **Integrasi useFactory Hook**: Menggunakan hook `useFactory` untuk manajemen seleksi pabrik yang konsisten di seluruh modul produksi dan purchasing.
+- **Peningkatan Visual & Feedback**: Implementasi sistem toast notifikasi (`useToast`) yang lebih konsisten dan perbaikan layout grid/modal untuk pengalaman pengguna yang lebih premium.
+
+
+## [2.15.0] - 2026-02-15
+
+
+### Keamanan & Integritas Data (Audit Fixes)
+- **Transactional Stock Operations**: Melakukan refaktor pada `StockService` untuk mendukung *pass-through transactions*. Semua operasi stok di `InvoiceService` dan `PurchaseOrderService` sekarang berjalan dalam satu paket transaksi database yang atomik, mencegah ketidaksiapan stok jika terjadi error di tengah proses.
+- **ID Normalization**: Menormalisasi input ID dari request path menjadi tipe data `Number` pada modul Customer dan Supplier untuk mencegah error *type mismatch* pada repositori.
+- **Improved Filter Mapping**: Memperbaiki logika filter `is_active` pada list Customer dan Supplier agar mengenali nilai boolean dari parameter query string dengan benar.
+- **Advanced Validation Layer**: Menambahkan layer validasi data di endpoint pembuatan Invoice dan Purchase Order untuk memastikan data yang dikirim lengkap sebelum diproses oleh service.
+
+### Optimasi Kode & UX
+- **Unified Dashboard Service**: Menggabungkan pengambilan statistik karyawan ke dalam `DashboardService` untuk mengurangi request redundant dan menyederhanakan alur data dashboard.
+- **Frontend useFactory Hook**: Implementasi custom hook `useFactory` untuk sentralisasi manajemen seleksi pabrik, persistensi pilihan di `localStorage`, dan optimasi performa dashboard.
+- **Error Handling Architecture**: Menambahkan kelas `InternalServerError` standar dan memperkuat penanganan error pada level repositori.
+
 ## [2.14.0] - 2026-02-15
 
 ### Keamanan & Integritas Data

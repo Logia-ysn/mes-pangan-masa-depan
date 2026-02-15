@@ -5,7 +5,7 @@ import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_updateCustomer: T_updateCustomer = apiWrapper(async (req, res) => {
     await requireAuth(req, 'SUPERVISOR');
-    const { id } = req.path;
+    const id = Number(req.path.id);
     const customer = await customerRepository.findById(id);
     if (!customer) throw new Error('Customer not found');
 

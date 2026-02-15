@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../../components/Layout/Header';
+
 import { purchaseOrderApi, goodsReceiptApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
@@ -198,7 +198,6 @@ const PurchaseOrderDetail = () => {
     if (loading) {
         return (
             <>
-                <Header title="Detail Purchase Order" subtitle="Memuat..." />
                 <div className="page-content">
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -214,7 +213,6 @@ const PurchaseOrderDetail = () => {
     if (!po) {
         return (
             <>
-                <Header title="Detail Purchase Order" subtitle="Tidak ditemukan" />
                 <div className="page-content">
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -240,8 +238,6 @@ const PurchaseOrderDetail = () => {
 
     return (
         <>
-            <Header title="Detail Purchase Order" subtitle={po.po_number} />
-
             <div className="page-content">
                 {/* Back button + Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

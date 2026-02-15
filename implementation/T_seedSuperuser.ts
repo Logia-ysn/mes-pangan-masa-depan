@@ -5,16 +5,26 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { userRepository } from "../src/repositories/user.repository";
 import { requireAuth } from "../utility/auth";
+import { ForbiddenError } from "../src/utils/errors";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
-const SEED_SECRET = process.env.SEED_SECRET || 'P4ng4nM4s4D3p4nJ4y4!';
+const SEED_SECRET = process.env.SEED_SECRET;
 const ROOT_EMAIL = 'root@pangan.com';
 
 export const t_seedSuperuser: T_seedSuperuser = apiWrapper(async (req, res) => {
-    // 0. Require ADMIN authentication
+    // 0. Disable in production
+    if (process.env.NODE_ENV === 'production') {
+        throw new ForbiddenError('This endpoint is disabled in production');
+    }
+
+    if (!SEED_SECRET) {
+        throw new Error('SEED_SECRET environment variable is required');
+    }
+
+    // 1. Require ADMIN authentication
     await requireAuth(req, 'ADMIN');
 
-    // 1. Verify Secret Key
+    // 2. Verify Secret Key
     if (req.body.secretKey !== SEED_SECRET) {
         return {
             success: false,

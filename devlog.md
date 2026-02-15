@@ -1,15 +1,17 @@
 # Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 22 — Comprehensive Code Audit & Integrity Fixes
+## 🟢 Status: Phase 23 — System Security Hardening & Transactional Integrity
 **Date**: Feb 15, 2026
-**Current Version**: 2.14.0
+**Current Version**: 2.15.0
+
+### ✅ Phase 23: System Security Hardening & Transactional Integrity (Feb 15, 2026)
+Successfully completed a deep-dive security hardening and architectural refactoring based on the latest System Audit.
+1. **Transactional Integrity** — Refactored `StockService` to support passthrough transactions. Fixed `InvoiceService` and `PurchaseOrderService` to ensure inventory movements are committed atomically with their parent records.
+2. **Security Hardening** — Added input validation layers to creation endpoints and normalized ID inputs (Number conversion) across all path param handlers.
+3. **Frontend Architecture** — Implemented `useFactory` custom hook for global factory context management and selection persistence.
+4. **Data Optimization** — Unified dashboard statistics data flow and improved is_active filter mapping for core master data entities.
 
 ### ✅ Phase 22: Comprehensive Code Audit & Integrity Fixes (Feb 15, 2026)
-Successfully completed a system-wide audit and resolved critical data integrity issues.
-1. **Schema Migration** — Transitioned `id_machines` and `id_operators` to native PostgreSQL **JSON** type for enhanced structure and query performance.
-2. **Race Condition Fixed** — Added random suffixes to PO and GR numbering logic to prevent concurrency collisions.
-3. **Operator Addition Fix** — Implemented auto-generation for `employee_code` in the backend to allow seamless operator creation from the Worksheet form modal.
-4. **Data Sync** — Optimized service mappings by removing redundant serializations.
 
 ### ✅ Phase 20: Inter-Factory Stock Transfer (Feb 15, 2026)
 Implemented the core business requirement for moving semi-finished products between production sites.

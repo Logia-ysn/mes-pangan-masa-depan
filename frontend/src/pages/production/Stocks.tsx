@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import Header from '../../components/Layout/Header';
-import { stockApi, factoryApi } from '../../services/api';
+import { stockApi } from '../../services/api';
 import api from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { logger } from '../../utils/logger';
+import { useFactory } from '../../hooks/useFactory';
+import Pagination from '../../components/UI/Pagination';
+import { formatDate, formatNumber } from '../../utils/formatUtils';
 
 interface Stock {
     id: number;
@@ -33,13 +35,9 @@ interface ProductType {
     category: string;
 }
 
-interface Factory {
-    id: number;
-    code: string;
-    name: string;
-}
-
 const Stocks = () => {
+    const { theme } = useTheme();
+    const { showSuccess, showError } = useToast();
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
     const [loading, setLoading] = useState(true);
@@ -53,11 +51,18 @@ const Stocks = () => {
         min_quantity: '',
         unit: 'kg'
     });
-    const { theme } = useTheme();
-    const { showSuccess, showError } = useToast();
 
-    const [factories, setFactories] = useState<Factory[]>([]);
-    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+    // Pagination & Factory hook
+    const [page, setPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 20;
+
+    const {
+        selectedFactory,
+        setSelectedFactory,
+        factories,
+        loading: factoryLoading
+    } = useFactory();
 
     // Transfer Modal States
     const [showTransferModal, setShowTransferModal] = useState(false);
@@ -73,31 +78,24 @@ const Stocks = () => {
     const [transfers, setTransfers] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchFactories = async () => {
-            try {
-                const res = await factoryApi.getAll();
-                const data = res.data?.data || res.data || [];
-                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
-                setFactories(pmdFactories);
-                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
-                if (pmd1) setSelectedFactory(pmd1.id);
-                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
-            } catch (error) {
-                logger.error('Error fetching factories:', error);
-            }
-        };
-        fetchFactories();
-    }, []);
+        if (!factoryLoading) {
+            fetchData();
+        }
+    }, [selectedFactory, page, factoryLoading]);
 
     useEffect(() => {
-        fetchData();
         fetchTransfers();
     }, [selectedFactory]);
 
     const fetchTransfers = async () => {
         try {
             const res = await api.get('/stock-movements', {
-                params: { reference_type: 'TRANSFER', limit: 10, movement_type: 'OUT' }
+                params: {
+                    reference_type: 'TRANSFER',
+                    limit: 10,
+                    movement_type: 'OUT',
+                    ...(selectedFactory ? { id_factory: selectedFactory } : {})
+                }
             });
             setTransfers(res.data?.data || []);
         } catch (e) { logger.error(e); }
@@ -107,14 +105,25 @@ const Stocks = () => {
         try {
             setLoading(true);
             const [stocksRes, productTypesRes] = await Promise.all([
-                stockApi.getAll({ limit: 100, id_factory: selectedFactory || undefined }),
+                stockApi.getAll({
+                    limit: ITEMS_PER_PAGE,
+                    offset: (page - 1) * ITEMS_PER_PAGE,
+                    id_factory: selectedFactory || undefined
+                }),
                 api.get('/product-types')
             ]);
-            setStocks(stocksRes.data.data || stocksRes.data || []);
+
+            const stockData = stocksRes.data?.data || stocksRes.data || [];
+            const total = stocksRes.data?.total || stockData.length;
+
+            setStocks(stockData);
+            setTotalItems(total);
+
             const ptData = productTypesRes.data?.data || productTypesRes.data || [];
             setProductTypes(Array.isArray(ptData) ? ptData : []);
         } catch (error) {
-            logger.error('Error:', error);
+            logger.error('Error fetching stock data:', error);
+            showError('Error', 'Gagal memuat data stok');
         } finally {
             setLoading(false);
         }
@@ -133,13 +142,16 @@ const Stocks = () => {
 
             if (editingStock) {
                 await stockApi.update(editingStock.id, payload);
+                showSuccess('Berhasil', 'Data stok berhasil diperbarui');
             } else {
                 await stockApi.create(payload);
+                showSuccess('Berhasil', 'Data stok baru berhasil ditambahkan');
             }
             fetchData();
             closeModal();
         } catch (error) {
             logger.error('Error saving stock:', error);
+            showError('Gagal', 'Terjadi kesalahan saat menyimpan data');
         }
     };
 
@@ -147,9 +159,11 @@ const Stocks = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus stok ini?')) {
             try {
                 await stockApi.delete(id);
+                showSuccess('Berhasil', 'Stok berhasil dihapus');
                 fetchData();
             } catch (error) {
                 logger.error('Error deleting stock:', error);
+                showError('Gagal', 'Gagal menghapus stok');
             }
         }
     };
@@ -183,13 +197,11 @@ const Stocks = () => {
     };
 
     const openTransferModal = async (stock?: Stock) => {
-        // Fetch ALL stocks (tanpa filter factory) agar dropdown produk lengkap
         try {
             const res = await stockApi.getAll({ limit: 200 });
             setAllStocks(res.data.data || res.data || []);
         } catch (e) { logger.error(e); }
 
-        // Pre-fill jika dipanggil dari row tertentu
         if (stock) {
             setTransferForm({
                 fromFactoryId: stock.id_factory,
@@ -245,25 +257,13 @@ const Stocks = () => {
             );
 
             setShowTransferModal(false);
-            fetchData(); // Refresh stock data
-            fetchTransfers(); // Refresh transfer history
+            fetchData();
+            fetchTransfers();
         } catch (error: any) {
             showError('Transfer Gagal', error.response?.data?.message || error.message);
         } finally {
             setTransferLoading(false);
         }
-    };
-
-    const formatNumber = (num: number) =>
-        new Intl.NumberFormat('id-ID').format(num);
-
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
     };
 
     const getStockStatus = (stock: Stock) => {
@@ -273,21 +273,17 @@ const Stocks = () => {
         return { label: 'Tersedia', class: 'badge-success', icon: 'check_circle' };
     };
 
-    // Categories from product types
     const categories = ['all', ...new Set(productTypes.map(pt => pt.category).filter(Boolean))];
 
-    // Filter stocks
     const filteredStocks = filterCategory === 'all'
         ? stocks
         : stocks.filter(s => s.product_type?.category === filterCategory);
 
-    // Stats
-    const totalSKUs = stocks.length;
+    const totalSKUs = totalItems;
     const lowStockCount = stocks.filter(s => s.quantity <= (s.min_quantity || 100) && s.quantity > 0).length;
     const outOfStockCount = stocks.filter(s => s.quantity <= 0).length;
     const totalValue = stocks.reduce((sum, s) => sum + (s.quantity || 0), 0);
 
-    // Chart Data: Distribution by Category
     const categoryDistribution = useMemo(() => {
         const dist = stocks.reduce((acc, curr) => {
             const cat = curr.product_type?.category || 'Uncategorized';
@@ -304,130 +300,120 @@ const Stocks = () => {
         tooltipBg: theme === 'dark' ? '#182430' : '#ffffff',
     };
 
-    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
-        <>
-            <Header title="Stok & Inventory" subtitle={`Kelola stok produk dan bahan baku — ${selectedFactoryName || 'Semua Pabrik'}`} />
-
-            <div className="page-content">
-                {/* Factory Toggle */}
-                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="page-content">
+            {/* Factory Toggle */}
+            <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                    className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setSelectedFactory(null); setPage(1); }}
+                >
+                    <span className="material-symbols-outlined icon-sm">apps</span>
+                    Semua
+                </button>
+                {factories.map(factory => (
                     <button
-                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
-                        onClick={() => setSelectedFactory(null)}
+                        key={factory.id}
+                        className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => { setSelectedFactory(factory.id); setPage(1); }}
                     >
-                        <span className="material-symbols-outlined icon-sm">apps</span>
-                        Semua
+                        <span className="material-symbols-outlined icon-sm">factory</span>
+                        {factory.name}
                     </button>
-                    {factories.map(factory => (
-                        <button
-                            key={factory.id}
-                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setSelectedFactory(factory.id)}
-                        >
-                            <span className="material-symbols-outlined icon-sm">factory</span>
-                            {factory.name}
-                        </button>
-                    ))}
+                ))}
+            </div>
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total SKU</span>
+                        <span className="material-symbols-outlined stat-card-icon">inventory_2</span>
+                    </div>
+                    <div className="stat-card-value">{formatNumber(totalSKUs)}</div>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total SKU</span>
-                            <span className="material-symbols-outlined stat-card-icon">inventory_2</span>
-                        </div>
-                        <div className="stat-card-value">{totalSKUs}</div>
-                        <span className="badge badge-muted">Produk</span>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Stok Rendah</span>
+                        <span className="material-symbols-outlined stat-card-icon">warning</span>
                     </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Stok Rendah</span>
-                            <span className="material-symbols-outlined stat-card-icon">warning</span>
-                        </div>
-                        <div className="stat-card-value" style={{ color: lowStockCount > 0 ? 'var(--warning)' : 'var(--success)' }}>
-                            {lowStockCount}
-                        </div>
-                        <span className={`badge ${lowStockCount > 0 ? 'badge-warning' : 'badge-success'}`}>
-                            {lowStockCount > 0 ? 'Perlu Restock' : 'Aman'}
-                        </span>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Stok Habis</span>
-                            <span className="material-symbols-outlined stat-card-icon">error</span>
-                        </div>
-                        <div className="stat-card-value" style={{ color: outOfStockCount > 0 ? 'var(--error)' : 'var(--success)' }}>
-                            {outOfStockCount}
-                        </div>
-                        <span className={`badge ${outOfStockCount > 0 ? 'badge-error' : 'badge-success'}`}>
-                            {outOfStockCount > 0 ? 'Urgent!' : 'OK'}
-                        </span>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total Stok</span>
-                            <span className="material-symbols-outlined stat-card-icon">scale</span>
-                        </div>
-                        <div className="stat-card-value">{formatNumber(totalValue)}</div>
-                        <span className="badge badge-info">kg</span>
+                    <div className="stat-card-value" style={{ color: lowStockCount > 0 ? 'var(--warning)' : 'var(--success)' }}>
+                        {lowStockCount}
                     </div>
                 </div>
 
-                <div className="grid grid-2-1" style={{ marginTop: 24, alignItems: 'start' }}>
-                    {/* Stock Table */}
-                    <div className="card" style={{ gridColumn: 'span 2' }}>
-                        <div className="card-header">
-                            <div>
-                                <h3 className="card-title">Daftar Stok</h3>
-                                <p className="card-subtitle">Kelola inventaris produk</p>
-                            </div>
-                            <div style={{ display: 'flex', gap: 12 }}>
-                                {/* Category Filter */}
-                                <select
-                                    className="form-input form-select"
-                                    style={{ width: 'auto', minWidth: 150 }}
-                                    value={filterCategory}
-                                    onChange={(e) => setFilterCategory(e.target.value)}
-                                >
-                                    <option value="all">Semua Kategori</option>
-                                    {categories.filter(c => c !== 'all').map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                                <button className="btn btn-secondary" onClick={() => openTransferModal()}
-                                    style={{ background: 'var(--info)', color: 'white', border: 'none' }}>
-                                    <span className="material-symbols-outlined icon-sm">swap_horiz</span>
-                                    Transfer Stok
-                                </button>
-                                <button className="btn btn-primary" onClick={() => openModal()}>
-                                    <span className="material-symbols-outlined icon-sm">add</span>
-                                    Tambah Stok
-                                </button>
-                            </div>
-                        </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Stok Habis</span>
+                        <span className="material-symbols-outlined stat-card-icon">error</span>
+                    </div>
+                    <div className="stat-card-value" style={{ color: outOfStockCount > 0 ? 'var(--error)' : 'var(--success)' }}>
+                        {outOfStockCount}
+                    </div>
+                </div>
 
-                        {loading ? (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">
-                                    <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                                </div>
-                                <h3>Memuat data...</h3>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total Volume (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">scale</span>
+                    </div>
+                    <div className="stat-card-value">{formatNumber(totalValue)}</div>
+                    <span className="badge badge-info">kg</span>
+                </div>
+            </div>
+
+            <div className="grid grid-2-1" style={{ marginTop: 24, alignItems: 'start' }}>
+                {/* Stock Table */}
+                <div className="card" style={{ gridColumn: 'span 2' }}>
+                    <div className="card-header">
+                        <div>
+                            <h3 className="card-title">Daftar Stok</h3>
+                            <p className="card-subtitle">Kelola inventaris produk</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            <select
+                                className="form-input form-select"
+                                style={{ width: 'auto', minWidth: 150 }}
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                            >
+                                <option value="all">Semua Kategori</option>
+                                {categories.filter(c => c !== 'all').map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                            <button className="btn btn-secondary" onClick={() => openTransferModal()}
+                                style={{ background: 'var(--info)', color: 'white', border: 'none' }}>
+                                <span className="material-symbols-outlined icon-sm">swap_horiz</span>
+                                Transfer Stok
+                            </button>
+                            <button className="btn btn-primary" onClick={() => openModal()}>
+                                <span className="material-symbols-outlined icon-sm">add</span>
+                                Tambah Stok
+                            </button>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
                             </div>
-                        ) : filteredStocks.length === 0 ? (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">
-                                    <span className="material-symbols-outlined">inventory_2</span>
-                                </div>
-                                <h3>Belum ada stok</h3>
-                                <p>Klik tombol "Tambah Stok" untuk menambahkan data inventaris</p>
+                            <h3>Memuat data...</h3>
+                        </div>
+                    ) : filteredStocks.length === 0 ? (
+                        <div className="empty-state">
+                            <div className="empty-state-icon">
+                                <span className="material-symbols-outlined">inventory_2</span>
                             </div>
-                        ) : (
+                            <h3>Belum ada stok</h3>
+                            <p>Tidak ditemukan data stok untuk filter ini</p>
+                        </div>
+                    ) : (
+                        <>
                             <div className="table-container">
                                 <table>
                                     <thead>
@@ -499,47 +485,54 @@ const Stocks = () => {
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                    </div>
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPageChange={setPage}
+                                totalItems={totalItems}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                            />
+                        </>
+                    )}
+                </div>
 
-                    {/* Inventory Distribution Chart */}
-                    <div className="card" style={{ gridColumn: 'span 1' }}>
-                        <div className="card-header">
-                            <h3 className="card-title">Distribusi Inventaris</h3>
-                            <p className="card-subtitle">Berdasarkan kategori</p>
-                        </div>
-                        <div style={{ height: 300, width: '100%' }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={categoryDistribution}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {categoryDistribution.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: chartColors.tooltipBg,
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: 8
-                                        }}
-                                        itemStyle={{ color: 'var(--text-primary)' }}
-                                    />
-                                    <Legend
-                                        verticalAlign="bottom"
-                                        height={36}
-                                        formatter={(value) => <span style={{ color: chartColors.text }}>{value}</span>}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                {/* Inventory Distribution Chart */}
+                <div className="card" style={{ gridColumn: 'span 1' }}>
+                    <div className="card-header">
+                        <h3 className="card-title">Distribusi Inventaris</h3>
+                        <p className="card-subtitle">Berdasarkan kategori</p>
+                    </div>
+                    <div style={{ height: 300, width: '100%' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={categoryDistribution}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {categoryDistribution.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: chartColors.tooltipBg,
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: 8
+                                    }}
+                                    itemStyle={{ color: 'var(--text-primary)' }}
+                                />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value) => <span style={{ color: chartColors.text }}>{value}</span>}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
@@ -593,11 +586,9 @@ const Stocks = () => {
                 )}
             </div>
 
-            {/* Modal */}
-            {/* ... code for existing modal remains, but I will add the transfer modal after it ... */}
+            {/* Modals */}
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
-                    {/* ... existing modal code ... */}
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3 className="modal-title">
@@ -677,7 +668,6 @@ const Stocks = () => {
                 </div>
             )}
 
-            {/* Transfer Modal */}
             {showTransferModal && (
                 <div className="modal-overlay" onClick={() => setShowTransferModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -692,7 +682,6 @@ const Stocks = () => {
                         </div>
                         <form onSubmit={handleTransfer}>
                             <div className="modal-body">
-                                {/* Transfer Direction */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'end', marginBottom: 16 }}>
                                     <div className="form-group" style={{ marginBottom: 0 }}>
                                         <label className="form-label">Dari Pabrik</label>
@@ -727,7 +716,6 @@ const Stocks = () => {
                                     </div>
                                 </div>
 
-                                {/* Product Selection */}
                                 <div className="form-group">
                                     <label className="form-label">Produk</label>
                                     <select
@@ -737,7 +725,6 @@ const Stocks = () => {
                                         required
                                     >
                                         <option value="">Pilih Produk</option>
-                                        {/* Filter: hanya tampilkan product yang ada stock-nya di factory asal */}
                                         {allStocks
                                             .filter(s => s.id_factory === transferForm.fromFactoryId && s.quantity > 0)
                                             .map(s => (
@@ -749,7 +736,6 @@ const Stocks = () => {
                                     </select>
                                 </div>
 
-                                {/* Quantity + Available Stock Info */}
                                 <div className="form-group">
                                     <label className="form-label">Jumlah Transfer (kg)</label>
                                     <input
@@ -762,21 +748,8 @@ const Stocks = () => {
                                         min="0.01"
                                         required
                                     />
-                                    {/* Show available stock */}
-                                    {transferForm.productCode && (() => {
-                                        const sourceStock = allStocks.find(
-                                            s => s.id_factory === transferForm.fromFactoryId &&
-                                                s.product_type?.code === transferForm.productCode
-                                        );
-                                        return sourceStock ? (
-                                            <small style={{ color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                                                Stok tersedia: <strong>{formatNumber(sourceStock.quantity)} {sourceStock.unit}</strong>
-                                            </small>
-                                        ) : null;
-                                    })()}
                                 </div>
 
-                                {/* Notes */}
                                 <div className="form-group">
                                     <label className="form-label">Catatan (opsional)</label>
                                     <input
@@ -784,54 +757,23 @@ const Stocks = () => {
                                         className="form-input"
                                         value={transferForm.notes}
                                         onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })}
-                                        placeholder="Contoh: Transfer PK untuk proses poles batch #123"
+                                        placeholder="Contoh: Transfer untuk proses poles"
                                     />
                                 </div>
-
-                                {/* Transfer Summary */}
-                                {transferForm.productCode && transferForm.quantity && parseFloat(transferForm.quantity) > 0 && (
-                                    <div style={{
-                                        background: 'rgba(19, 127, 236, 0.1)',
-                                        padding: 16,
-                                        borderRadius: 8,
-                                        marginTop: 8
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--info)' }}>
-                                            <span className="material-symbols-outlined icon-sm">info</span>
-                                            <strong>Ringkasan Transfer</strong>
-                                        </div>
-                                        <p style={{ fontSize: '0.875rem', marginTop: 8, color: 'var(--text-secondary)' }}>
-                                            <strong>{formatNumber(parseFloat(transferForm.quantity))} kg {transferForm.productCode}</strong> akan
-                                            dipindahkan dari <strong>{factories.find(f => f.id === transferForm.fromFactoryId)?.name}</strong> ke
-                                            <strong> {factories.find(f => f.id === transferForm.toFactoryId)?.name}</strong>.
-                                        </p>
-                                    </div>
-                                )}
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowTransferModal(false)}>
                                     Batal
                                 </button>
-                                <button type="submit" className="btn btn-primary" disabled={transferLoading}
-                                    style={{ background: 'var(--info)', border: 'none' }}>
-                                    {transferLoading ? (
-                                        <>
-                                            <span className="material-symbols-outlined animate-spin icon-sm">sync</span>
-                                            Memproses...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="material-symbols-outlined icon-sm">swap_horiz</span>
-                                            Transfer Stok
-                                        </>
-                                    )}
+                                <button type="submit" className="btn btn-primary" disabled={transferLoading}>
+                                    {transferLoading ? 'Memproses...' : 'Kirim Transfer'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../../components/Layout/Header';
 import { invoiceApi, customerApi, factoryApi, productTypeApi } from '../../services/api';
 import { logger } from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
+import { useFactory } from '../../hooks/useFactory';
+import Pagination from '../../components/UI/Pagination';
+import { formatCurrency, formatDate } from '../../utils/formatUtils';
 
 interface Invoice {
     id: number;
@@ -22,12 +25,6 @@ interface Invoice {
 }
 
 interface Customer {
-    id: number;
-    code: string;
-    name: string;
-}
-
-interface Factory {
     id: number;
     code: string;
     name: string;
@@ -54,20 +51,26 @@ const statusConfig: Record<string, { label: string; class: string }> = {
     CANCELLED: { label: 'Dibatalkan', class: 'badge-error' }
 };
 
-const formatCurrency = (val: number | string) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
-};
-
 const Invoices = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [factories, setFactories] = useState<Factory[]>([]);
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    // Pagination & Factory hook
+    const [page, setPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 20;
+
+    const {
+        selectedFactory,
+        setSelectedFactory,
+        factories,
+        loading: factoryLoading
+    } = useFactory();
 
     const [formData, setFormData] = useState({
         id_factory: 0,
@@ -81,41 +84,32 @@ const Invoices = () => {
     const [items, setItems] = useState<InvoiceItemForm[]>([{ id_product_type: 0, quantity: '', unit_price: '' }]);
 
     useEffect(() => {
-        const fetchPMDFactories = async () => {
-            try {
-                const res = await factoryApi.getAll();
-                const data = res.data?.data || res.data || [];
-                const pmdFactories = data.filter((f: any) => f.code.startsWith('PMD'));
-                const pmd1 = pmdFactories.find((f: any) => f.code === 'PMD-1');
-                if (pmd1) setSelectedFactory(pmd1.id);
-                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
-            } catch (error) {
-                logger.error('Error fetching factories:', error);
-            }
-        };
-        fetchPMDFactories();
-    }, []);
-
-    useEffect(() => {
-        fetchInvoices();
-    }, [selectedFactory]);
+        if (!factoryLoading) {
+            fetchInvoices();
+        }
+    }, [selectedFactory, page, factoryLoading]);
 
     useEffect(() => {
         fetchCustomers();
-        fetchFactories();
         fetchProductTypes();
     }, []);
 
     const fetchInvoices = async () => {
         try {
+            setLoading(true);
             const response = await invoiceApi.getAll({
-                limit: 500,
+                limit: ITEMS_PER_PAGE,
+                offset: (page - 1) * ITEMS_PER_PAGE,
                 id_factory: selectedFactory || undefined
             });
             const data = response.data?.data || response.data || [];
+            const total = response.data?.total || data.length;
+
             setInvoices(Array.isArray(data) ? data : []);
+            setTotalItems(total);
         } catch (error) {
             logger.error('Error fetching invoices:', error);
+            showError('Error', 'Gagal memuat data invoice');
         } finally {
             setLoading(false);
         }
@@ -128,16 +122,6 @@ const Invoices = () => {
             setCustomers(Array.isArray(data) ? data : []);
         } catch (error) {
             logger.error('Error fetching customers:', error);
-        }
-    };
-
-    const fetchFactories = async () => {
-        try {
-            const response = await factoryApi.getAll();
-            const data = response.data?.data || response.data || [];
-            setFactories(Array.isArray(data) ? data : []);
-        } catch (error) {
-            logger.error('Error fetching factories:', error);
         }
     };
 
@@ -169,10 +153,12 @@ const Invoices = () => {
                 }))
             };
             await invoiceApi.create(payload);
+            showSuccess('Berhasil', 'Invoice berhasil dibuat');
             fetchInvoices();
             closeModal();
         } catch (error) {
             logger.error('Error creating invoice:', error);
+            showError('Gagal', 'Gagal membuat invoice');
         }
     };
 
@@ -180,9 +166,11 @@ const Invoices = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus invoice ini? Stok akan dikembalikan.')) {
             try {
                 await invoiceApi.delete(id);
+                showSuccess('Berhasil', 'Invoice berhasil dihapus');
                 fetchInvoices();
             } catch (error) {
                 logger.error('Error deleting invoice:', error);
+                showError('Gagal', 'Gagal menghapus invoice');
             }
         }
     };
@@ -227,97 +215,90 @@ const Invoices = () => {
     // Stats
     const totalRevenue = invoices.filter(i => i.status === 'PAID').reduce((sum, i) => sum + Number(i.total), 0);
     const pendingAmount = invoices.filter(i => ['DRAFT', 'SENT', 'PARTIAL'].includes(i.status)).reduce((sum, i) => sum + Number(i.total), 0);
-    const totalInvoices = invoices.length;
+    const totalInvoices = totalItems;
 
-    const formatDate = (d: string) => {
-        if (!d) return '-';
-        return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-
-    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
-        <>
-            <Header title="Invoice Penjualan" subtitle={`Kelola invoice dan penjualan — ${selectedFactoryName || 'Semua Pabrik'}`} />
-
-            <div className="page-content">
-                {/* Factory Toggle */}
-                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="page-content">
+            {/* Factory Toggle */}
+            <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                    className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setSelectedFactory(null); setPage(1); }}
+                >
+                    <span className="material-symbols-outlined icon-sm">apps</span>
+                    Semua
+                </button>
+                {factories.map(factory => (
                     <button
-                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
-                        onClick={() => setSelectedFactory(null)}
+                        key={factory.id}
+                        className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => { setSelectedFactory(factory.id); setPage(1); }}
                     >
-                        <span className="material-symbols-outlined icon-sm">apps</span>
-                        Semua
+                        <span className="material-symbols-outlined icon-sm">factory</span>
+                        {factory.name}
                     </button>
-                    {factories.filter(f => f.code.startsWith('PMD')).map(factory => (
-                        <button
-                            key={factory.id}
-                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setSelectedFactory(factory.id)}
-                        >
-                            <span className="material-symbols-outlined icon-sm">factory</span>
-                            {factory.name}
-                        </button>
-                    ))}
+                ))}
+            </div>
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total Revenue (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">payments</span>
+                    </div>
+                    <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(totalRevenue)}</div>
+                    <span className="badge badge-success">Lunas</span>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Belum Dibayar (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">pending</span>
+                    </div>
+                    <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(pendingAmount)}</div>
+                    <span className="badge badge-warning">Outstanding</span>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Jumlah Invoice</span>
+                        <span className="material-symbols-outlined stat-card-icon">receipt_long</span>
+                    </div>
+                    <div className="stat-card-value">{formatInvoicesCount(totalInvoices)}</div>
+                </div>
+            </div>
+
+            {/* Invoice List */}
+            <div className="card">
+                <div className="card-header">
+                    <div>
+                        <h3 className="card-title">Daftar Invoice</h3>
+                        <p className="card-subtitle">Kelola invoice penjualan</p>
+                    </div>
+                    <button className="btn btn-primary" onClick={openModal}>
+                        <span className="material-symbols-outlined icon-sm">add</span>
+                        Buat Invoice
+                    </button>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total Revenue</span>
-                            <span className="material-symbols-outlined stat-card-icon">payments</span>
+                {loading ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
                         </div>
-                        <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(totalRevenue)}</div>
-                        <span className="badge badge-success">Lunas</span>
+                        <h3>Memuat data...</h3>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Belum Dibayar</span>
-                            <span className="material-symbols-outlined stat-card-icon">pending</span>
+                ) : invoices.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined">receipt_long</span>
                         </div>
-                        <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(pendingAmount)}</div>
-                        <span className="badge badge-warning">Outstanding</span>
+                        <h3>Belum ada invoice</h3>
+                        <p>Klik tombol "Buat Invoice" untuk membuat invoice baru</p>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Jumlah Invoice</span>
-                            <span className="material-symbols-outlined stat-card-icon">receipt_long</span>
-                        </div>
-                        <div className="stat-card-value">{totalInvoices}</div>
-                    </div>
-                </div>
-
-                {/* Invoice List */}
-                <div className="card">
-                    <div className="card-header">
-                        <div>
-                            <h3 className="card-title">Daftar Invoice</h3>
-                            <p className="card-subtitle">Kelola invoice penjualan</p>
-                        </div>
-                        <button className="btn btn-primary" onClick={openModal}>
-                            <span className="material-symbols-outlined icon-sm">add</span>
-                            Buat Invoice
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                            </div>
-                            <h3>Memuat data...</h3>
-                        </div>
-                    ) : invoices.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined">receipt_long</span>
-                            </div>
-                            <h3>Belum ada invoice</h3>
-                            <p>Klik tombol "Buat Invoice" untuk membuat invoice baru</p>
-                        </div>
-                    ) : (
+                ) : (
+                    <>
                         <div className="table-container">
                             <table>
                                 <thead>
@@ -366,8 +347,15 @@ const Invoices = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalItems={totalItems}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                        />
+                    </>
+                )}
             </div>
 
             {/* Create Invoice Modal */}
@@ -531,8 +519,12 @@ const Invoices = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
+};
+
+const formatInvoicesCount = (count: number) => {
+    return new Intl.NumberFormat('id-ID').format(count);
 };
 
 export default Invoices;

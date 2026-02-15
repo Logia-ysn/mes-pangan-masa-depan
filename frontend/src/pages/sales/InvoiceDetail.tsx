@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../../components/Layout/Header';
+
 import { invoiceApi, paymentApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
@@ -225,7 +225,6 @@ const InvoiceDetail = () => {
     if (loading) {
         return (
             <>
-                <Header title="Detail Invoice" subtitle="Memuat..." />
                 <div className="page-content">
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -241,7 +240,6 @@ const InvoiceDetail = () => {
     if (!invoice) {
         return (
             <>
-                <Header title="Detail Invoice" subtitle="Tidak ditemukan" />
                 <div className="page-content">
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -261,8 +259,6 @@ const InvoiceDetail = () => {
 
     return (
         <>
-            <Header title="Detail Invoice" subtitle={invoice.invoice_number} />
-
             <div className="page-content">
                 {/* Back button + Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

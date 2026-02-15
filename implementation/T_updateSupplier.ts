@@ -6,7 +6,7 @@ import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_updateSupplier: T_updateSupplier = apiWrapper(async (req, res) => {
     await requireAuth(req, 'SUPERVISOR');
-    const { id } = req.path;
+    const id = Number(req.path.id);
     const supplier = await supplierRepository.findById(id);
     if (!supplier) throw new Error('Supplier not found');
 

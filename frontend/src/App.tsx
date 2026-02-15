@@ -74,6 +74,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+import RoleGuard from './components/RoleGuard';
+
 const AppRoutes = () => {
   const { user } = useAuth();
 
@@ -94,11 +96,17 @@ const AppRoutes = () => {
           {/* Production Module */}
           <Route path="production">
             <Route path="worksheets" element={<Worksheets />} />
-            <Route path="worksheets/new" element={<WorksheetForm />} />
+            <Route path="worksheets/new" element={
+              <RoleGuard requiredRole="SUPERVISOR"><WorksheetForm /></RoleGuard>
+            } />
             <Route path="worksheets/:id" element={<WorksheetDetail />} />
-            <Route path="worksheets/:id/edit" element={<WorksheetForm />} />
+            <Route path="worksheets/:id/edit" element={
+              <RoleGuard requiredRole="SUPERVISOR"><WorksheetForm /></RoleGuard>
+            } />
             <Route path="stocks" element={<Stocks />} />
-            <Route path="raw-materials" element={<RawMaterialReceipt />} />
+            <Route path="raw-materials" element={
+              <RoleGuard requiredRole="OPERATOR"><RawMaterialReceipt /></RoleGuard>
+            } />
             <Route path="machines" element={<Machines />} />
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="oee" element={<OEE />} />
@@ -107,28 +115,48 @@ const AppRoutes = () => {
 
           {/* Sales Module */}
           <Route path="sales">
-            <Route path="customers" element={<Customers />} />
-            <Route path="invoices" element={<Invoices />} />
-            <Route path="invoices/:id" element={<InvoiceDetail />} />
+            <Route path="customers" element={
+              <RoleGuard requiredRole="SUPERVISOR"><Customers /></RoleGuard>
+            } />
+            <Route path="invoices" element={
+              <RoleGuard requiredRole="SUPERVISOR"><Invoices /></RoleGuard>
+            } />
+            <Route path="invoices/:id" element={
+              <RoleGuard requiredRole="SUPERVISOR"><InvoiceDetail /></RoleGuard>
+            } />
           </Route>
 
           {/* Purchasing Module */}
           <Route path="purchasing">
-            <Route path="purchase-orders" element={<PurchaseOrders />} />
-            <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
+            <Route path="purchase-orders" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrders /></RoleGuard>
+            } />
+            <Route path="purchase-orders/:id" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrderDetail /></RoleGuard>
+            } />
           </Route>
 
           {/* Reports Module */}
           <Route path="reports">
-            <Route path="production" element={<ProductionReport />} />
-            <Route path="sales" element={<SalesReport />} />
-            <Route path="cogm" element={<COGMReport />} />
-            <Route path="stock" element={<StockReport />} />
+            <Route path="production" element={
+              <RoleGuard requiredRole="SUPERVISOR"><ProductionReport /></RoleGuard>
+            } />
+            <Route path="sales" element={
+              <RoleGuard requiredRole="SUPERVISOR"><SalesReport /></RoleGuard>
+            } />
+            <Route path="cogm" element={
+              <RoleGuard requiredRole="ADMIN"><COGMReport /></RoleGuard>
+            } />
+            <Route path="stock" element={
+              <RoleGuard requiredRole="SUPERVISOR"><StockReport /></RoleGuard>
+            } />
           </Route>
 
           {/* Admin Module */}
           <Route path="admin">
-            <Route path="users" element={<Users />} />
+            <Route path="users" element={
+              <RoleGuard requiredRole="ADMIN"><Users /></RoleGuard>
+            } />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}

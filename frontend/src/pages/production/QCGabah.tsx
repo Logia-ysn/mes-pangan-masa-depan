@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import Header from '../../components/Layout/Header';
 import { qcGabahApi } from '../../services/api';
 import { logger } from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
 
 const QCGabah = () => {
+    const { showError, showSuccess } = useToast();
     const [loading, setLoading] = useState(false);
     const [_imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -19,7 +20,7 @@ const QCGabah = () => {
         status: string;
     } | null>(null);
 
-    const [error, setError] = useState<string | null>(null);
+    const [_error, setError] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -53,165 +54,177 @@ const QCGabah = () => {
             });
 
             setResult(res.data);
+            showSuccess('Analisis Berhasil', 'Kualitas gabah telah teridentifikasi');
         } catch (err: any) {
             logger.error(err);
-            // Check for response data error (Backend error message)
             const errorMessage = err.response?.data?.error || err.message || "Failed to analyze image";
             setError(errorMessage);
-            alert(`Analysis Failed: ${errorMessage}`);
+            showError('Analisis Gagal', errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: 24, paddingBottom: 100 }}>
-            <Header
-                title="QC Gabah - Green Detection"
-                subtitle="Analisis kualitas gabah berbasis Machine Learning (Kadar Hijau)"
-            />
-
-            <div className="grid-2" style={{ marginTop: 24 }}>
+        <div className="page-content">
+            <div className="grid-2">
                 {/* Input Section */}
-                <div className="card" style={{ padding: 24 }}>
-                    <h3 style={{ marginBottom: 20, fontSize: '1.1rem' }}>Upload Sampel</h3>
-
-                    <div style={{ marginBottom: 16 }}>
-                        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Supplier</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Nama Supplier"
-                            value={supplier}
-                            onChange={(e) => setSupplier(e.target.value)}
-                        />
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Upload Sampel</h3>
+                        <p className="card-subtitle">Analisis berbasis AI Vision</p>
                     </div>
-
-                    <div style={{ marginBottom: 16 }}>
-                        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Lot / Batch Code</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Kode Lot"
-                            value={lot}
-                            onChange={(e) => setLot(e.target.value)}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: 24 }}>
-                        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Foto Sampel</label>
-                        <div style={{
-                            border: '2px dashed var(--border-color)',
-                            borderRadius: 8,
-                            padding: 24,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            background: 'var(--bg-surface-secondary)'
-                        }} onClick={() => document.getElementById('file-upload')?.click()}>
-
-                            {imagePreview ? (
-                                <img
-                                    src={imagePreview}
-                                    alt="Preview"
-                                    style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8 }}
-                                />
-                            ) : (
-                                <div style={{ padding: 40 }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 48, color: 'var(--text-muted)' }}>add_photo_alternate</span>
-                                    <p style={{ marginTop: 8, color: 'var(--text-secondary)' }}>Klik untuk upload foto gabah</p>
-                                </div>
-                            )}
-
+                    <div style={{ padding: 24 }}>
+                        <div className="form-group">
+                            <label className="form-label">Supplier</label>
                             <input
-                                id="file-upload"
-                                type="file"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                onChange={handleFileChange}
+                                type="text"
+                                className="form-input"
+                                placeholder="Nama Supplier"
+                                value={supplier}
+                                onChange={(e) => setSupplier(e.target.value)}
                             />
                         </div>
-                    </div>
 
-                    <button
-                        className="btn btn-primary"
-                        style={{ width: '100%', padding: '12px', justifyContent: 'center' }}
-                        disabled={!imagePreview || loading}
-                        onClick={handleAnalyze}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="material-symbols-outlined spin" style={{ marginRight: 8 }}>refresh</span>
-                                Analyzing...
-                            </>
-                        ) : (
-                            <>
-                                <span className="material-symbols-outlined" style={{ marginRight: 8 }}>analytics</span>
-                                Analyze Quality
-                            </>
-                        )}
-                    </button>
-
-                    {error && (
-                        <div style={{ marginTop: 16, padding: 12, background: '#fee2e2', color: '#dc2626', borderRadius: 8, fontSize: '0.9rem' }}>
-                            {error}
+                        <div className="form-group">
+                            <label className="form-label">Lot / Batch Code</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Kode Lot"
+                                value={lot}
+                                onChange={(e) => setLot(e.target.value)}
+                            />
                         </div>
-                    )}
+
+                        <div className="form-group">
+                            <label className="form-label">Foto Sampel</label>
+                            <div style={{
+                                border: '2px dashed var(--border-color)',
+                                borderRadius: 12,
+                                padding: 24,
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                background: 'var(--bg-surface-secondary)',
+                                transition: 'all 0.2s ease'
+                            }} onClick={() => document.getElementById('file-upload')?.click()}>
+
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="Preview"
+                                        style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}
+                                    />
+                                ) : (
+                                    <div style={{ padding: 40 }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 48, color: 'var(--text-muted)' }}>add_photo_alternate</span>
+                                        <p style={{ marginTop: 8, color: 'var(--text-secondary)' }}>Klik atau seret foto ke sini</p>
+                                    </div>
+                                )}
+
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%', padding: '12px', justifyContent: 'center' }}
+                            disabled={!imagePreview || loading}
+                            onClick={handleAnalyze}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="material-symbols-outlined spin" style={{ marginRight: 8 }}>refresh</span>
+                                    Menganalisis...
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined" style={{ marginRight: 8 }}>analytics</span>
+                                    Analisis Kualitas
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Result Section */}
-                <div className="card" style={{ padding: 24 }}>
-                    <h3 style={{ marginBottom: 20, fontSize: '1.1rem' }}>Hasil Analisis</h3>
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Hasil Analisis</h3>
+                        <p className="card-subtitle">Estimasi kualitas berdasarkan visual</p>
+                    </div>
+                    <div style={{ padding: 24 }}>
+                        {result ? (
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{
+                                    background: result.grade === 'KW 1' ? 'rgba(34, 197, 94, 0.1)' : result.grade === 'KW 2' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                    color: result.grade === 'KW 1' ? '#166534' : result.grade === 'KW 2' ? '#854d0e' : '#991b1b',
+                                    padding: '32px 24px',
+                                    borderRadius: 16,
+                                    display: 'inline-block',
+                                    marginBottom: 24,
+                                    minWidth: 240,
+                                    border: '1px solid currentColor'
+                                }}>
+                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8, opacity: 0.8 }}>Predicted Grade</div>
+                                    <div style={{ fontSize: '4rem', fontWeight: 800, lineHeight: 1 }}>{result.grade}</div>
+                                    <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: 12 }}>{result.status}</div>
+                                </div>
 
-                    {result ? (
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{
-                                background: result.grade === 'KW 1' ? '#dcfce7' : result.grade === 'KW 2' ? '#fef9c3' : '#fee2e2',
-                                color: result.grade === 'KW 1' ? '#166534' : result.grade === 'KW 2' ? '#854d0e' : '#991b1b',
-                                padding: '24px',
-                                borderRadius: 16,
-                                display: 'inline-block',
-                                marginBottom: 24,
-                                minWidth: 200
-                            }}>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Predicted Grade</div>
-                                <div style={{ fontSize: '3rem', fontWeight: 800 }}>{result.grade}</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: 8 }}>Reference: {result.status}</div>
-                            </div>
+                                <div style={{ textAlign: 'left', marginTop: 16 }}>
+                                    <div style={{ marginBottom: 24 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                            <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>Prosentase Butir Hijau</span>
+                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{result.green_percentage}%</span>
+                                        </div>
+                                        <div style={{ height: 12, background: 'var(--bg-surface-secondary)', borderRadius: 6, overflow: 'hidden' }}>
+                                            <div style={{
+                                                width: `${Math.min(result.green_percentage, 100)}%`,
+                                                height: '100%',
+                                                background: result.green_percentage < 10 ? '#22c55e' : result.green_percentage < 20 ? '#eab308' : '#ef4444',
+                                                transition: 'width 1s ease-out'
+                                            }} />
+                                        </div>
+                                    </div>
 
-                            <div style={{ textAlign: 'left', marginTop: 16 }}>
-                                <div style={{ marginBottom: 16 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontWeight: 500 }}>Prosentase Butir Hijau</span>
-                                        <span style={{ fontWeight: 700 }}>{result.green_percentage}%</span>
+                                    <div className="alert alert-info">
+                                        <span className="material-symbols-outlined icon-sm">info</span>
+                                        <p style={{ fontSize: '0.85rem' }}>
+                                            Semakin rendah persentase butir hijau, semakin baik kualitas gabah. Max 10% untuk grade KW 1.
+                                        </p>
                                     </div>
-                                    <div style={{ height: 12, background: '#e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
-                                        <div style={{
-                                            width: `${Math.min(result.green_percentage, 100)}%`,
-                                            height: '100%',
-                                            background: result.green_percentage < 10 ? '#22c55e' : result.green_percentage < 20 ? '#eab308' : '#ef4444'
-                                        }} />
-                                    </div>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 8 }}>
-                                        * Semakin rendah persentase butir hijau, semakin baik kualitas gabah.
-                                        (Max 10% untuk KW 1)
-                                    </p>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div style={{
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            opacity: 0.5,
-                            minHeight: 300
-                        }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 64, marginBottom: 16 }}>query_stats</span>
-                            <p>Upload foto dan klik Analyze untuk melihat hasil</p>
-                        </div>
-                    )}
+                        ) : (
+                            <div style={{
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                opacity: 0.5,
+                                minHeight: 300,
+                                textAlign: 'center'
+                            }}>
+                                <div style={{
+                                    width: 80, height: 80, borderRadius: '50%',
+                                    background: 'var(--bg-surface-secondary)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    marginBottom: 16
+                                }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 40 }}>query_stats</span>
+                                </div>
+                                <h3>Belum Ada Data</h3>
+                                <p>Silakan upload foto dan klik tombol analisis</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

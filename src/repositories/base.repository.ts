@@ -72,8 +72,9 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
                 where: { id }
             });
             return true;
-        } catch (error) {
-            return false;
+        } catch (error: any) {
+            if (error.code === 'P2025') return false; // Record not found
+            throw error; // Re-throw other real errors (FK constraints, etc.)
         }
     }
 

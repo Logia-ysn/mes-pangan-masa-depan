@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Header from '../../components/Layout/Header';
+
 import { userApi, factoryApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import toast from 'react-hot-toast';
@@ -211,7 +211,6 @@ const Users = () => {
 
     return (
         <div className="page-content animate-fade-up">
-            <Header title="Manajemen User" subtitle="Kelola hak akses dan akun pengguna sistem" />
 
             {/* Stats Grid */}
             <div className="stats-grid" style={{ marginBottom: 24 }}>

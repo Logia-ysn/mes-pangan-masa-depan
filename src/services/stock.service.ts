@@ -3,7 +3,7 @@
  * Handles stock management business logic using Prisma
  */
 
-import { Stock, StockMovement_movement_type_enum } from '@prisma/client';
+import { Prisma, Stock, StockMovement_movement_type_enum } from '@prisma/client';
 import { prisma } from '../libs/prisma';
 import { stockRepository } from '../repositories/stock.repository';
 import { productTypeRepository } from '../repositories/product-type.repository';
@@ -31,12 +31,15 @@ class StockService {
     /**
      * Get stock by factory and product code
      */
-    async getStockByFactoryAndProduct(factoryId: number, productCode: string): Promise<Stock | null> {
+    async getStockByFactoryAndProduct(factoryId: number, productCode: string, tx?: Prisma.TransactionClient): Promise<Stock | null> {
         const productType = await productTypeRepository.findByCode(productCode);
         if (!productType) {
             return null;
         }
-        return await stockRepository.findByFactoryAndProduct(factoryId, productType.id);
+        const db = tx || prisma;
+        return await db.stock.findFirst({
+            where: { id_factory: factoryId, id_product_type: productType.id }
+        });
     }
 
     /**
@@ -47,9 +50,9 @@ class StockService {
     }
 
     /**
-     * Update stock quantity and create movement record (transactional)
+     * Update stock quantity and create movement record (transactional aware)
      */
-    async updateStock(dto: UpdateStockDTO): Promise<Stock | null> {
+    async updateStock(dto: UpdateStockDTO, tx?: Prisma.TransactionClient): Promise<Stock | null> {
         if (dto.quantity <= 0) {
             return null;
         }
@@ -61,14 +64,14 @@ class StockService {
             return null;
         }
 
-        return await prisma.$transaction(async (tx) => {
+        const logic = async (db: Prisma.TransactionClient) => {
             // Get or create stock within transaction
-            let stock = await tx.stock.findFirst({
+            let stock = await db.stock.findFirst({
                 where: { id_factory: dto.factoryId, id_product_type: productType.id }
             });
 
             if (!stock) {
-                stock = await tx.stock.create({
+                stock = await db.stock.create({
                     data: {
                         id_factory: dto.factoryId,
                         id_product_type: productType.id,
@@ -92,13 +95,13 @@ class StockService {
             }
 
             // Update stock atomically
-            const updatedStock = await tx.stock.update({
+            const updatedStock = await db.stock.update({
                 where: { id: stock.id },
                 data: { quantity: newQuantity }
             });
 
             // Create movement record
-            await tx.stockMovement.create({
+            await db.stockMovement.create({
                 data: {
                     id_stock: stock.id,
                     id_user: dto.userId,
@@ -114,7 +117,15 @@ class StockService {
             });
 
             return updatedStock;
-        });
+        };
+
+        if (tx) {
+            return await logic(tx);
+        } else {
+            return await prisma.$transaction(async (newTx) => {
+                return await logic(newTx);
+            });
+        }
     }
 
     /**
@@ -126,7 +137,8 @@ class StockService {
         quantity: number,
         userId: number,
         referenceType?: string,
-        referenceId?: number
+        referenceId?: number,
+        tx?: Prisma.TransactionClient
     ): Promise<Stock | null> {
         return await this.updateStock({
             factoryId,
@@ -136,7 +148,7 @@ class StockService {
             userId,
             referenceType,
             referenceId
-        });
+        }, tx);
     }
 
     /**
@@ -148,7 +160,8 @@ class StockService {
         quantity: number,
         userId: number,
         referenceType?: string,
-        referenceId?: number
+        referenceId?: number,
+        tx?: Prisma.TransactionClient
     ): Promise<Stock | null> {
         return await this.updateStock({
             factoryId,
@@ -158,7 +171,7 @@ class StockService {
             userId,
             referenceType,
             referenceId
-        });
+        }, tx);
     }
 
     /**

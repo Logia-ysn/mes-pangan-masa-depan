@@ -27,12 +27,15 @@ server.express.set('trust proxy', 1);
 // --- CORS with credentials ---
 server.express.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
+    } else if (allowedOrigins.includes('*')) {
+      // Security: Disallow wildcard with credentials
+      console.warn('Blocked CORS request from origin:', origin, '(due to wildcard with credentials)');
+      callback(null, false);
     } else {
-      callback(null, false); // Just block it quietly
+      callback(null, false);
     }
   },
   credentials: true,
@@ -79,10 +82,10 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50, // Increased from 10
+  max: 15, // Reduced from 50 to prevent brute-force
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many auth attempts' } },
+  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many auth attempts. Please wait 15 minutes.' } },
 });
 
 server.express.use(globalLimiter);

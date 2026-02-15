@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '../../components/Layout';
+
 import { worksheetApi, machineApi, employeeApi } from '../../services/api';
 import ProductionProgress from '../../components/Production/ProductionProgress';
 import type { ProductionStep } from '../../components/Production/ProductionProgress';
@@ -123,7 +123,6 @@ const WorksheetDetail = () => {
     if (loading) {
         return (
             <>
-                <Header title="Detail Produksi" subtitle="Memuat informasi..." />
                 <div className="page-content">
                     <div className="empty-state">
                         <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
@@ -137,7 +136,6 @@ const WorksheetDetail = () => {
     if (error || !worksheet) {
         return (
             <>
-                <Header title="Detail Produksi" subtitle="Error" />
                 <div className="page-content">
                     <div className="empty-state">
                         <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>error</span>
@@ -158,8 +156,6 @@ const WorksheetDetail = () => {
 
     return (
         <>
-            <Header title={`Produksi #${worksheet.id}`} subtitle="Detail Laporan Harian" />
-
             <div className="page-content">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <button className="btn btn-secondary" onClick={handleBack}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Header from '../../components/Layout/Header';
+
 import api, { factoryApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
@@ -146,7 +146,6 @@ const OEE = () => {
     if (loading) {
         return (
             <>
-                <Header title="OEE Monitor" subtitle="Overall Equipment Effectiveness" />
                 <div className="page-content">
                     <div className="empty-state">
                         <div className="empty-state-icon">
@@ -159,12 +158,9 @@ const OEE = () => {
         );
     }
 
-    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
 
     return (
         <>
-            <Header title="OEE Monitor" subtitle={`Overall Equipment Effectiveness — ${selectedFactoryName || 'Semua Pabrik'}`} />
-
             <div className="page-content">
                 {/* Factory Toggle */}
                 <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -169,30 +169,34 @@ class PurchaseOrderService {
             throw new BusinessRuleError('Can only delete DRAFT or CANCELLED purchase orders');
         }
 
-        // Reverse stock if there are goods receipts
-        for (const receipt of po.GoodsReceipt) {
-            for (const receiptItem of receipt.GoodsReceiptItem) {
-                const poItem = po.PurchaseOrderItem.find(i => i.id === receiptItem.id_purchase_order_item);
-                if (poItem) {
-                    await stockService.removeStock(
-                        po.id_factory,
-                        poItem.ProductType.code,
-                        Number(receiptItem.quantity_received),
-                        userId,
-                        'GOODS_RECEIPT_REVERSAL',
-                        receipt.id
-                    );
+        // Execute in transaction
+        await prisma.$transaction(async (tx) => {
+            // Reverse stock if there are goods receipts
+            for (const receipt of po.GoodsReceipt) {
+                for (const receiptItem of receipt.GoodsReceiptItem) {
+                    const poItem = po.PurchaseOrderItem.find(i => i.id === receiptItem.id_purchase_order_item);
+                    if (poItem) {
+                        await stockService.removeStock(
+                            po.id_factory,
+                            poItem.ProductType.code,
+                            Number(receiptItem.quantity_received),
+                            userId,
+                            'GOODS_RECEIPT_REVERSAL',
+                            receipt.id,
+                            tx
+                        );
+                    }
                 }
             }
-        }
 
-        // Delete in order: receipt items -> receipts -> PO items -> PO
-        await prisma.goodsReceiptItem.deleteMany({
-            where: { GoodsReceipt: { id_purchase_order: id } }
+            // Delete in order: receipt items -> receipts -> PO items -> PO
+            await tx.goodsReceiptItem.deleteMany({
+                where: { GoodsReceipt: { id_purchase_order: id } }
+            });
+            await tx.goodsReceipt.deleteMany({ where: { id_purchase_order: id } });
+            await tx.purchaseOrderItem.deleteMany({ where: { id_purchase_order: id } });
+            await tx.purchaseOrder.delete({ where: { id } });
         });
-        await prisma.goodsReceipt.deleteMany({ where: { id_purchase_order: id } });
-        await prisma.purchaseOrderItem.deleteMany({ where: { id_purchase_order: id } });
-        await prisma.purchaseOrder.delete({ where: { id } });
 
         return { message: 'Purchase order deleted successfully' };
     }
@@ -238,37 +242,44 @@ class PurchaseOrderService {
             throw new BusinessRuleError('Purchase order is already cancelled');
         }
 
-        // Reverse all received stock
-        for (const receipt of po.GoodsReceipt) {
-            for (const receiptItem of receipt.GoodsReceiptItem) {
-                const poItem = po.PurchaseOrderItem.find(i => i.id === receiptItem.id_purchase_order_item);
-                if (poItem) {
-                    await stockService.removeStock(
-                        po.id_factory,
-                        poItem.ProductType.code,
-                        Number(receiptItem.quantity_received),
-                        userId,
-                        'GOODS_RECEIPT_REVERSAL',
-                        receipt.id
-                    );
+        // Execute in transaction
+        return await prisma.$transaction(async (tx) => {
+            // Reverse all received stock
+            for (const receipt of po.GoodsReceipt) {
+                for (const receiptItem of receipt.GoodsReceiptItem) {
+                    const poItem = po.PurchaseOrderItem.find(i => i.id === receiptItem.id_purchase_order_item);
+                    if (poItem) {
+                        await stockService.removeStock(
+                            po.id_factory,
+                            poItem.ProductType.code,
+                            Number(receiptItem.quantity_received),
+                            userId,
+                            'GOODS_RECEIPT_REVERSAL',
+                            receipt.id,
+                            tx
+                        );
+                    }
                 }
             }
-        }
 
-        // Reset received quantities
-        for (const item of po.PurchaseOrderItem) {
-            await prisma.purchaseOrderItem.update({
-                where: { id: item.id },
-                data: { received_quantity: 0 }
+            // Reset received quantities
+            for (const item of po.PurchaseOrderItem) {
+                await tx.purchaseOrderItem.update({
+                    where: { id: item.id },
+                    data: { received_quantity: 0 }
+                });
+            }
+
+            await tx.purchaseOrder.update({
+                where: { id },
+                data: { status: PurchaseOrder_status_enum.CANCELLED }
             });
-        }
 
-        await prisma.purchaseOrder.update({
-            where: { id },
-            data: { status: PurchaseOrder_status_enum.CANCELLED }
+            return await tx.purchaseOrder.findUnique({
+                where: { id },
+                include: { Factory: true, Supplier: true }
+            });
         });
-
-        return await purchaseOrderRepository.findById(id);
     }
 
     /**
@@ -382,7 +393,8 @@ class PurchaseOrderService {
                     item.quantity_received,
                     userId,
                     'GOODS_RECEIPT',
-                    createdReceipt.id
+                    createdReceipt.id,
+                    tx
                 );
             }
 
@@ -426,7 +438,8 @@ class PurchaseOrderService {
                         Number(receiptItem.quantity_received),
                         userId,
                         'GOODS_RECEIPT_REVERSAL',
-                        receiptId
+                        receiptId,
+                        tx
                     );
 
                     // Update received quantity on PO item

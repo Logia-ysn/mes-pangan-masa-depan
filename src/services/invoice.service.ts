@@ -112,7 +112,8 @@ class InvoiceService {
                         Number(item.quantity),
                         userId,
                         'INVOICE',
-                        createdInvoice.id
+                        createdInvoice.id,
+                        tx
                     );
                 }
             }
@@ -207,7 +208,8 @@ class InvoiceService {
                     Number(item.quantity),
                     userId,
                     'INVOICE_CANCELLED',
-                    invoice.id
+                    invoice.id,
+                    tx
                 );
             }
 
@@ -236,24 +238,28 @@ class InvoiceService {
             throw new NotFoundError('Invoice', id);
         }
 
-        // Reverse stock if invoice is not cancelled
-        if (invoice.status !== Invoice_status_enum.CANCELLED) {
-            for (const item of invoice.InvoiceItem) {
-                await stockService.addStock(
-                    invoice.id_factory,
-                    item.ProductType.code,
-                    Number(item.quantity),
-                    userId,
-                    'INVOICE_REVERSAL',
-                    invoice.id
-                );
+        // Execute in transaction
+        await prisma.$transaction(async (tx) => {
+            // Reverse stock if invoice is not cancelled
+            if (invoice.status !== Invoice_status_enum.CANCELLED) {
+                for (const item of invoice.InvoiceItem) {
+                    await stockService.addStock(
+                        invoice.id_factory,
+                        item.ProductType.code,
+                        Number(item.quantity),
+                        userId,
+                        'INVOICE_REVERSAL',
+                        invoice.id,
+                        tx
+                    );
+                }
             }
-        }
 
-        // Delete in order: payments -> items -> invoice
-        await prisma.payment.deleteMany({ where: { id_invoice: id } });
-        await prisma.invoiceItem.deleteMany({ where: { id_invoice: id } });
-        await prisma.invoice.delete({ where: { id } });
+            // Delete in order: payments -> items -> invoice
+            await tx.payment.deleteMany({ where: { id_invoice: id } });
+            await tx.invoiceItem.deleteMany({ where: { id_invoice: id } });
+            await tx.invoice.delete({ where: { id } });
+        });
 
         return { message: 'Invoice deleted successfully' };
     }
@@ -285,36 +291,41 @@ class InvoiceService {
 
         const itemSubtotal = itemData.quantity * itemData.unit_price;
 
-        // Create the invoice item
-        const createdItem = await prisma.invoiceItem.create({
-            data: {
-                id_invoice: invoiceId,
-                id_product_type: itemData.id_product_type,
-                quantity: itemData.quantity,
-                unit_price: itemData.unit_price,
-                subtotal: itemSubtotal
-            }
+        // Create the invoice item and update stock in transaction
+        const createdItem = await prisma.$transaction(async (tx) => {
+            const item = await tx.invoiceItem.create({
+                data: {
+                    id_invoice: invoiceId,
+                    id_product_type: itemData.id_product_type,
+                    quantity: itemData.quantity,
+                    unit_price: itemData.unit_price,
+                    subtotal: itemSubtotal
+                }
+            });
+
+            // Recalculate invoice subtotal and total
+            const allItems = await tx.invoiceItem.findMany({ where: { id_invoice: invoiceId } });
+            const newSubtotal = allItems.reduce((sum, i) => sum + Number(i.subtotal), 0);
+            const newTotal = newSubtotal + Number(invoice.tax) - Number(invoice.discount);
+
+            await tx.invoice.update({
+                where: { id: invoiceId },
+                data: { subtotal: newSubtotal, total: newTotal }
+            });
+
+            // Deduct stock
+            await stockService.removeStock(
+                invoice.id_factory,
+                productType.code,
+                Number(itemData.quantity),
+                userId,
+                'INVOICE',
+                invoiceId,
+                tx
+            );
+
+            return item;
         });
-
-        // Recalculate invoice subtotal and total
-        const allItems = await prisma.invoiceItem.findMany({ where: { id_invoice: invoiceId } });
-        const newSubtotal = allItems.reduce((sum, i) => sum + Number(i.subtotal), 0);
-        const newTotal = newSubtotal + Number(invoice.tax) - Number(invoice.discount);
-
-        await prisma.invoice.update({
-            where: { id: invoiceId },
-            data: { subtotal: newSubtotal, total: newTotal }
-        });
-
-        // Deduct stock
-        await stockService.removeStock(
-            invoice.id_factory,
-            productType.code,
-            Number(itemData.quantity),
-            userId,
-            'INVOICE',
-            invoiceId
-        );
 
         return createdItem;
     }
@@ -335,29 +346,33 @@ class InvoiceService {
             throw new NotFoundError('InvoiceItem', itemId);
         }
 
-        // Reverse stock
-        await stockService.addStock(
-            item.Invoice.id_factory,
-            item.ProductType.code,
-            Number(item.quantity),
-            userId,
-            'INVOICE_REVERSAL',
-            item.Invoice.id
-        );
+        // Reverse stock and delete item in transaction
+        await prisma.$transaction(async (tx) => {
+            // Reverse stock
+            await stockService.addStock(
+                item.Invoice.id_factory,
+                item.ProductType.code,
+                Number(item.quantity),
+                userId,
+                'INVOICE_REVERSAL',
+                item.Invoice.id,
+                tx
+            );
 
-        // Delete the item
-        await prisma.invoiceItem.delete({ where: { id: itemId } });
+            // Delete the item
+            await tx.invoiceItem.delete({ where: { id: itemId } });
 
-        // Recalculate invoice subtotal and total
-        const remainingItems = await prisma.invoiceItem.findMany({
-            where: { id_invoice: item.Invoice.id }
-        });
-        const newSubtotal = remainingItems.reduce((sum, i) => sum + Number(i.subtotal), 0);
-        const newTotal = newSubtotal + Number(item.Invoice.tax) - Number(item.Invoice.discount);
+            // Recalculate invoice subtotal and total
+            const remainingItems = await tx.invoiceItem.findMany({
+                where: { id_invoice: item.Invoice.id }
+            });
+            const newSubtotal = remainingItems.reduce((sum, i) => sum + Number(i.subtotal), 0);
+            const newTotal = newSubtotal + Number(item.Invoice.tax) - Number(item.Invoice.discount);
 
-        await prisma.invoice.update({
-            where: { id: item.Invoice.id },
-            data: { subtotal: newSubtotal, total: newTotal }
+            await tx.invoice.update({
+                where: { id: item.Invoice.id },
+                data: { subtotal: newSubtotal, total: newTotal }
+            });
         });
 
         return { message: 'Invoice item deleted successfully' };

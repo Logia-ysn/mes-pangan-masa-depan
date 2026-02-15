@@ -57,3 +57,9 @@ export class BusinessRuleError extends AppError {
         super(message, 422);
     }
 }
+
+export class InternalServerError extends AppError {
+    constructor(message: string = 'Internal server error') {
+        super(message, 500);
+    }
+}

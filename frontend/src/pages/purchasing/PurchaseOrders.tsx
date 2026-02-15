@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../../components/Layout/Header';
 import { purchaseOrderApi, supplierApi, factoryApi, productTypeApi } from '../../services/api';
 import { logger } from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
+import { useFactory } from '../../hooks/useFactory';
+import Pagination from '../../components/UI/Pagination';
+import { formatCurrency, formatDate } from '../../utils/formatUtils';
 
 interface PurchaseOrder {
     id: number;
@@ -55,20 +58,26 @@ const statusConfig: Record<string, { label: string; class: string }> = {
     CANCELLED: { label: 'Dibatalkan', class: 'badge-error' }
 };
 
-const formatCurrency = (val: number | string) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
-};
-
 const PurchaseOrders = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [factories, setFactories] = useState<Factory[]>([]);
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
+
+    // Pagination & Factory hook
+    const [page, setPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 20;
+
+    const {
+        selectedFactory,
+        setSelectedFactory,
+        factories,
+        loading: factoryLoading
+    } = useFactory();
 
     const [formData, setFormData] = useState({
         id_factory: 0,
@@ -82,51 +91,36 @@ const PurchaseOrders = () => {
     const [items, setItems] = useState<POItemForm[]>([{ id_product_type: 0, quantity: '', unit_price: '' }]);
 
     useEffect(() => {
-        const fetchPMDFactories = async () => {
-            try {
-                const res = await factoryApi.getAll();
-                const data = res.data?.data || res.data || [];
-                const pmdFactories = data.filter((f: any) => f.code.startsWith('PMD'));
-                const pmd1 = pmdFactories.find((f: any) => f.code === 'PMD-1');
-                if (pmd1) setSelectedFactory(pmd1.id);
-                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
-            } catch (error) {
-                logger.error('Error fetching factories:', error);
-            }
-        };
-        fetchPMDFactories();
-    }, []);
-
-    useEffect(() => {
-        fetchPurchaseOrders();
-    }, [selectedFactory]);
+        if (!factoryLoading) {
+            fetchPurchaseOrders();
+        }
+    }, [selectedFactory, page, factoryLoading]);
 
     useEffect(() => {
         fetchSuppliers();
-        fetchFactories();
         fetchProductTypes();
     }, []);
 
     const fetchPurchaseOrders = async () => {
         try {
+            setLoading(true);
             const response = await purchaseOrderApi.getAll({
-                limit: 500,
+                limit: ITEMS_PER_PAGE,
+                offset: (page - 1) * ITEMS_PER_PAGE,
                 id_factory: selectedFactory || undefined
             });
             const data = response.data?.data || response.data || [];
+            const total = response.data?.total || data.length;
+
             setPurchaseOrders(Array.isArray(data) ? data : []);
+            setTotalItems(total);
         } catch (error) {
             logger.error('Error fetching purchase orders:', error);
+            showError('Error', 'Gagal memuat data purchase order');
         } finally {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchSuppliers();
-        fetchFactories();
-        fetchProductTypes();
-    }, []);
 
     const fetchSuppliers = async () => {
         try {
@@ -135,16 +129,6 @@ const PurchaseOrders = () => {
             setSuppliers(Array.isArray(data) ? data : []);
         } catch (error) {
             logger.error('Error fetching suppliers:', error);
-        }
-    };
-
-    const fetchFactories = async () => {
-        try {
-            const response = await factoryApi.getAll();
-            const data = response.data?.data || response.data || [];
-            setFactories(Array.isArray(data) ? data : []);
-        } catch (error) {
-            logger.error('Error fetching factories:', error);
         }
     };
 
@@ -176,10 +160,12 @@ const PurchaseOrders = () => {
                 }))
             };
             await purchaseOrderApi.create(payload);
+            showSuccess('Berhasil', 'Purchase Order berhasil dibuat');
             fetchPurchaseOrders();
             closeModal();
         } catch (error) {
             logger.error('Error creating purchase order:', error);
+            showError('Gagal', 'Gagal membuat purchase order');
         }
     };
 
@@ -187,9 +173,11 @@ const PurchaseOrders = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus Purchase Order ini?')) {
             try {
                 await purchaseOrderApi.delete(id);
+                showSuccess('Berhasil', 'Purchase Order berhasil dihapus');
                 fetchPurchaseOrders();
             } catch (error) {
                 logger.error('Error deleting purchase order:', error);
+                showError('Gagal', 'Gagal menghapus purchase order');
             }
         }
     };
@@ -236,95 +224,88 @@ const PurchaseOrders = () => {
     const pendingReceiptCount = purchaseOrders.filter(po => ['APPROVED', 'SENT', 'PARTIAL_RECEIVED'].includes(po.status)).length;
     const completedCount = purchaseOrders.filter(po => po.status === 'RECEIVED').length;
 
-    const formatDate = (d: string) => {
-        if (!d) return '-';
-        return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-
-    const selectedFactoryName = factories.find(f => f.id === selectedFactory)?.name;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
-        <>
-            <Header title="Purchase Order" subtitle={`Kelola pembelian bahan baku — ${selectedFactoryName || 'Semua Pabrik'}`} />
-
-            <div className="page-content">
-                {/* Factory Toggle */}
-                <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="page-content">
+            {/* Factory Toggle */}
+            <div style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                    className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setSelectedFactory(null); setPage(1); }}
+                >
+                    <span className="material-symbols-outlined icon-sm">apps</span>
+                    Semua
+                </button>
+                {factories.map(factory => (
                     <button
-                        className={`btn ${selectedFactory === null ? 'btn-primary' : 'btn-secondary'}`}
-                        onClick={() => setSelectedFactory(null)}
+                        key={factory.id}
+                        className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => { setSelectedFactory(factory.id); setPage(1); }}
                     >
-                        <span className="material-symbols-outlined icon-sm">apps</span>
-                        Semua
+                        <span className="material-symbols-outlined icon-sm">factory</span>
+                        {factory.name}
                     </button>
-                    {factories.filter(f => f.code.startsWith('PMD')).map(factory => (
-                        <button
-                            key={factory.id}
-                            className={`btn ${selectedFactory === factory.id ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setSelectedFactory(factory.id)}
-                        >
-                            <span className="material-symbols-outlined icon-sm">factory</span>
-                            {factory.name}
-                        </button>
-                    ))}
+                ))}
+            </div>
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total Amount (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">payments</span>
+                    </div>
+                    <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(totalPOAmount)}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Menunggu Penerimaan</span>
+                        <span className="material-symbols-outlined stat-card-icon">pending</span>
+                    </div>
+                    <div className="stat-card-value">{pendingReceiptCount}</div>
+                    <span className="badge badge-warning">Proses</span>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Selesai</span>
+                        <span className="material-symbols-outlined stat-card-icon">check_circle</span>
+                    </div>
+                    <div className="stat-card-value">{completedCount}</div>
+                    <span className="badge badge-success">Diterima</span>
+                </div>
+            </div>
+
+            {/* PO List */}
+            <div className="card">
+                <div className="card-header">
+                    <div>
+                        <h3 className="card-title">Daftar Purchase Order</h3>
+                        <p className="card-subtitle">Kelola pembelian bahan baku</p>
+                    </div>
+                    <button className="btn btn-primary" onClick={openModal}>
+                        <span className="material-symbols-outlined icon-sm">add</span>
+                        Buat PO
+                    </button>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total PO Amount</span>
-                            <span className="material-symbols-outlined stat-card-icon">payments</span>
+                {loading ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
                         </div>
-                        <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>{formatCurrency(totalPOAmount)}</div>
+                        <h3>Memuat data...</h3>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Menunggu Penerimaan</span>
-                            <span className="material-symbols-outlined stat-card-icon">pending</span>
+                ) : purchaseOrders.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined">shopping_cart</span>
                         </div>
-                        <div className="stat-card-value">{pendingReceiptCount}</div>
-                        <span className="badge badge-warning">Proses</span>
+                        <h3>Belum ada Purchase Order</h3>
+                        <p>Klik tombol "Buat PO" untuk membuat purchase order baru</p>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Selesai</span>
-                            <span className="material-symbols-outlined stat-card-icon">check_circle</span>
-                        </div>
-                        <div className="stat-card-value">{completedCount}</div>
-                        <span className="badge badge-success">Diterima</span>
-                    </div>
-                </div>
-
-                {/* PO List */}
-                <div className="card">
-                    <div className="card-header">
-                        <div>
-                            <h3 className="card-title">Daftar Purchase Order</h3>
-                            <p className="card-subtitle">Kelola pembelian bahan baku</p>
-                        </div>
-                        <button className="btn btn-primary" onClick={openModal}>
-                            <span className="material-symbols-outlined icon-sm">add</span>
-                            Buat PO
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                            </div>
-                            <h3>Memuat data...</h3>
-                        </div>
-                    ) : purchaseOrders.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined">shopping_cart</span>
-                            </div>
-                            <h3>Belum ada Purchase Order</h3>
-                            <p>Klik tombol "Buat PO" untuk membuat purchase order baru</p>
-                        </div>
-                    ) : (
+                ) : (
+                    <>
                         <div className="table-container">
                             <table>
                                 <thead>
@@ -373,8 +354,15 @@ const PurchaseOrders = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalItems={totalItems}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                        />
+                    </>
+                )}
             </div>
 
             {/* Create PO Modal */}
@@ -538,7 +526,7 @@ const PurchaseOrders = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

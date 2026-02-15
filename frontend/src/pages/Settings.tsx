@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
-import Header from '../components/Layout/Header';
+
 import api, { supplierApi, rawMaterialCategoryApi, rawMaterialVarietyApi } from '../services/api';
 import QualityConfig from '../components/Settings/QualityConfig';
 import { logger } from '../utils/logger';
@@ -277,8 +277,6 @@ const Settings = () => {
 
     return (
         <>
-            <Header title="Pengaturan" subtitle="Manajemen Konfigurasi Sistem" />
-
             <div className="page-content">
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import Header from '../../components/Layout/Header';
 import { customerApi } from '../../services/api';
 import { logger } from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
+import Pagination from '../../components/UI/Pagination';
 
 interface Customer {
     id: number;
@@ -16,12 +17,18 @@ interface Customer {
 }
 
 const Customers = () => {
+    const { showSuccess, showError } = useToast();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [search, setSearch] = useState('');
     const [filterActive, setFilterActive] = useState<string>('all');
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 20;
 
     const [formData, setFormData] = useState({
         code: '',
@@ -34,15 +41,25 @@ const Customers = () => {
 
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [page, search, filterActive]);
 
     const fetchCustomers = async () => {
         try {
-            const response = await customerApi.getAll({ limit: 500 });
+            setLoading(true);
+            const response = await customerApi.getAll({
+                limit: ITEMS_PER_PAGE,
+                offset: (page - 1) * ITEMS_PER_PAGE,
+                search: search || undefined,
+                is_active: filterActive === 'all' ? undefined : filterActive === 'active'
+            });
             const data = response.data?.data || response.data || [];
+            const total = response.data?.total || data.length;
+
             setCustomers(Array.isArray(data) ? data : []);
+            setTotalItems(total);
         } catch (error) {
             logger.error('Error fetching customers:', error);
+            showError('Error', 'Gagal memuat data pelanggan');
         } finally {
             setLoading(false);
         }
@@ -53,13 +70,16 @@ const Customers = () => {
         try {
             if (editingCustomer) {
                 await customerApi.update(editingCustomer.id, formData);
+                showSuccess('Berhasil', 'Data pelanggan berhasil diperbarui');
             } else {
                 await customerApi.create(formData);
+                showSuccess('Berhasil', 'Pelanggan baru berhasil ditambahkan');
             }
             fetchCustomers();
             closeModal();
         } catch (error) {
             logger.error('Error saving customer:', error);
+            showError('Gagal', 'Gagal menyimpan data pelanggan');
         }
     };
 
@@ -67,9 +87,11 @@ const Customers = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus pelanggan ini?')) {
             try {
                 await customerApi.delete(id);
+                showSuccess('Berhasil', 'Pelanggan berhasil dihapus');
                 fetchCustomers();
             } catch (error) {
                 logger.error('Error deleting customer:', error);
+                showError('Gagal', 'Gagal menghapus pelanggan');
             }
         }
     };
@@ -87,7 +109,7 @@ const Customers = () => {
             });
         } else {
             setEditingCustomer(null);
-            const nextCode = `CUST-${String(customers.length + 1).padStart(3, '0')}`;
+            const nextCode = `CUST-${String(totalItems + 1).padStart(3, '0')}`;
             setFormData({
                 code: nextCode,
                 name: '',
@@ -105,110 +127,95 @@ const Customers = () => {
         setEditingCustomer(null);
     };
 
-    const filteredCustomers = customers.filter(c => {
-        const matchSearch = !search ||
-            c.name.toLowerCase().includes(search.toLowerCase()) ||
-            c.code.toLowerCase().includes(search.toLowerCase());
-        const matchActive = filterActive === 'all' ||
-            (filterActive === 'active' && c.is_active) ||
-            (filterActive === 'inactive' && !c.is_active);
-        return matchSearch && matchActive;
-    });
-
-    const totalCustomers = customers.length;
-    const activeCustomers = customers.filter(c => c.is_active).length;
-    const now = new Date();
-    const thisMonth = customers.filter(c => {
-        const created = new Date(c.created_at);
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-    }).length;
+    const activeCustomersCount = customers.filter(c => c.is_active).length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
-        <>
-            <Header title="Pelanggan" subtitle="Kelola data pelanggan" />
+        <div className="page-content">
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Total Pelanggan</span>
+                        <span className="material-symbols-outlined stat-card-icon">groups</span>
+                    </div>
+                    <div className="stat-card-value">{totalItems}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Aktif (Page)</span>
+                        <span className="material-symbols-outlined stat-card-icon">check_circle</span>
+                    </div>
+                    <div className="stat-card-value">{activeCustomersCount}</div>
+                    <span className="badge badge-success">
+                        {customers.length > 0 ? Math.round((activeCustomersCount / customers.length) * 100) : 0}%
+                    </span>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-header">
+                        <span className="stat-card-label">Halaman</span>
+                        <span className="material-symbols-outlined stat-card-icon">description</span>
+                    </div>
+                    <div className="stat-card-value">{page} / {Math.max(1, totalPages)}</div>
+                </div>
+            </div>
 
-            <div className="page-content">
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Total Pelanggan</span>
-                            <span className="material-symbols-outlined stat-card-icon">groups</span>
-                        </div>
-                        <div className="stat-card-value">{totalCustomers}</div>
+            {/* Customer List */}
+            <div className="card">
+                <div className="card-header">
+                    <div>
+                        <h3 className="card-title">Daftar Pelanggan</h3>
+                        <p className="card-subtitle">Kelola data pelanggan perusahaan</p>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Pelanggan Aktif</span>
-                            <span className="material-symbols-outlined stat-card-icon">check_circle</span>
+                    <button className="btn btn-primary" onClick={() => openModal()}>
+                        <span className="material-symbols-outlined icon-sm">add</span>
+                        Tambah Pelanggan
+                    </button>
+                </div>
+
+                {/* Filters */}
+                <div style={{ padding: '0 24px 16px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 280 }}>
+                        <div className="header-search" style={{ width: '100%', maxWidth: 'none' }}>
+                            <span className="material-symbols-outlined">search</span>
+                            <input
+                                type="text"
+                                placeholder="Cari nama atau kode..."
+                                value={search}
+                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                            />
                         </div>
-                        <div className="stat-card-value">{activeCustomers}</div>
-                        <span className="badge badge-success">
-                            {totalCustomers > 0 ? Math.round((activeCustomers / totalCustomers) * 100) : 0}%
-                        </span>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-label">Baru Bulan Ini</span>
-                            <span className="material-symbols-outlined stat-card-icon">person_add</span>
-                        </div>
-                        <div className="stat-card-value">{thisMonth}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {['all', 'active', 'inactive'].map(f => (
+                            <button
+                                key={f}
+                                className={`btn btn-sm ${filterActive === f ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => { setFilterActive(f); setPage(1); }}
+                            >
+                                {f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Customer List */}
-                <div className="card">
-                    <div className="card-header">
-                        <div>
-                            <h3 className="card-title">Daftar Pelanggan</h3>
-                            <p className="card-subtitle">Kelola data pelanggan perusahaan</p>
+                {loading ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
                         </div>
-                        <button className="btn btn-primary" onClick={() => openModal()}>
-                            <span className="material-symbols-outlined icon-sm">add</span>
-                            Tambah Pelanggan
-                        </button>
+                        <h3>Memuat data...</h3>
                     </div>
-
-                    {/* Filters */}
-                    <div style={{ padding: '0 24px 16px', display: 'flex', gap: 12, alignItems: 'center' }}>
-                        <div style={{ flex: 1, maxWidth: 320 }}>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Cari nama atau kode..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
+                ) : customers.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <span className="material-symbols-outlined">groups</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            {['all', 'active', 'inactive'].map(f => (
-                                <button
-                                    key={f}
-                                    className={`btn btn-sm ${filterActive === f ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => setFilterActive(f)}
-                                >
-                                    {f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                                </button>
-                            ))}
-                        </div>
+                        <h3>Tidak ditemukan</h3>
+                        <p>Tidak ada pelanggan yang cocok dengan kriteria pencarian Anda</p>
                     </div>
-
-                    {loading ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                            </div>
-                            <h3>Memuat data...</h3>
-                        </div>
-                    ) : filteredCustomers.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined">groups</span>
-                            </div>
-                            <h3>Belum ada pelanggan</h3>
-                            <p>Klik tombol "Tambah Pelanggan" untuk menambahkan pelanggan baru</p>
-                        </div>
-                    ) : (
+                ) : (
+                    <>
                         <div className="table-container">
                             <table>
                                 <thead>
@@ -223,7 +230,7 @@ const Customers = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredCustomers.map((customer) => (
+                                    {customers.map((customer) => (
                                         <tr key={customer.id}>
                                             <td>
                                                 <span className="font-mono font-bold" style={{ color: 'var(--primary)' }}>
@@ -254,8 +261,15 @@ const Customers = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalItems={totalItems}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                        />
+                    </>
+                )}
             </div>
 
             {/* Modal Form */}
@@ -366,7 +380,7 @@ const Customers = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

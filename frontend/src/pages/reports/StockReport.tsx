@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import Header from '../../components/Layout/Header';
+
 import { reportApi, factoryApi } from '../../services/api';
 import { exportToCSV } from '../../utils/exportUtils';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -131,8 +131,6 @@ const StockReport = () => {
 
     return (
         <>
-            <Header title="Laporan Stok" subtitle="Ringkasan pergerakan stok berdasarkan periode" />
-
             <div className="page-content">
                 {/* Filter Bar */}
                 <div className="card" style={{ marginBottom: '1.5rem' }}>

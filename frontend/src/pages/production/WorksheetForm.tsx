@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import Header from '../../components/Layout/Header';
+
 import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
 import { formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { logger } from '../../utils/logger';
@@ -475,7 +475,6 @@ const WorksheetForm = () => {
     if (loading) {
         return (
             <>
-                <Header title="Worksheet Produksi" subtitle="Loading..." />
                 <div className="page-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 32, animation: 'spin 1s linear infinite', color: 'var(--text-secondary)' }}>
                         progress_activity
@@ -487,8 +486,6 @@ const WorksheetForm = () => {
 
     return (
         <>
-            <Header title="Worksheet Produksi" subtitle={`${selectedFactoryData?.name || 'Factory'} - ${isEditMode ? 'Edit' : 'New Entry'}`} />
-
             <div className="page-content">
                 {/* Breadcrumb */}
                 <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>

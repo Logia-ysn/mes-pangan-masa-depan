@@ -17,6 +17,7 @@ export interface DashboardStats {
     totalRevenue: number;
     totalExpenses: number;
     netProfit: number;
+    totalEmployees: number;
     stockSummary: StockSummary[];
 }
 
@@ -118,6 +119,7 @@ class DashboardService {
             totalRevenue: financialStats.totalRevenue,
             totalExpenses: financialStats.totalExpenses,
             netProfit: financialStats.totalRevenue - financialStats.totalExpenses,
+            totalEmployees: await prisma.employee.count(),
             stockSummary
         };
     }

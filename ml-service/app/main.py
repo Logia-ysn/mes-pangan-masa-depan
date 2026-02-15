@@ -4,13 +4,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import health, analyze, analyze_detailed, calibration
 
+import os
+
 app = FastAPI(title=settings.app_title, version=settings.app_version)
+
+# SEED_SECRET from env or default
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3005").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
 

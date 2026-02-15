@@ -9,7 +9,11 @@ from app.services.color_detector import detect_colors
 from app.services.grading_service import determine_grade
 from app.services.calibration_store import calibration_store
 
+import logging
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 def _analyze(image_bytes: bytes, supplier: Optional[str], lot: Optional[str]) -> AnalyzeResponse:
@@ -40,16 +44,26 @@ async def analyze_grain(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File must be an image")
     try:
         contents = await file.read()
+        if len(contents) > MAX_FILE_SIZE:
+             raise HTTPException(status_code=413, detail="File too large. Max 10MB.")
         result = _analyze(contents, None, None)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal analysis error")
 
 
 @router.post("/analyze-base64")
 async def analyze_grain_base64(request: AnalyzeBase64Request):
     try:
         image_bytes = decode_base64(request.image_base64)
+        if len(image_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="Image too large. Max 10MB.")
         return _analyze(image_bytes, request.supplier, request.lot)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Base64 analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal analysis error")
