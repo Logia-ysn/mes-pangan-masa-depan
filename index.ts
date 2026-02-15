@@ -11,6 +11,7 @@ import { createWorkbook } from './src/services/excel.service';
 import { worksheetRepository } from './src/repositories/worksheet.repository';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
 
 // --- BigInt Serialization Patch ---
 // Prevent "Do not know how to serialize a BigInt" error in JSON.stringify
@@ -25,7 +26,15 @@ server.express.set('trust proxy', 1);
 
 // --- CORS with credentials ---
 server.express.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(null, false); // Just block it quietly
+    }
+  },
   credentials: true,
 }));
 
