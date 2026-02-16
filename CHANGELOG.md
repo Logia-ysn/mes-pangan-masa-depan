@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.17.1] - 2026-02-16
+
+### Diperbaiki
+- **Mobile Navigation Stability**: Perbaikan isu *blur* pada sidebar mobile melalui optimasi `z-index` (9999) dan penataan ulang urutan render DOM di `Layout.tsx`.
+- **Sidebar Legibility**: Menggunakan latar belakang putih solid pada mobile guna menjamin keterbacaan menu navigasi saat *overlay* aktif.
+
 ## [2.17.0] - 2026-02-15
 
 ### Ditambahkan

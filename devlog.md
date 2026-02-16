@@ -1,8 +1,15 @@
 # Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 24 — Mobile UI Reconstruction & Final Polishing
-**Date**: Feb 15, 2026
-**Current Version**: 2.17.0
+## 🟢 Status: Phase 25 — Mobile Navigation Final Integrity
+**Date**: Feb 16, 2026
+**Current Version**: 2.17.1
+
+### ✅ Phase 25: Mobile Navigation Final Integrity (Feb 16, 2026)
+Resolved a subtle rendering bug where the navigation sidebar appeared blurred and non-interactive on specific mobile devices despite correct layout.
+1. **DOM Order Optimization** — Moved `<Sidebar />` to the very end of the main Layout container to ensure the browser paints it on top of the blurred overlay.
+2. **Z-Index Maximization** — Applied `z-index: 9999` to the sidebar to override any overlapping header or toast elements.
+3. **Background Hardening** — Switched mobile sidebar from semi-transparent glass to solid white to block the "blur-under-blur" effect that was degrading text clarity.
+4. **Full local backup** — Created version tag `v2.17.1` and secured all documentation updates.
 
 ### ✅ Phase 24: Mobile UI Reconstruction & Final Polishing (Feb 15, 2026)
 Successfully overhauled the mobile user experience to fix a "broken" layout and standardized navigational patterns.
