@@ -1834,14 +1834,35 @@ tbody tr:hover {
 }
 
 /* ===== Receipt Print Styles ===== */
-.print-receipt {
-  display: none;
+.print-receipt,
+.print-visible {
+  display: none !important;
+}
+
+@media print {
+  body {
+    visibility: hidden;
+  }
+
+  .print-visible,
+  .print-visible * {
+    visibility: visible !important;
+  }
+
+  .print-visible {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    display: block !important;
+    width: 100% !important;
+  }
 }
 
 @media print {
 
   /* Saat printing receipt, tampilkan receipt dan hide semua yang lain */
-  .print-receipt {
+  .print-receipt,
+  .print-visible {
     display: block !important;
     width: 100%;
     background: white;
@@ -1853,10 +1874,16 @@ tbody tr:hover {
   /* Hide main content components saat body punya class is-printing */
   body.is-printing .sidebar,
   body.is-printing .header,
-  body.is-printing .page-content,
   body.is-printing .modal-overlay,
-  body.is-printing .modal {
+  body.is-printing .modal,
+  body.is-printing .page-content>*:not(.print-visible) {
     display: none !important;
+  }
+
+  body.is-printing .page-content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   body.is-printing .main-content {

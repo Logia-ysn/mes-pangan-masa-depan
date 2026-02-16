@@ -1098,19 +1098,83 @@ const RawMaterialReceipt = () => {
                 </div>
             )}
 
-            {/* Print Container (Hidden) */}
+            {/* Print Container (Hidden on screen) */}
             {printingBatch && (
-                <div id="receipt-print" style={{ display: 'none', padding: 40 }}>
-                    <h2 style={{ textAlign: 'center' }}>TANDA TERIMA BAHAN BAKU</h2>
-                    <hr />
-                    <p><strong>Batch ID:</strong> {printingBatch.batchId}</p>
-                    <p><strong>Supplier:</strong> {printingBatch.supplier}</p>
-                    <p><strong>Tanggal:</strong> {formatDate(printingBatch.dateReceived)}</p>
-                    <p><strong>Berat:</strong> {formatNumber(printingBatch.netWeight)} kg</p>
-                    <br />
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <div>Penerima<br /><br /><br />(................)</div>
-                        <div>Pengirim<br /><br /><br />(................)</div>
+                <div id="receipt-print" className="print-receipt print-visible">
+                    <div className="receipt-header">
+                        <h2>TANDA TERIMA BAHAN BAKU</h2>
+                        <h3>Pangan Masa Depan</h3>
+                    </div>
+
+                    <table className="receipt-info">
+                        <tbody>
+                            <tr>
+                                <td className="receipt-label">No. Batch</td>
+                                <td>: <strong>{printingBatch.batchId}</strong></td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">No. PO</td>
+                                <td>: {printingBatch.poNumber}</td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">Supplier</td>
+                                <td>: {printingBatch.supplier}</td>
+                            </tr>
+                            <tr>
+                                <td className="receipt-label">Tanggal Terima</td>
+                                <td>: {formatDate(printingBatch.dateReceived)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table className="receipt-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Kategori</th>
+                                <th>Jenis / Varietas</th>
+                                <th>Grade</th>
+                                <th>KA (%)</th>
+                                <th>Berat Bersih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{printingBatch.categoryId || 'N/A'}</td>
+                                <td>{printingBatch.materialType}</td>
+                                <td>{printingBatch.qualityGrade}</td>
+                                <td>{printingBatch.moistureContent}%</td>
+                                <td>{formatNumber(printingBatch.netWeight)} kg</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {printingBatch.notes && (
+                        <div className="receipt-notes">
+                            <strong>Catatan:</strong><br />
+                            {printingBatch.notes}
+                        </div>
+                    )}
+
+                    <div className="receipt-signatures">
+                        <div className="signature-box">
+                            <p>Admin Gudang</p>
+                            <div className="signature-line"></div>
+                            <p>(........................)</p>
+                        </div>
+                        <div className="signature-box">
+                            <p>Sopir / Pengantar</p>
+                            <div className="signature-line"></div>
+                            <p>(........................)</p>
+                        </div>
+                        <div className="signature-box">
+                            <p>Mengetahui</p>
+                            <div className="signature-line"></div>
+                            <p>(........................)</p>
+                        </div>
+                    </div>
+
+                    <div className="receipt-footer">
+                        Dicetak pada: {new Date().toLocaleString('id-ID')}
                     </div>
                 </div>
             )}
