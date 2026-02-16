@@ -1,8 +1,12 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// API URL: Use environment variable or fallback to localhost
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3005');
+// API URL: Use environment variable or fallback to Railway production URL, then localhost
+const PROD_API_URL = 'https://erp-pangan-masa-depan-production-7abe.up.railway.app'; // Fixed production URL
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PROD_API_URL : 'http://localhost:3005');
+
+console.log('Production mode:', import.meta.env.PROD);
+console.log('Using API Base URL:', API_URL);
 
 const api = axios.create({
     baseURL: API_URL,

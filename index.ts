@@ -29,18 +29,25 @@ server.express.set('trust proxy', 1);
 // --- CORS with credentials ---
 server.express.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Allow local development
+    if (!origin || origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+
+    // Check if origin matches allowed origins or is a Vercel preview
+    const isAllowed = allowedOrigins.includes(origin);
+    const isVercelPreview = origin.endsWith('.vercel.app');
+
+    if (isAllowed || isVercelPreview) {
       callback(null, true);
-    } else if (allowedOrigins.includes('*')) {
-      // Security: Disallow wildcard with credentials
-      console.warn('Blocked CORS request from origin:', origin, '(due to wildcard with credentials)');
-      callback(null, false);
     } else {
+      console.warn('CORS Blocked for origin:', origin);
       callback(null, false);
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
 
 // --- Cookie parser ---
@@ -106,7 +113,12 @@ server.express.use('/auth/register', authLimiter);
 
 // --- Health check ---
 server.express.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+    uptime: process.uptime()
+  });
 });
 
 // --- Batch Code Generation API ---
@@ -350,8 +362,11 @@ server.express.post('/auth/logout', (_req, res) => {
 });
 
 // --- Start server ---
+const port = Number(process.env.PORT || 3005);
+console.log(`Starting server on port ${port}...`);
+
 server.run({
-  port: +(process.env.PORT ?? 9415),
+  port: port,
   types_path: path.resolve(__dirname, 'types'),
   implementation_path: path.resolve(__dirname, 'implementation'),
   async beforeStart() {
