@@ -16,21 +16,21 @@ Workflow ini memastikan sinkronisasi antara development lokal dan aplikasi live 
 ### 1. Development Lokal
 // turbo
 ```bash
-# Start backend (port 3000)
+# Start backend (port 3005)
 cd /Users/yay/Project/erp-pangan-masa-depan
 npm run dev
 ```
 
 // turbo
 ```bash
-# Start frontend (port 5173)
+# Start frontend (port 3006)
 cd /Users/yay/Project/erp-pangan-masa-depan/frontend
 npm run dev
 ```
 
 ### 2. Test di Browser
-- Backend: http://localhost:3000
-- Frontend: http://localhost:5173
+- Backend: http://localhost:3005
+- Frontend: http://localhost:3006
 
 ### 3. Commit & Push ke GitHub
 ```bash

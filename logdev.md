@@ -175,15 +175,40 @@ Pages yang di-lazy-load:
 
 ---
 
-## Belum Dikerjakan (Phase 4: Operational Maturity)
+## Phase 4: Operational Integrity & Automation (Current Status)
 
-- [ ] Migrasi auth token dari localStorage ke httpOnly cookie (butuh backend endpoint set-cookie)
-- [ ] Token refresh endpoint + silent refresh di frontend
-- [ ] Rate limiting (express-rate-limit atau serupa)
-- [ ] Request logging / audit trail
-- [ ] Health check endpoint (`/health`)
-- [ ] CI/CD pipeline
-- [ ] Monitoring & alerting
+Fokus pada integritas data operasional dan otomatisasi alur kerja produksi untuk meminimalkan human error.
+
+### 4.1 Automated Batch Numbering (v2.19.0)
+- **Traceability**: Implementasi sistem penomoran batch terpusat `{Factory}{Type}{Variety}{Level}-{YYMMDD}-{Seq}`.
+- **Integrasi**: Otomatis generate kode saat Goods Receipt (bahan baku) dan Worksheet (produk jadi/sampingan).
+- **Service**: `BatchNumberingService` atomic sequence generation untuk mencegah duplikasi.
+- **Audit Trail**: Kolom `batch_code` ditambahkan ke setiap pergerakan stok.
+
+### 4.2 Advanced SKU Classification (v2.18.0)
+- **Master Data**: Migrasi dari input teks manual ke `RiceVariety`, `RiceLevel`, `RiceBrand`.
+- **SKU Generator**: Otomatisasi pembuatan nama produk dan kode unik.
+- **Factory Link**: Produk baru otomatis terhubung ke `FactoryMaterialConfig`.
+
+### 4.3 Multi-Factory & Stock Transfer (v2.9 - v2.17)
+- **Transfer Antar Pabrik**: Fitur pemindahan stok validasi transaksional (PMD 1 ↔ PMD 2).
+- **Mobile UI**: Redesain total untuk responsivitas (horizontal scroll selector, typography scaling).
+- **UI Premium**: Standarisasi desain komponen (borders, spacing, animations).
+
+### 4.4 Data Integrity Fixes
+- **Transactional Operations**: Semua mutasi stok (PO, Invoice, Transfer) dibungkus `prisma.$transaction`.
+- **Hard Reset**: Logika reset total yang aman terhadap foreign key constraints baru.
+- **Validation**: Perbaikan validasi input angka dan ID di seluruh endpoint.
+
+---
+
+## Belum Dikerjakan (Next Steps)
+
+- [ ] Quality Trending Dashboard (SPC Charts)
+- [ ] Audit Log Viewer UI
+- [ ] Migrasi auth token ke httpOnly cookie
+- [ ] Rate limiting & Request logging
+- [ ] CI/CD pipeline automation
 
 ---
 

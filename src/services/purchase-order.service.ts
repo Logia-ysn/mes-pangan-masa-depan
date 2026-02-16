@@ -6,6 +6,7 @@
 import { PurchaseOrder_status_enum } from '@prisma/client';
 import { prisma } from '../libs/prisma';
 import { stockService } from './stock.service';
+import { BatchNumberingService } from './batch-numbering.service';
 import { purchaseOrderRepository } from '../repositories/purchase-order.repository';
 import { goodsReceiptRepository } from '../repositories/goods-receipt.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
@@ -386,7 +387,15 @@ class PurchaseOrderService {
                     }
                 });
 
-                // Add stock
+                // Add stock with auto-generated batch code
+                const grDate = createdReceipt.receipt_date ? new Date(createdReceipt.receipt_date as any) : new Date();
+                const batchCode = await BatchNumberingService.generateBatchForProduct(
+                    po.Factory.code,
+                    poItem.id_product_type,
+                    grDate,
+                    tx
+                );
+
                 await stockService.addStock(
                     po.id_factory,
                     poItem.ProductType.code,
@@ -394,7 +403,8 @@ class PurchaseOrderService {
                     userId,
                     'GOODS_RECEIPT',
                     createdReceipt.id,
-                    tx
+                    tx,
+                    batchCode
                 );
             }
 

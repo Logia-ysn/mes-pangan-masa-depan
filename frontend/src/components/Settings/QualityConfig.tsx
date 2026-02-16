@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { qualityParameterApi, rawMaterialVarietyApi } from '../../services/api';
+import { qualityParameterApi, riceVarietyApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 
 interface QualityParameter {
@@ -70,8 +70,8 @@ const QualityConfig = () => {
 
     const fetchVarieties = async () => {
         try {
-            const res = await rawMaterialVarietyApi.getAll();
-            setVarieties(res.data?.data || []);
+            const res = await riceVarietyApi.getAll();
+            setVarieties(res.data?.data || res.data || []);
         } catch (e) { logger.error(e); }
     };
 

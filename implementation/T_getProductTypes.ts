@@ -6,12 +6,14 @@ import { apiWrapper } from "../src/utils/apiWrapper";
 export const t_getProductTypes: T_getProductTypes = apiWrapper(async (req, res) => {
   await requireAuth(req, 'OPERATOR');
 
-  const { limit, offset, search } = req.query;
+  const { limit, offset, search, category, isActive } = req.query;
 
   const { productTypes, total } = await productTypeRepository.findWithFilters({
     limit: limit ? Number(limit) : 50,
     offset: offset ? Number(offset) : 0,
-    search: search as string
+    search: search as string,
+    category: category as string,
+    isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined
   });
 
   return { data: productTypes as any, total };

@@ -1,4 +1,36 @@
 # Changelog
+ 
+## [2.19.0] - 2026-02-16
+
+### Ditambahkan
+- **Sistem Penomoran Batch Otomatis** — Kode batch terstandarisasi untuk semua produk (bahan baku, barang jadi, produk sampingan)
+- **BatchNumberingService** — Service baru untuk generate kode batch dengan format: `{Pabrik}{Jenis}{Varietas}{Level}-{YYMMDD}-{Seq}`
+- **Database Schema** — Model `BatchCodeMapping` dan `BatchSequence` untuk mapping parameter dan tracking sequence harian
+- **Auto-Seed** — Mapping kode batch otomatis di-seed saat server pertama kali start
+
+### Diubah
+- **Penerimaan Barang** — Otomatis generate kode batch saat menerima bahan baku melalui PO
+- **Worksheet Produksi** — Otomatis generate kode batch untuk output utama dan produk sampingan
+- **Stock Movement** — Setiap pergerakan stok sekarang mencatat `batch_code` untuk audit trail lengkap
+- **Dummy Generator** — Menggunakan sistem batch numbering baru (bukan format hardcode)
+- **Hard Reset** — Termasuk pembersihan tabel `BatchSequence` dan `BatchCodeMapping`
+
+## [2.18.0] - 2026-02-16
+
+### Ditambahkan
+- **Sistem Klasifikasi Material Baru**: Implementasi master data `RiceVariety`, `RiceLevel`, dan `RiceBrand` untuk standarisasi penamaan produk (SKU).
+- **Automated SKU Generator**: Fitur pembuatan SKU otomatis yang menggabungkan level, varietas, dan merk secara sistematis.
+- **Factory-Product Linking**: Otomatisasi pendaftaran produk ke pabrik (`FactoryMaterialConfig`) saat pembuatan SKU guna mempermudah alur produksi.
+- **Master Data Seeding**: Penambahan kategori proses produksi (Drying, Hulling, Whitening, etc.) ke database untuk pelacakan alur kerja yang lebih detail.
+
+### Diubah
+- **Redesain Premium SKU Selector**: Pembaruan antarmuka seleksi produk dengan estetika premium (1.5px border, solid backgrounds, dan hover animations).
+- **Enhanced Dummy Generator**: Generator batch data kini mendukung sistem klasifikasi baru dan menghasilkan alur produksi multi-varietas (IR64, Ciherang).
+- **Hard Reset Logic**: Pembaruan sistem reset total guna menangani dependensi tabel baru dan menjamin integritas data (Foreign Key constraints).
+
+### Diperbaiki
+- **SKU Creation Error**: Perbaikan error 500 saat membuat SKU baru akibat ketidaksesuaian nama field antara frontend dan backend.
+- **Constraint Violation on Reset**: Memperbaiki kegagalan fitur Hard Reset saat menghapus data dengan relasi kompleks.
 
 ## [2.17.1] - 2026-02-16
 

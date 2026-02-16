@@ -10,6 +10,8 @@ export interface ProductTypeListParams {
     limit?: number;
     offset?: number;
     search?: string;
+    category?: string;
+    isActive?: boolean;
 }
 
 export class ProductTypeRepository extends BaseRepository<ProductType> {
@@ -37,12 +39,25 @@ export class ProductTypeRepository extends BaseRepository<ProductType> {
             ];
         }
 
+        if (params.category) {
+            where.category = params.category;
+        }
+
+        if (params.isActive !== undefined) {
+            where.is_active = params.isActive;
+        }
+
         const [productTypes, total] = await Promise.all([
             this.model.findMany({
                 where,
                 take: params.limit || 50,
                 skip: params.offset || 0,
-                orderBy: { id: 'asc' }
+                orderBy: { id: 'asc' },
+                include: {
+                    RiceVariety: true,
+                    RiceLevel: true,
+                    RiceBrand: true,
+                }
             }),
             this.model.count({ where })
         ]);

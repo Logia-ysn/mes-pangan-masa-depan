@@ -22,6 +22,9 @@ interface Stock {
         name: string;
         code: string;
         category: string;
+        RiceVariety?: { code: string; name: string };
+        RiceLevel?: { code: string; name: string };
+        RiceBrand?: { code: string; name: string };
     };
     factory?: {
         name: string;
@@ -33,6 +36,9 @@ interface ProductType {
     name: string;
     code: string;
     category: string;
+    RiceVariety?: { code: string; name: string };
+    RiceLevel?: { code: string; name: string };
+    RiceBrand?: { code: string; name: string };
 }
 
 const Stocks = () => {
@@ -443,6 +449,19 @@ const Stocks = () => {
                                                         <div className="font-medium">
                                                             {stock.product_type?.name || productType?.name || `Product #${stock.id_product_type}`}
                                                         </div>
+                                                        {(stock.product_type?.RiceVariety || stock.product_type?.RiceLevel || stock.product_type?.RiceBrand) && (
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
+                                                                {stock.product_type?.RiceLevel && (
+                                                                    <span className="badge badge-info" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>{stock.product_type.RiceLevel.name}</span>
+                                                                )}
+                                                                {stock.product_type?.RiceVariety && (
+                                                                    <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>{stock.product_type.RiceVariety.name}</span>
+                                                                )}
+                                                                {stock.product_type?.RiceBrand && (
+                                                                    <span className="badge badge-warning" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>{stock.product_type.RiceBrand.name}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="hide-mobile">
                                                         <span className="badge badge-muted">
@@ -729,7 +748,9 @@ const Stocks = () => {
                                             .filter(s => s.id_factory === transferForm.fromFactoryId && s.quantity > 0)
                                             .map(s => (
                                                 <option key={s.id} value={s.product_type?.code || ''}>
-                                                    {s.product_type?.code} - {s.product_type?.name} ({formatNumber(s.quantity)} {s.unit})
+                                                    {s.product_type?.code} - {s.product_type?.name}
+                                                    {s.product_type?.RiceVariety ? ` (${s.product_type.RiceVariety.name})` : ''}
+                                                    - {formatNumber(s.quantity)} {s.unit}
                                                 </option>
                                             ))
                                         }

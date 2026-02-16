@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 
-import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, outputProductApi } from '../../services/api';
+import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, factoryMaterialApi } from '../../services/api';
 import { formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { logger } from '../../utils/logger';
+import SKUSelector from '../../components/Production/SKUSelector';
 
 // --- Interfaces ---
 
@@ -44,28 +45,25 @@ interface ProcessCategory {
     is_main_process: boolean;
 }
 
-interface OutputProduct {
-    id: number;
-    code: string;
-    name: string;
-    id_factory: number;
-}
 
 interface InputBatch {
     id_stock: number;
     stock_name: string;  // "BTC-2026-001 - Gabah Kering Panen"
     quantity: number;
     unit_price: number;
-    batch_id?: string;   // "BTC-2026-001" (untuk traceability)
+    batch_code?: string; // e.g. "P1-PD-IR-160226-001"
 }
 
 interface SideProduct {
+    id_product_type?: number;
     product_code: string;
     product_name: string;
     quantity: number;
     is_auto: boolean;
     unit_price: number;
 }
+
+// --- Main Component ---
 
 // --- Configs ---
 
@@ -75,22 +73,6 @@ const shiftConfig: { [key: string]: { label: string; class: string } } = {
     SHIFT_3: { label: 'Shift 3', class: 'badge-muted' },
     SHIFT_4: { label: 'Shift 4', class: 'badge-success' }
 };
-
-const sideProductConfig: { PMD1: { code: string; name: string; defaultPercentage: number; isAuto?: boolean }[]; PMD2: { code: string; name: string; defaultPercentage: number; isAuto?: boolean }[] } = {
-    PMD1: [
-        { code: 'BEKATUL', name: 'Bekatul', defaultPercentage: 0 },
-        { code: 'SEKAM', name: 'Sekam', defaultPercentage: 15, isAuto: true },
-    ],
-    PMD2: [
-        { code: 'BEKATUL', name: 'Bekatul', defaultPercentage: 0 },
-        { code: 'BROKEN', name: 'Broken', defaultPercentage: 0 },
-        { code: 'REJECT', name: 'Reject', defaultPercentage: 0 },
-        { code: 'MENIR_JITAY', name: 'Menir Jitay', defaultPercentage: 0 },
-        { code: 'MENIR_GULA', name: 'Menir Gula', defaultPercentage: 0 },
-    ]
-};
-
-// --- Main Component ---
 
 const WorksheetForm = () => {
     const navigate = useNavigate();
@@ -104,7 +86,6 @@ const WorksheetForm = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [processCategories, setProcessCategories] = useState<ProcessCategory[]>([]);
-    const [outputProducts, setOutputProducts] = useState<OutputProduct[]>([]);
 
     // UI state
     const [selectedFactory, setSelectedFactory] = useState<number | null>(null);
@@ -112,6 +93,7 @@ const WorksheetForm = () => {
     const [submitting, setSubmitting] = useState(false);
     const [showBatchModal, setShowBatchModal] = useState(false);
     const [showAddOperatorModal, setShowAddOperatorModal] = useState(false);
+    const [generatingBatch, setGeneratingBatch] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -208,12 +190,10 @@ const WorksheetForm = () => {
 
         const fetchFactoryData = async () => {
             try {
-                const [stockRes, outputRes] = await Promise.all([
+                const [stockRes] = await Promise.all([
                     stockApi.getAll({ id_factory: selectedFactory }),
-                    outputProductApi.getAll({ id_factory: selectedFactory }),
                 ]);
                 setStocks(stockRes.data?.data || []);
-                setOutputProducts(outputRes.data?.data || []);
             } catch (error) {
                 logger.error('Error loading factory data:', error);
             }
@@ -294,27 +274,68 @@ const WorksheetForm = () => {
 
     // --- Helpers ---
 
-    const initializeSideProducts = (factoryId: number) => {
-        const factory = factories.find(f => f.id === factoryId);
-        const isPmd1 = factory?.code === 'PMD-1';
-        const config = isPmd1 ? sideProductConfig.PMD1 : sideProductConfig.PMD2;
+    const initializeSideProducts = async (factoryId: number) => {
+        try {
+            // Fetch factory material config to find outputs with category SIDE_PRODUCT
+            const res = await factoryMaterialApi.getAll(factoryId);
+            const materials = res.data?.data || [];
 
-        const products: SideProduct[] = config.map(sp => ({
-            product_code: sp.code,
-            product_name: sp.name,
-            quantity: 0,
-            is_auto: sp.isAuto || false,
-            unit_price: 0
-        }));
+            // Filter only outputs that are classified as SIDE_PRODUCT
+            const sideProductMaterials = materials.filter((m: any) =>
+                m.is_output && m.ProductType?.category === 'SIDE_PRODUCT'
+            );
 
-        setFormData(prev => ({ ...prev, side_products: products }));
+            const products: SideProduct[] = sideProductMaterials.map((m: any) => ({
+                id_product_type: m.id_product_type,
+                product_code: m.ProductType?.code || 'UNKNOWN',
+                product_name: m.ProductType?.name || 'Unknown',
+                quantity: 0,
+                is_auto: m.ProductType?.code === 'SEKAM', // Default auto for SEKAM
+                unit_price: 0
+            }));
+
+            setFormData(prev => ({ ...prev, side_products: products }));
+        } catch (error) {
+            logger.error('Error initializing side products:', error);
+        }
     };
 
-    const generateBatchCode = () => {
-        const date = new Date();
-        const factory = factories.find(f => f.id === selectedFactory);
-        const prefix = factory?.code === 'PMD-1' ? 'P1' : 'P2';
-        return `${prefix}-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${String(Date.now()).slice(-4)}`;
+    // Batch code readiness check: needs factory + output product selected
+    const isFormReadyForBatch = !!(selectedFactory && formData.id_output_product);
+
+    const handleGenerateBatchCode = async () => {
+        if (!isFormReadyForBatch) {
+            showError('Perhatian', 'Pilih Pabrik dan Output Product (SKU) terlebih dahulu');
+            return;
+        }
+
+        setGeneratingBatch(true);
+        try {
+            const factory = factories.find(f => f.id === selectedFactory);
+            if (!factory) {
+                showError('Error', 'Pabrik tidak ditemukan');
+                return;
+            }
+
+            const response = await api.post('/batch-code/generate', {
+                factoryCode: factory.code,
+                productTypeId: parseInt(formData.id_output_product),
+                date: formData.worksheet_date
+            });
+
+            const batchCode = response.data?.batchCode;
+            if (batchCode) {
+                setFormData(prev => ({ ...prev, batch_code: batchCode }));
+                showSuccess('Berhasil', `Batch Code berhasil digenerate: ${batchCode}`);
+            } else {
+                showError('Error', 'Gagal mendapatkan batch code dari server');
+            }
+        } catch (error: any) {
+            logger.error('Failed to generate batch code:', error);
+            showError('Gagal', error.response?.data?.error || error.message || 'Gagal generate Batch Code');
+        } finally {
+            setGeneratingBatch(false);
+        }
     };
 
     const handleProcessToggle = (code: string) => {
@@ -350,10 +371,11 @@ const WorksheetForm = () => {
         });
     };
 
-    const addInputBatch = (stock: Stock, quantity: number, unitPrice: number, batchLabel?: string) => {
+    const addInputBatch = (stock: Stock, quantity: number, unitPrice: number, batchLabel?: string, rawBatchId?: string) => {
         const batch: InputBatch = {
             id_stock: stock.id,
             stock_name: batchLabel || stock.ProductType?.name || 'Unknown',
+            batch_code: rawBatchId,
             quantity,
             unit_price: unitPrice,
         };
@@ -413,10 +435,12 @@ const WorksheetForm = () => {
                 id_stock: b.id_stock,
                 quantity: b.quantity,
                 unit_price: b.unit_price,
-                total_cost: b.quantity * b.unit_price
+                total_cost: b.quantity * b.unit_price,
+                batch_code: b.batch_code
             }));
 
             const sideProductsPayload = formData.side_products.map(sp => ({
+                id_product_type: sp.id_product_type,
                 product_code: sp.product_code,
                 product_name: sp.product_name,
                 quantity: sp.quantity,
@@ -434,7 +458,7 @@ const WorksheetForm = () => {
                 id_machines: formData.selected_machines,
                 id_output_product: parseInt(formData.id_output_product) || null,
                 process_steps: JSON.stringify(formData.selected_processes),
-                batch_code: formData.batch_code || generateBatchCode(),
+                batch_code: formData.batch_code,
                 input_batches: inputBatchesPayload,
                 side_products: sideProductsPayload,
                 gabah_input: totalInputWeight,
@@ -663,52 +687,97 @@ const WorksheetForm = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
                             {/* Section 2: Output Product & Process */}
-                            <div className="card" style={{ padding: 24 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', background: 'rgba(59, 130, 246, 0.1)', padding: 8, borderRadius: '50%' }}>tune</span>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>2. Output Product & Process</h3>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Output Product *</label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
-                                        {outputProducts.map(op => (
-                                            <button
-                                                key={op.id}
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, id_output_product: String(op.id) })}
-                                                style={{
-                                                    padding: '12px 16px',
-                                                    border: `2px solid ${formData.id_output_product === String(op.id) ? 'var(--primary)' : 'var(--border-color)'}`,
-                                                    borderRadius: 8,
-                                                    background: formData.id_output_product === String(op.id) ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-surface)',
-                                                    cursor: 'pointer',
-                                                    textAlign: 'center'
-                                                }}
-                                            >
-                                                <div style={{ fontWeight: 600, color: formData.id_output_product === String(op.id) ? 'var(--primary)' : 'var(--text-primary)', fontSize: '0.875rem' }}>{op.name}</div>
-                                            </button>
-                                        ))}
+                            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                                    padding: '16px 20px',
+                                    borderBottom: '1px solid var(--border-color)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{
+                                            width: 36, height: 36, borderRadius: 10,
+                                            background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            <span className="material-symbols-outlined" style={{ color: 'white', fontSize: 18 }}>shopping_bag</span>
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>2. Output Product & Process</h3>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SKU selection and processing steps</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="form-group" style={{ marginTop: 20 }}>
-                                    <label className="form-label">Process Steps (multiple selection)</label>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                        {processCategories.map(pc => (
-                                            <button
-                                                key={pc.id}
-                                                type="button"
-                                                onClick={() => handleProcessToggle(pc.code)}
-                                                className={`btn ${formData.selected_processes.includes(pc.code) ? 'btn-primary' : 'btn-secondary'}`}
-                                                style={{ fontSize: '0.8rem' }}
-                                            >
-                                                {formData.selected_processes.includes(pc.code) && (
-                                                    <span className="material-symbols-outlined icon-sm">check</span>
-                                                )}
-                                                {pc.name}
-                                            </button>
-                                        ))}
+                                <div style={{ padding: '24px' }}>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr',
+                                        gap: '24px'
+                                    }}>
+                                        <div className="form-group" style={{ margin: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--primary)' }}>inventory</span>
+                                                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>Output Product (SKU) *</label>
+                                            </div>
+                                            <SKUSelector
+                                                value={formData.id_output_product}
+                                                idFactory={selectedFactory}
+                                                onChange={(id, _code, _name) => setFormData({ ...formData, id_output_product: String(id) })}
+                                                category="FINISHED_RICE"
+                                                placeholder="Pilih SKU Beras..."
+                                            />
+                                        </div>
+
+                                        <div className="form-group" style={{ margin: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--success)' }}>settings_suggest</span>
+                                                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>Process Steps (multiple selection)</label>
+                                            </div>
+                                            <div style={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 10,
+                                                padding: '4px'
+                                            }}>
+                                                {processCategories.map(pc => {
+                                                    const isActive = formData.selected_processes.includes(pc.code);
+                                                    return (
+                                                        <button
+                                                            key={pc.id}
+                                                            type="button"
+                                                            onClick={() => handleProcessToggle(pc.code)}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 8,
+                                                                padding: '10px 18px',
+                                                                borderRadius: '50px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 500,
+                                                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                                border: '1.5px solid',
+                                                                borderColor: isActive ? 'var(--primary)' : 'var(--border-color)',
+                                                                background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-surface)',
+                                                                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                                                                boxShadow: isActive ? '0 4px 12px rgba(59, 130, 246, 0.12)' : 'none',
+                                                                transform: isActive ? 'translateY(-1px)' : 'none'
+                                                            }}
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{
+                                                                fontSize: 18,
+                                                                fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0"
+                                                            }}>
+                                                                {isActive ? 'check_circle' : 'radio_button_unchecked'}
+                                                            </span>
+                                                            {pc.name}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -720,21 +789,83 @@ const WorksheetForm = () => {
                                     <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>3. Production Data</h3>
                                 </div>
 
-                                {/* Batch Code */}
-                                <div className="form-group">
-                                    <label className="form-label">Batch Code</label>
-                                    <div className="input-group">
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            placeholder={generateBatchCode()}
-                                            value={formData.batch_code}
-                                            onChange={e => setFormData({ ...formData, batch_code: e.target.value })}
-                                        />
-                                        <button type="button" className="btn btn-secondary" onClick={() => setFormData({ ...formData, batch_code: generateBatchCode() })}>
-                                            <span className="material-symbols-outlined icon-sm">autorenew</span>
-                                            Generate
-                                        </button>
+                                {/* Batch Code — auto-generate via backend API */}
+                                <div style={{
+                                    padding: '16px 20px',
+                                    borderRadius: 12,
+                                    border: formData.batch_code
+                                        ? '2px solid var(--success)'
+                                        : isFormReadyForBatch
+                                            ? '2px dashed var(--primary)'
+                                            : '2px dashed var(--border-color)',
+                                    background: formData.batch_code
+                                        ? 'rgba(34, 197, 94, 0.04)'
+                                        : isFormReadyForBatch
+                                            ? 'rgba(59, 130, 246, 0.04)'
+                                            : 'var(--bg-elevated)',
+                                    transition: 'all 0.3s ease'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                                <span className="material-symbols-outlined" style={{
+                                                    fontSize: 20,
+                                                    color: formData.batch_code ? 'var(--success)' : 'var(--text-secondary)'
+                                                }}>
+                                                    {formData.batch_code ? 'check_circle' : 'qr_code_2'}
+                                                </span>
+                                                <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>Batch Code</label>
+                                            </div>
+                                            {formData.batch_code ? (
+                                                <span style={{
+                                                    fontFamily: 'monospace',
+                                                    fontSize: '1.1rem',
+                                                    fontWeight: 700,
+                                                    color: 'var(--success)',
+                                                    letterSpacing: 1
+                                                }}>
+                                                    {formData.batch_code}
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                                    {isFormReadyForBatch
+                                                        ? 'Klik tombol untuk generate Batch Code otomatis.'
+                                                        : 'Pilih Pabrik dan Output Product (SKU) terlebih dahulu.'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            {formData.batch_code ? (
+                                                <>
+                                                    <button type="button" className="btn btn-secondary btn-sm"
+                                                        onClick={() => setFormData(prev => ({ ...prev, batch_code: '' }))}
+                                                    >
+                                                        <span className="material-symbols-outlined icon-sm">refresh</span>
+                                                        Reset
+                                                    </button>
+                                                    <button type="button" className="btn btn-primary btn-sm"
+                                                        onClick={handleGenerateBatchCode}
+                                                        disabled={generatingBatch}
+                                                    >
+                                                        <span className="material-symbols-outlined icon-sm">
+                                                            {generatingBatch ? 'progress_activity' : 'auto_awesome'}
+                                                        </span>
+                                                        Re-generate
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button type="button" className="btn btn-primary"
+                                                    onClick={handleGenerateBatchCode}
+                                                    disabled={!isFormReadyForBatch || generatingBatch}
+                                                    style={{ whiteSpace: 'nowrap' }}
+                                                >
+                                                    <span className="material-symbols-outlined icon-sm">
+                                                        {generatingBatch ? 'progress_activity' : 'auto_awesome'}
+                                                    </span>
+                                                    {generatingBatch ? 'Generating...' : 'Generate Batch Code'}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -940,7 +1071,7 @@ const WorksheetForm = () => {
                         <button type="button" className="btn btn-secondary" onClick={() => navigate('/production/worksheets')}>
                             Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={submitting}>
+                        <button type="submit" className="btn btn-primary" disabled={submitting || !formData.batch_code}>
                             <span className="material-symbols-outlined icon-sm">{submitting ? 'progress_activity' : 'save'}</span>
                             {submitting ? 'Saving...' : (isEditMode ? 'Update Worksheet' : 'Save Worksheet')}
                         </button>
@@ -1029,7 +1160,7 @@ interface ReceiptBatch {
 const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
     stocks: Stock[];
     selectedFactory: number | null;
-    onSelect: (stock: Stock, quantity: number, unitPrice: number, batchLabel: string) => void;
+    onSelect: (stock: Stock, quantity: number, unitPrice: number, batchLabel: string, rawBatchId?: string) => void;
     onClose: () => void;
 }) => {
     const [receiptBatches, setReceiptBatches] = useState<ReceiptBatch[]>([]);
@@ -1106,25 +1237,7 @@ const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
         setQuantity(''); // Reset qty
     };
 
-    const handleConfirm = () => {
-        if (!selectedBatch || !quantity) return;
 
-        // Find the Stock object for this batch
-        const stock = stocks.find(s => s.id === selectedBatch.id_stock);
-        if (!stock) return;
-
-        const qty = parseFloat(quantity);
-        const batchLabel = `${selectedBatch.batchId} - ${selectedBatch.productName}`;
-
-        // Kalkulasi Harga Landed (HPP Material) = Harga Beli + (Biaya Lain / Total Qty Received)
-        const basePrice = selectedBatch.pricePerKg || 0;
-        const totalOtherCosts = selectedBatch.otherCosts || 0;
-        const totalReceivedQty = selectedBatch.quantity || 1;
-        const overheadPerKg = totalOtherCosts / totalReceivedQty;
-        const landedPricePerKg = basePrice + overheadPerKg;
-
-        onSelect(stock, qty, landedPricePerKg, batchLabel);
-    };
 
     // Max available = aggregate stock quantity for this product
     const maxAvailable = selectedBatch
@@ -1278,7 +1391,20 @@ const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
                     <button className="btn btn-secondary" onClick={onClose}>Batal</button>
                     <button
                         className="btn btn-primary"
-                        onClick={handleConfirm}
+                        onClick={() => {
+                            if (!selectedBatch || !quantity) return;
+                            const stock = stocks.find(s => s.id === selectedBatch.id_stock);
+                            if (!stock) return;
+                            const qty = parseFloat(quantity);
+                            const batchLabel = `${selectedBatch.batchId} - ${selectedBatch.productName}`;
+                            const basePrice = selectedBatch.pricePerKg || 0;
+                            const totalOtherCosts = selectedBatch.otherCosts || 0;
+                            const totalReceivedQty = selectedBatch.quantity || 1;
+                            const overheadPerKg = totalOtherCosts / totalReceivedQty;
+                            const landedPricePerKg = basePrice + overheadPerKg;
+
+                            onSelect(stock, qty, landedPricePerKg, batchLabel, selectedBatch.batchId);
+                        }}
                         disabled={!selectedBatch || !quantity || parseFloat(quantity) <= 0}
                     >
                         <span className="material-symbols-outlined icon-sm">add</span>

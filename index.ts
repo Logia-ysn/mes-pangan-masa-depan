@@ -5,10 +5,12 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import express from 'express';
 import { getUserFromToken } from './utility/auth';
 import { pdfService } from './src/services/pdf.service';
 import { createWorkbook } from './src/services/excel.service';
 import { worksheetRepository } from './src/repositories/worksheet.repository';
+import fileUpload from 'express-fileupload';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
@@ -43,6 +45,16 @@ server.express.use(cors({
 
 // --- Cookie parser ---
 server.express.use(cookieParser());
+
+// --- File upload (Surat Jalan/Tanda Terima) ---
+server.express.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
+
+// --- Static files serving ---
+server.express.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Cookie to Authorization Header Middleware ---
 // NAIV handlers only receive filtered request objects (headers, body, query, path).
@@ -95,6 +107,25 @@ server.express.use('/auth/register', authLimiter);
 // --- Health check ---
 server.express.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// --- Batch Code Generation API ---
+server.express.post('/batch-code/generate', express.json(), async (req, res) => {
+  try {
+    const { factoryCode, productTypeId, date } = req.body;
+    if (!factoryCode || !productTypeId) {
+      return res.status(400).json({ error: 'factoryCode and productTypeId are required' });
+    }
+    const { BatchNumberingService } = require('./src/services/batch-numbering.service');
+    const batchDate = date ? new Date(date) : new Date();
+    const batchCode = await BatchNumberingService.generateBatchForProduct(
+      factoryCode, Number(productTypeId), batchDate
+    );
+    res.json({ batchCode });
+  } catch (error: any) {
+    console.error('Batch code generation error:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate batch code' });
+  }
 });
 
 // --- Invoice PDF export ---
@@ -273,6 +304,40 @@ server.express.get('/reports/stock-report/excel', async (req, res) => {
   }
 });
 
+// --- File Upload API ---
+server.express.post('/upload', async (req, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ success: false, message: 'No files were uploaded.' });
+    }
+
+    const { type } = req.query; // e.g. 'surat-jalan' or 'tanda-terima'
+    const folder = type === 'tanda-terima' ? 'tanda-terima' : 'surat-jalan';
+
+    // Create folders if they don't exist
+    const fs = require('fs');
+    const uploadDir = path.join(__dirname, 'uploads', folder);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const file = req.files.file as any;
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    const uploadPath = path.join(uploadDir, fileName);
+
+    await file.mv(uploadPath);
+
+    res.json({
+      success: true,
+      url: `/uploads/${folder}/${fileName}`,
+      fileName: fileName
+    });
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // --- Logout (clears httpOnly cookie) ---
 server.express.post('/auth/logout', (_req, res) => {
   res.clearCookie('token', {
@@ -292,6 +357,11 @@ server.run({
   async beforeStart() {
     await prisma.$connect();
     console.log('Prisma connected');
+
+    // Auto-seed batch code mappings if empty
+    const { BatchNumberingService } = require('./src/services/batch-numbering.service');
+    const seeded = await BatchNumberingService.seedDefaultMappings();
+    if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
   }
 });
 

@@ -114,10 +114,35 @@ export const rawMaterialCategoryApi = {
     create: (data: Record<string, any>) => api.post('/raw-material-categories', data),
 };
 
-// Raw Material Varieties
-export const rawMaterialVarietyApi = {
-    getAll: (params?: Record<string, any>) => api.get('/raw-material-varieties', { params }),
-    create: (data: Record<string, any>) => api.post('/raw-material-varieties', data),
+// Rice Varieties (New System)
+export const riceVarietyApi = {
+    getAll: (params?: Record<string, any>) => api.get('/rice-varieties', { params }),
+    create: (data: Record<string, any>) => api.post('/rice-varieties', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/rice-varieties/${id}`, data),
+    delete: (id: number) => api.delete(`/rice-varieties/${id}`),
+};
+
+// Rice Levels
+export const riceLevelApi = {
+    getAll: (params?: Record<string, any>) => api.get('/rice-levels', { params }),
+    create: (data: Record<string, any>) => api.post('/rice-levels', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/rice-levels/${id}`, data),
+    delete: (id: number) => api.delete(`/rice-levels/${id}`),
+};
+
+// Rice Brands
+export const riceBrandApi = {
+    getAll: (params?: Record<string, any>) => api.get('/rice-brands', { params }),
+    create: (data: Record<string, any>) => api.post('/rice-brands', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/rice-brands/${id}`, data),
+    delete: (id: number) => api.delete(`/rice-brands/${id}`),
+};
+
+// Factory Materials
+export const factoryMaterialApi = {
+    getAll: (id_factory: number) => api.get('/factory-materials', { params: { id_factory } }),
+    upsert: (data: { id_factory: number; id_product_type: number; is_input: boolean; is_output: boolean }) =>
+        api.post('/factory-materials', data),
 };
 
 // Machines

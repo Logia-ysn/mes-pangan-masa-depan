@@ -3,7 +3,7 @@
 # Configuration
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_ROOT="backups"
-BACKUP_NAME="full_v2.14.0_audit_integrity_fix_$TIMESTAMP"
+BACKUP_NAME="full_v2.18.0_sku_refined_$TIMESTAMP"
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_NAME"
 
 # Create backup directory

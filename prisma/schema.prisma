@@ -98,22 +98,36 @@ model ExpenseCategory {
 }
 
 model Factory {
-  id            Int             @id(map: "PK_6635a0ad5ed4a0499652a126970") @default(autoincrement())
-  code          String          @unique @db.VarChar(20)
-  name          String          @db.VarChar(200)
-  address       String?
-  phone         String?         @db.VarChar(20)
-  is_active     Boolean         @default(true)
-  created_at    DateTime        @default(now()) @db.Timestamp(6)
-  DailyExpense  DailyExpense[]
-  Employee      Employee[]
-  Invoice       Invoice[]
-  Machine       Machine[]
-  OutputProduct OutputProduct[]
-  PurchaseOrder PurchaseOrder[]
-  Stock         Stock[]
-  User          User[]
-  Worksheet     Worksheet[]
+  id                    Int                     @id(map: "PK_6635a0ad5ed4a0499652a126970") @default(autoincrement())
+  code                  String                  @unique @db.VarChar(20)
+  name                  String                  @db.VarChar(200)
+  address               String?
+  phone                 String?                 @db.VarChar(20)
+  is_active             Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamp(6)
+  DailyExpense          DailyExpense[]
+  Employee              Employee[]
+  FactoryMaterialConfig FactoryMaterialConfig[]
+  Invoice               Invoice[]
+  Machine               Machine[]
+  OutputProduct         OutputProduct[]
+  PurchaseOrder         PurchaseOrder[]
+  Stock                 Stock[]
+  User                  User[]
+  Worksheet             Worksheet[]
+}
+
+model FactoryMaterialConfig {
+  id              Int         @id @default(autoincrement())
+  id_factory      Int
+  id_product_type Int
+  is_input        Boolean     @default(false)
+  is_output       Boolean     @default(false)
+  created_at      DateTime    @default(now())
+  Factory         Factory     @relation(fields: [id_factory], references: [id])
+  ProductType     ProductType @relation(fields: [id_product_type], references: [id])
+
+  @@unique([id_factory, id_product_type])
 }
 
 model Invoice {
@@ -190,6 +204,7 @@ model Maintenance {
   @@index([maintenance_date], map: "IDX_maintenance_date")
 }
 
+/// @deprecated Use FactoryMaterialConfig + ProductType instead. Kept for backward compatibility.
 model OutputProduct {
   id            Int      @id(map: "PK_e3c20634774dc24c518a507ad93") @default(autoincrement())
   id_factory    Int
@@ -227,16 +242,59 @@ model ProcessCategory {
   created_at      DateTime @default(now()) @db.Timestamp(6)
 }
 
+model RiceVariety {
+  id               Int                @id @default(autoincrement())
+  code             String             @unique @db.VarChar(30)
+  name             String             @db.VarChar(100)
+  description      String?
+  is_active        Boolean            @default(true)
+  created_at       DateTime           @default(now())
+  ProductType      ProductType[]
+  QualityParameter QualityParameter[]
+}
+
+model RiceLevel {
+  id          Int           @id @default(autoincrement())
+  code        String        @unique @db.VarChar(30)
+  name        String        @db.VarChar(100)
+  sort_order  Int           @default(0)
+  is_active   Boolean       @default(true)
+  created_at  DateTime      @default(now())
+  ProductType ProductType[]
+}
+
+model RiceBrand {
+  id          Int           @id @default(autoincrement())
+  code        String        @unique @db.VarChar(30)
+  name        String        @db.VarChar(100)
+  is_active   Boolean       @default(true)
+  created_at  DateTime      @default(now())
+  ProductType ProductType[]
+}
+
 model ProductType {
-  id                Int                 @id(map: "PK_242e6bc43c0297318eb8560618f") @default(autoincrement())
-  code              String              @unique @db.VarChar(20)
-  name              String              @db.VarChar(100)
-  description       String?
-  unit              String              @default("kg") @db.VarChar(20)
-  InvoiceItem       InvoiceItem[]
-  PurchaseOrderItem PurchaseOrderItem[]
-  Stock             Stock[]
-  Worksheet         Worksheet[]
+  id                    Int                     @id(map: "PK_242e6bc43c0297318eb8560618f") @default(autoincrement())
+  code                  String                  @unique @db.VarChar(50)
+  name                  String                  @db.VarChar(200)
+  description           String?
+  unit                  String                  @default("kg") @db.VarChar(20)
+  category              ProductCategory?
+  created_at            DateTime                @default(now())
+  id_rice_brand         Int?
+  id_rice_level         Int?
+  id_variety            Int?
+  is_active             Boolean                 @default(true)
+  side_product_type     SideProductType?
+  FactoryMaterialConfig FactoryMaterialConfig[]
+  InvoiceItem           InvoiceItem[]
+  RiceBrand             RiceBrand?              @relation(fields: [id_rice_brand], references: [id])
+  RiceLevel             RiceLevel?              @relation(fields: [id_rice_level], references: [id])
+  RiceVariety           RiceVariety?            @relation(fields: [id_variety], references: [id])
+  PurchaseOrderItem     PurchaseOrderItem[]
+  Stock                 Stock[]
+  Worksheet             Worksheet[]
+  WorksheetInput        Worksheet[]             @relation("WorksheetInputProduct")
+  WorksheetSideProduct  WorksheetSideProduct[]
 }
 
 model QCGabah {
@@ -252,22 +310,23 @@ model QCGabah {
 }
 
 model QualityParameter {
-  name               String              @db.VarChar
-  grade              String              @db.VarChar
-  min_value          Decimal?            @db.Decimal(10, 2)
-  max_value          Decimal?            @db.Decimal(10, 2)
-  unit               String              @default("percentage") @db.VarChar
-  is_active          Boolean             @default(true)
-  created_at         DateTime            @default(now()) @db.Timestamp(6)
-  updated_at         DateTime            @updatedAt @db.Timestamp(6)
-  level              Int                 @default(1)
-  id                 Int                 @id(map: "PK_5d5fdce6fef66d219e1d69d07d7") @default(autoincrement())
-  id_variety         Int?
-  RawMaterialVariety RawMaterialVariety? @relation(fields: [id_variety], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_046d2225de7a7bedcdf0ca626e8")
+  name        String       @db.VarChar
+  grade       String       @db.VarChar
+  min_value   Decimal?     @db.Decimal(10, 2)
+  max_value   Decimal?     @db.Decimal(10, 2)
+  unit        String       @default("percentage") @db.VarChar
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime     @updatedAt @db.Timestamp(6)
+  level       Int          @default(1)
+  id          Int          @id(map: "PK_5d5fdce6fef66d219e1d69d07d7") @default(autoincrement())
+  id_variety  Int?
+  RiceVariety RiceVariety? @relation(fields: [id_variety], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([id_variety], map: "IDX_quality_param_variety")
 }
 
+/// @deprecated Use ProductType with category filter instead. Kept for backward compatibility.
 model RawMaterialCategory {
   id          Int      @id(map: "PK_ddf58cf202d3dc204e7bee72ad2") @default(autoincrement())
   code        String   @unique(map: "UQ_a30e2ec13b6a5c7e7ce45a8951f") @db.VarChar(20)
@@ -298,14 +357,14 @@ model RawMaterialQualityAnalysis {
   StockMovement     StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
 }
 
+/// @deprecated Use RiceVariety instead. Kept for backward compatibility.
 model RawMaterialVariety {
-  id               Int                @id(map: "PK_e6b1cd87e5533fccbed8e7e24b9") @default(autoincrement())
-  code             String             @unique(map: "UQ_b2486d09132793df46873cd3df9") @db.VarChar(20)
-  name             String             @db.VarChar(100)
-  description      String?
-  is_active        Boolean            @default(true)
-  created_at       DateTime           @default(now()) @db.Timestamp(6)
-  QualityParameter QualityParameter[]
+  id          Int      @id(map: "PK_e6b1cd87e5533fccbed8e7e24b9") @default(autoincrement())
+  code        String   @unique(map: "UQ_b2486d09132793df46873cd3df9") @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
 }
 
 model Stock {
@@ -335,6 +394,10 @@ model StockMovement {
   reference_id               BigInt?
   notes                      String?
   created_at                 DateTime                         @default(now()) @db.Timestamp(6)
+  batch_code                 String?                          @db.VarChar(50)
+  from_factory_id            Int?
+  to_factory_id              Int?
+  transfer_id                Int?
   RawMaterialQualityAnalysis RawMaterialQualityAnalysis[]
   Stock                      Stock                            @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_03c884464cad073305dd53ed7b1")
   User                       User                             @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_0645774788e95617e3ffd45b3b7")
@@ -342,6 +405,8 @@ model StockMovement {
   @@index([id_stock], map: "IDX_stock_movement_stock")
   @@index([id_user], map: "IDX_stock_movement_user")
   @@index([created_at], map: "IDX_stock_movement_created")
+  @@index([batch_code])
+  @@index([reference_type])
 }
 
 model Supplier {
@@ -382,41 +447,43 @@ model User {
 }
 
 model Worksheet {
-  id                   Int                    @id(map: "PK_dd3c48d621cab0deaa8b38f417e") @default(autoincrement())
-  id_factory           Int
-  id_user              Int
-  worksheet_date       DateTime               @db.Date
-  shift                Worksheet_shift_enum
-  gabah_input          Decimal                @db.Decimal(15, 2)
-  beras_output         Decimal                @db.Decimal(15, 2)
-  menir_output         Decimal                @default(0) @db.Decimal(15, 2)
-  dedak_output         Decimal                @default(0) @db.Decimal(15, 2)
-  sekam_output         Decimal                @default(0) @db.Decimal(15, 2)
-  rendemen             Decimal?               @db.Decimal(5, 2)
-  machine_hours        Decimal                @default(0) @db.Decimal(5, 2)
-  downtime_hours       Decimal                @default(0) @db.Decimal(5, 2)
-  downtime_reason      String?
-  notes                String?
-  created_at           DateTime               @default(now()) @db.Timestamp(6)
-  updated_at           DateTime               @updatedAt @db.Timestamp(6)
-  id_output_product    Int?
-  id_machine           Int?
-  batch_code           String?                @db.VarChar(50)
-  process_step         String?                @db.VarChar(50)
-  production_cost      Decimal?               @db.Decimal(15, 2)
-  raw_material_cost    Decimal?               @db.Decimal(15, 2)
-  side_product_revenue Decimal?               @db.Decimal(15, 2)
-  process_steps        String?
-  id_machines          Json?
-  id_operators         Json?
-  hpp                  Decimal?               @db.Decimal(15, 2)
-  hpp_per_kg           Decimal?               @db.Decimal(15, 2)
-  ProductType          ProductType?           @relation(fields: [id_output_product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_10ff9fd85814d58f9a6d74a5a7e")
-  User                 User                   @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_4389afefb4c0bbc4fc7a1a435f3")
-  Factory              Factory                @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b6e3fcc79a8ed4484be3f3d8eeb")
-  Machine              Machine?               @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dddd8317548de410ffa729dc394")
-  WorksheetInputBatch  WorksheetInputBatch[]
-  WorksheetSideProduct WorksheetSideProduct[]
+  id                    Int                    @id(map: "PK_dd3c48d621cab0deaa8b38f417e") @default(autoincrement())
+  id_factory            Int
+  id_user               Int
+  worksheet_date        DateTime               @db.Date
+  shift                 Worksheet_shift_enum
+  gabah_input           Decimal                @db.Decimal(15, 2)
+  beras_output          Decimal                @db.Decimal(15, 2)
+  menir_output          Decimal                @default(0) @db.Decimal(15, 2)
+  dedak_output          Decimal                @default(0) @db.Decimal(15, 2)
+  sekam_output          Decimal                @default(0) @db.Decimal(15, 2)
+  rendemen              Decimal?               @db.Decimal(5, 2)
+  machine_hours         Decimal                @default(0) @db.Decimal(5, 2)
+  downtime_hours        Decimal                @default(0) @db.Decimal(5, 2)
+  downtime_reason       String?
+  notes                 String?
+  created_at            DateTime               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime               @updatedAt @db.Timestamp(6)
+  id_output_product     Int?
+  id_machine            Int?
+  batch_code            String?                @db.VarChar(50)
+  process_step          String?                @db.VarChar(50)
+  production_cost       Decimal?               @db.Decimal(15, 2)
+  raw_material_cost     Decimal?               @db.Decimal(15, 2)
+  side_product_revenue  Decimal?               @db.Decimal(15, 2)
+  hpp                   Decimal?               @db.Decimal(15, 2)
+  hpp_per_kg            Decimal?               @db.Decimal(15, 2)
+  process_steps         String?
+  id_input_product_type Int?
+  id_machines           Json?
+  id_operators          Json?
+  ProductType           ProductType?           @relation(fields: [id_output_product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_10ff9fd85814d58f9a6d74a5a7e")
+  User                  User                   @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_4389afefb4c0bbc4fc7a1a435f3")
+  Factory               Factory                @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b6e3fcc79a8ed4484be3f3d8eeb")
+  Machine               Machine?               @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dddd8317548de410ffa729dc394")
+  InputProductType      ProductType?           @relation("WorksheetInputProduct", fields: [id_input_product_type], references: [id])
+  WorksheetInputBatch   WorksheetInputBatch[]
+  WorksheetSideProduct  WorksheetSideProduct[]
 
   @@index([id_factory], map: "IDX_worksheet_factory")
   @@index([id_user], map: "IDX_worksheet_user")
@@ -437,17 +504,20 @@ model WorksheetInputBatch {
 }
 
 model WorksheetSideProduct {
-  id                 Int       @id(map: "PK_d28ee5b7917b61e88f9332d692a") @default(autoincrement())
+  id                 Int          @id(map: "PK_d28ee5b7917b61e88f9332d692a") @default(autoincrement())
   id_worksheet       Int
-  product_code       String    @db.VarChar(30)
-  product_name       String    @db.VarChar(100)
-  quantity           Decimal   @default(0) @db.Decimal(15, 2)
-  is_auto_calculated Boolean   @default(false)
-  auto_percentage    Decimal?  @db.Decimal(10, 2)
-  unit_price         Decimal?  @db.Decimal(15, 2)
-  total_value        Decimal?  @db.Decimal(15, 2)
-  created_at         DateTime  @default(now()) @db.Timestamp(6)
-  Worksheet          Worksheet @relation(fields: [id_worksheet], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_da2240b0153fe85db8486b2fbdb")
+  product_code       String       @db.VarChar(30)
+  product_name       String       @db.VarChar(100)
+  quantity           Decimal      @default(0) @db.Decimal(15, 2)
+  is_auto_calculated Boolean      @default(false)
+  auto_percentage    Decimal?     @db.Decimal(10, 2)
+  unit_price         Decimal?     @db.Decimal(15, 2)
+  total_value        Decimal?     @db.Decimal(15, 2)
+  created_at         DateTime     @default(now()) @db.Timestamp(6)
+  batch_code         String?      @db.VarChar(50)
+  id_product_type    Int?
+  Worksheet          Worksheet    @relation(fields: [id_worksheet], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_da2240b0153fe85db8486b2fbdb")
+  ProductType        ProductType? @relation(fields: [id_product_type], references: [id])
 }
 
 model migrations {
@@ -537,6 +607,27 @@ model Notification {
   @@index([created_at])
 }
 
+model BatchCodeMapping {
+  id         Int      @id @default(autoincrement())
+  param_type String   @db.VarChar(30)
+  param_key  String   @db.VarChar(50)
+  batch_code String   @db.VarChar(10)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  @@unique([param_type, param_key])
+}
+
+model BatchSequence {
+  id            Int      @id @default(autoincrement())
+  sequence_key  String   @db.VarChar(100)
+  sequence_date DateTime @db.Date
+  last_number   Int      @default(0)
+  updated_at    DateTime @updatedAt
+
+  @@unique([sequence_key, sequence_date])
+}
+
 enum PurchaseOrder_status_enum {
   DRAFT
   APPROVED
@@ -624,4 +715,19 @@ enum Notification_severity_enum {
   INFO
   WARNING
   CRITICAL
+}
+
+enum ProductCategory {
+  RAW_MATERIAL
+  INTERMEDIATE
+  FINISHED_RICE
+  SIDE_PRODUCT
+}
+
+enum SideProductType {
+  BEKATUL
+  BROKEN
+  MENIR
+  SEKAM
+  REJECT
 }

@@ -18,6 +18,7 @@ export interface UpdateStockDTO {
     referenceType?: string;
     referenceId?: number;
     notes?: string;
+    batchCode?: string;
 }
 
 export interface CreateStockDTO {
@@ -109,6 +110,7 @@ class StockService {
                     quantity: dto.quantity,
                     reference_type: dto.referenceType,
                     reference_id: dto.referenceId,
+                    batch_code: dto.batchCode || null,
                     notes: dto.notes || JSON.stringify({
                         type: dto.movementType === StockMovement_movement_type_enum.OUT ? 'STOCK_OUT' : 'STOCK_IN',
                         productCode: dto.productCode
@@ -138,7 +140,8 @@ class StockService {
         userId: number,
         referenceType?: string,
         referenceId?: number,
-        tx?: Prisma.TransactionClient
+        tx?: Prisma.TransactionClient,
+        batchCode?: string
     ): Promise<Stock | null> {
         return await this.updateStock({
             factoryId,
@@ -147,7 +150,8 @@ class StockService {
             movementType: StockMovement_movement_type_enum.IN,
             userId,
             referenceType,
-            referenceId
+            referenceId,
+            batchCode
         }, tx);
     }
 
@@ -194,21 +198,21 @@ class StockService {
         return available >= requiredQuantity;
     }
 
-    /**
-     * Transfer stock between factories (single transaction)
-     */
     async transferStock(
         fromFactoryId: number,
         toFactoryId: number,
         productCode: string,
         quantity: number,
         userId: number,
-        notes?: string
+        notes?: string,
+        batchCode?: string
     ): Promise<{ from: Stock | null; to: Stock | null }> {
         const productType = await productTypeRepository.findByCode(productCode);
         if (!productType) {
             throw new BusinessRuleError(`Product type not found: ${productCode}`);
         }
+
+        const transferId = Date.now();
 
         return await prisma.$transaction(async (tx) => {
             // Source stock
@@ -258,10 +262,14 @@ class StockService {
                     movement_type: StockMovement_movement_type_enum.OUT,
                     quantity,
                     reference_type: 'TRANSFER',
-                    reference_id: toFactoryId,
+                    reference_id: BigInt(transferId),
+                    batch_code: batchCode || null,
+                    from_factory_id: fromFactoryId,
+                    to_factory_id: toFactoryId,
                     notes: JSON.stringify({
                         type: 'TRANSFER_OUT',
                         productCode,
+                        transfer_id: transferId,
                         toFactory: toFactoryId,
                         userNotes: notes || ''
                     })
@@ -275,10 +283,14 @@ class StockService {
                     movement_type: StockMovement_movement_type_enum.IN,
                     quantity,
                     reference_type: 'TRANSFER',
-                    reference_id: fromFactoryId,
+                    reference_id: BigInt(transferId),
+                    batch_code: batchCode || null,
+                    from_factory_id: fromFactoryId,
+                    to_factory_id: toFactoryId,
                     notes: JSON.stringify({
                         type: 'TRANSFER_IN',
                         productCode,
+                        transfer_id: transferId,
                         fromFactory: fromFactoryId,
                         userNotes: notes || ''
                     })

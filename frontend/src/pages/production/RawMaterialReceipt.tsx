@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
-import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, rawMaterialVarietyApi, qualityAnalysisApi } from '../../services/api';
+import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, riceVarietyApi, qualityAnalysisApi } from '../../services/api';
 import { formatDate, formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { printElement } from '../../utils/printUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,7 +23,8 @@ interface RawMaterialBatch {
     pricePerKg: number;
     otherCosts: number;
     notes: string;
-    deliveryNoteUrl?: string;
+    deliveryNoteUrl?: string; // Surat Jalan
+    receiptUrl?: string;      // Tanda Terima
     createdAt: string;
     supplierId?: string;
     categoryId?: string;
@@ -82,6 +83,10 @@ const RawMaterialReceipt = () => {
     // Analysis Modal
     const [showAnalysisModal, setShowAnalysisModal] = useState(false);
     const [printingBatch, setPrintingBatch] = useState<RawMaterialBatch | null>(null);
+
+    // File Upload State
+    const [suratJalanFile, setSuratJalanFile] = useState<File | null>(null);
+    const [tandaTerimaFile, setTandaTerimaFile] = useState<File | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -146,9 +151,9 @@ const RawMaterialReceipt = () => {
 
     const fetchVarieties = async () => {
         try {
-            const response = await rawMaterialVarietyApi.getAll({ is_active: true });
-            if (response.data && response.data.data) {
-                setVarieties(response.data.data);
+            const response = await riceVarietyApi.getAll();
+            if (response.data) {
+                setVarieties(response.data.data || response.data);
             }
         } catch (error) {
             logger.error("Failed to fetch varieties", error);
@@ -199,6 +204,8 @@ const RawMaterialReceipt = () => {
                         pricePerKg: details.pricePerKg || 0,
                         otherCosts: details.otherCosts || 0,
                         notes: details.notes || '',
+                        deliveryNoteUrl: details.deliveryNoteUrl || '',
+                        receiptUrl: details.receiptUrl || '',
                         factoryName: factory?.name || 'Unknown',
                         createdAt: m.created_at
                     };
@@ -214,11 +221,65 @@ const RawMaterialReceipt = () => {
         }
     };
 
-    const handleGenerateBatchId = () => {
-        const date = new Date();
-        const year = date.getFullYear();
-        const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        setFormData(prev => ({ ...prev, batchId: `BTC-${year}-${rand}` }));
+    // Check if all required fields are filled to enable batch generation
+    const isFormReadyForBatch = !!(selectedFactory && formData.supplierId && formData.categoryId && formData.varietyId && formData.netWeight && parseFloat(formData.netWeight) > 0 && formData.pricePerKg && parseFloat(formData.pricePerKg) > 0 && formData.dateReceived);
+
+    const [generatingBatch, setGeneratingBatch] = useState(false);
+
+    const handleGenerateBatchId = async () => {
+        if (!isFormReadyForBatch) {
+            showWarning('Perhatian', 'Harap lengkapi semua data terlebih dahulu sebelum generate Batch ID');
+            return;
+        }
+
+        setGeneratingBatch(true);
+        try {
+            // Find the factory code
+            const factory = factories.find(f => f.id === selectedFactory);
+            if (!factory) {
+                showError('Error', 'Pabrik tidak ditemukan');
+                return;
+            }
+
+            // Find product type matching RAW_MATERIAL + variety
+            const productTypesResponse = await api.get('/product-types', {
+                params: { category: 'RAW_MATERIAL', id_variety: formData.varietyId }
+            });
+            const filteredTypes = productTypesResponse.data?.data || productTypesResponse.data || [];
+            let matchedProductType = filteredTypes.length > 0 ? filteredTypes[0] : null;
+
+            if (!matchedProductType) {
+                // Fallback: find any raw material product type
+                const allRes = await productTypeApi.getAll();
+                const all = allRes.data?.data || allRes.data || [];
+                matchedProductType = all.find((pt: any) => pt.category === 'RAW_MATERIAL');
+            }
+
+            if (!matchedProductType) {
+                showError('Error', 'Tidak ditemukan Product Type untuk varietas ini');
+                return;
+            }
+
+            // Call backend batch code generation API
+            const response = await api.post('/batch-code/generate', {
+                factoryCode: factory.code,
+                productTypeId: matchedProductType.id,
+                date: formData.dateReceived
+            });
+
+            const batchCode = response.data?.batchCode;
+            if (batchCode) {
+                setFormData(prev => ({ ...prev, batchId: batchCode }));
+                showSuccess('Berhasil', `Batch ID berhasil digenerate: ${batchCode}`);
+            } else {
+                showError('Error', 'Gagal mendapatkan batch code dari server');
+            }
+        } catch (error: any) {
+            logger.error('Failed to generate batch code:', error);
+            showError('Gagal', error.response?.data?.error || error.message || 'Gagal generate Batch ID');
+        } finally {
+            setGeneratingBatch(false);
+        }
     };
 
     const handleSave = async () => {
@@ -234,26 +295,53 @@ const RawMaterialReceipt = () => {
 
         setLoading(true);
         try {
-            const selectedCategory = categories.find(c => c.id === parseInt(formData.categoryId));
-            const productTypesResponse = await productTypeApi.getAll();
-            const allProductTypes = productTypesResponse.data?.data || productTypesResponse.data || [];
+            // --- Helper: File Upload ---
+            const uploadFile = async (file: File, type: string) => {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+                const res = await api.post(`/upload?type=${type}`, uploadFormData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                return res.data.url;
+            };
 
-            let matchedProductType = allProductTypes.find((pt: any) =>
-                pt.code === selectedCategory?.code ||
-                pt.name === selectedCategory?.name
-            );
+            let deliveryNoteUrl = '';
+            let receiptUrl = '';
 
-            if (!matchedProductType) {
-                matchedProductType = allProductTypes.find((pt: any) => pt.code === 'GKP');
+            if (suratJalanFile) {
+                deliveryNoteUrl = await uploadFile(suratJalanFile, 'surat-jalan');
+            }
+            if (tandaTerimaFile) {
+                receiptUrl = await uploadFile(tandaTerimaFile, 'tanda-terima');
             }
 
+            const selectedVariety = varieties.find(v => v.id === parseInt(formData.varietyId));
+            const categoryCode = 'RAW_MATERIAL';
+
+            // Find product type that matches RAW_MATERIAL category and this variety
+            const productTypesResponse = await api.get('/product-types', {
+                params: { category: categoryCode, id_variety: formData.varietyId }
+            });
+            const filteredTypes = productTypesResponse.data?.data || productTypesResponse.data || [];
+
+            let matchedProductType = filteredTypes.length > 0 ? filteredTypes[0] : null;
+
             if (!matchedProductType) {
-                const newTypeRes = await productTypeApi.create({
-                    code: selectedCategory?.code || 'GKP',
-                    name: selectedCategory?.name || 'Gabah Kering Panen',
-                    unit: 'kg'
-                });
-                matchedProductType = newTypeRes.data?.data || newTypeRes.data;
+                // If not found, try to find a general one or create
+                const allRes = await productTypeApi.getAll();
+                const all = allRes.data?.data || allRes.data || [];
+                matchedProductType = all.find((pt: any) => pt.code === 'GKP' || pt.code === 'GABA');
+
+                if (!matchedProductType) {
+                    const newTypeRes = await productTypeApi.create({
+                        code: `GABA-${selectedVariety?.code || 'GENERIC'}`,
+                        name: `Gabah ${selectedVariety?.name || 'Generic'}`,
+                        category: categoryCode,
+                        id_variety: parseInt(formData.varietyId),
+                        unit: 'kg'
+                    });
+                    matchedProductType = newTypeRes.data?.data || newTypeRes.data;
+                }
             }
 
             const factoryId = selectedFactory;
@@ -279,7 +367,7 @@ const RawMaterialReceipt = () => {
 
             const quantity = parseFloat(formData.netWeight);
             const selectedSupplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
-            const selectedVariety = varieties.find(v => v.id === parseInt(formData.varietyId));
+            const selectedCategory = categories.find(c => c.id === parseInt(formData.categoryId));
 
             const notesPayload = JSON.stringify({
                 batchId: formData.batchId,
@@ -295,7 +383,9 @@ const RawMaterialReceipt = () => {
                 density: parseFloat(formData.density),
                 pricePerKg: parseFloat(formData.pricePerKg),
                 otherCosts: parseFloat(formData.otherCosts || '0'),
-                notes: formData.notes
+                notes: formData.notes,
+                deliveryNoteUrl: deliveryNoteUrl || (editingId ? batches.find(b => b.id === editingId)?.deliveryNoteUrl : ''),
+                receiptUrl: receiptUrl || (editingId ? batches.find(b => b.id === editingId)?.receiptUrl : '')
             });
 
             const payload = {
@@ -350,6 +440,8 @@ const RawMaterialReceipt = () => {
                 otherCosts: '0',
                 notes: ''
             });
+            setSuratJalanFile(null);
+            setTandaTerimaFile(null);
             fetchData();
 
         } catch (error: any) {
@@ -452,7 +544,7 @@ const RawMaterialReceipt = () => {
         }
         setLoading(true);
         try {
-            const response = await rawMaterialVarietyApi.create(newVariety);
+            const response = await riceVarietyApi.create(newVariety);
             if (response.data) {
                 fetchVarieties();
                 setFormData({ ...formData, varietyId: String(response.data.id || response.data.data?.id) });
@@ -544,32 +636,7 @@ const RawMaterialReceipt = () => {
                     </div>
 
                     <div style={{ padding: 24 }}>
-                        <div className="grid-4" style={{ marginBottom: 20 }}>
-                            <div className="form-group">
-                                <label className="form-label">Batch ID</label>
-                                <div className="input-group">
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="BTC-2023-001"
-                                        value={formData.batchId}
-                                        onChange={e => setFormData({ ...formData, batchId: e.target.value })}
-                                    />
-                                    <button className="btn btn-secondary" onClick={handleGenerateBatchId}>
-                                        <span className="material-symbols-outlined icon-sm">auto_awesome</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">PO Number</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="PO-88421"
-                                    value={formData.poNumber}
-                                    onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
-                                />
-                            </div>
+                        <div className="grid-3" style={{ marginBottom: 20 }}>
                             <div className="form-group">
                                 <label className="form-label">Tanggal Terima</label>
                                 <input
@@ -586,10 +653,20 @@ const RawMaterialReceipt = () => {
                                     value={formData.supplierId}
                                     onChange={e => handleSupplierChange(e.target.value)}
                                 >
-                                    <option value="">Select Supplier</option>
+                                    <option value="">Pilih Supplier</option>
                                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     <option value="__add_new__" style={{ color: 'var(--primary)' }}>+ Tambah Supplier Baru</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">PO Number</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="PO-88421"
+                                    value={formData.poNumber}
+                                    onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
+                                />
                             </div>
                         </div>
 
@@ -686,6 +763,112 @@ const RawMaterialReceipt = () => {
                             </div>
                         </div>
 
+                        {/* File Upload Section */}
+                        <div className="grid-2 mb-4" style={{ gap: '1.5rem', marginTop: '0.5rem' }}>
+                            <div className="form-group">
+                                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span className="material-symbols-outlined icon-sm">upload_file</span>
+                                    Surat Jalan
+                                </label>
+                                <input
+                                    type="file"
+                                    className="form-input"
+                                    accept="image/*,application/pdf"
+                                    onChange={e => setSuratJalanFile(e.target.files?.[0] || null)}
+                                />
+                                {suratJalanFile && <small className="text-success">File terpilih: {suratJalanFile.name}</small>}
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span className="material-symbols-outlined icon-sm">upload_file</span>
+                                    Tanda Terima
+                                </label>
+                                <input
+                                    type="file"
+                                    className="form-input"
+                                    accept="image/*,application/pdf"
+                                    onChange={e => setTandaTerimaFile(e.target.files?.[0] || null)}
+                                />
+                                {tandaTerimaFile && <small className="text-success">File terpilih: {tandaTerimaFile.name}</small>}
+                            </div>
+                        </div>
+
+                        {/* Batch ID Generation — last step */}
+                        <div style={{
+                            padding: '16px 20px',
+                            background: formData.batchId
+                                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.04) 100%)'
+                                : isFormReadyForBatch
+                                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%)'
+                                    : 'rgba(148, 163, 184, 0.06)',
+                            borderRadius: 12,
+                            border: formData.batchId
+                                ? '1.5px solid rgba(16, 185, 129, 0.3)'
+                                : isFormReadyForBatch
+                                    ? '1.5px dashed rgba(59, 130, 246, 0.4)'
+                                    : '1.5px dashed rgba(148, 163, 184, 0.3)',
+                            marginBottom: 20,
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: 200 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <span className="material-symbols-outlined" style={{
+                                            fontSize: 20,
+                                            color: formData.batchId ? 'var(--success)' : isFormReadyForBatch ? 'var(--primary)' : 'var(--text-muted)'
+                                        }}>
+                                            {formData.batchId ? 'check_circle' : 'qr_code_2'}
+                                        </span>
+                                        <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Batch ID</label>
+                                    </div>
+                                    {formData.batchId ? (
+                                        <div style={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: 700,
+                                            fontFamily: 'monospace',
+                                            color: 'var(--success)',
+                                            letterSpacing: 1
+                                        }}>
+                                            {formData.batchId}
+                                        </div>
+                                    ) : (
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                            {isFormReadyForBatch
+                                                ? 'Semua data sudah terisi. Klik tombol untuk generate Batch ID otomatis.'
+                                                : 'Lengkapi semua field di atas terlebih dahulu untuk generate Batch ID.'}
+                                        </p>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    {formData.batchId && (
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => setFormData(prev => ({ ...prev, batchId: '' }))}
+                                            title="Reset Batch ID"
+                                        >
+                                            <span className="material-symbols-outlined icon-sm">refresh</span>
+                                            Reset
+                                        </button>
+                                    )}
+                                    <button
+                                        className={`btn ${formData.batchId ? 'btn-secondary' : 'btn-primary'} btn-sm`}
+                                        onClick={handleGenerateBatchId}
+                                        disabled={!isFormReadyForBatch || generatingBatch}
+                                        style={{
+                                            opacity: isFormReadyForBatch ? 1 : 0.5,
+                                            cursor: isFormReadyForBatch ? 'pointer' : 'not-allowed'
+                                        }}
+                                    >
+                                        {generatingBatch ? (
+                                            <><span className="material-symbols-outlined icon-sm" style={{ animation: 'spin 1s linear infinite' }}>sync</span> Generating...</>
+                                        ) : (
+                                            <><span className="material-symbols-outlined icon-sm">auto_awesome</span> {formData.batchId ? 'Re-generate' : 'Generate Batch ID'}</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                             {editingId && (
                                 <button className="btn btn-secondary" onClick={() => {
@@ -698,7 +881,7 @@ const RawMaterialReceipt = () => {
                                     });
                                 }}>Batal Edit</button>
                             )}
-                            <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
+                            <button className="btn btn-primary" onClick={handleSave} disabled={loading || !formData.batchId}>
                                 <span className="material-symbols-outlined icon-sm">save</span>
                                 {editingId ? 'Simpan Perubahan' : 'Catat Penerimaan'}
                             </button>
@@ -756,8 +939,32 @@ const RawMaterialReceipt = () => {
                                             <td><span className="font-mono">{formatNumber(batch.netWeight)}</span> kg</td>
                                             <td><span className="font-mono">{formatCurrency(batch.netWeight * batch.pricePerKg + Number(batch.otherCosts))}</span></td>
                                             <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 4 }}>
+                                                    {batch.deliveryNoteUrl && (
+                                                        <a
+                                                            href={`${api.defaults.baseURL}${batch.deliveryNoteUrl}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            title="Lihat Surat Jalan"
+                                                        >
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--primary)' }}>description</span>
+                                                        </a>
+                                                    )}
+                                                    {batch.receiptUrl && (
+                                                        <a
+                                                            href={`${api.defaults.baseURL}${batch.receiptUrl}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            title="Lihat Tanda Terima"
+                                                        >
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--success)' }}>receipt_long</span>
+                                                        </a>
+                                                    )}
+                                                </div>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handlePrint(batch)} title="Cetak Surat Jalan">
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => handlePrint(batch)} title="Cetak Slip Internal">
                                                         <span className="material-symbols-outlined icon-sm">print</span>
                                                     </button>
                                                     <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(batch)}>

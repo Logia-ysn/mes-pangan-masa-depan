@@ -20,6 +20,12 @@ export class T_getProductTypes_query {
   @IsOptional()
   @IsString({ message: 'search must be a string' })
   search?: string
+  @IsOptional()
+  @IsString({ message: 'category must be a string' })
+  category?: string
+  @IsOptional()
+  @IsString({ message: 'isActive must be a string' })
+  isActive?: string
 }
 class ReturnType_0 {
   @IsNotEmpty({ message: 'total cannot be empty' })

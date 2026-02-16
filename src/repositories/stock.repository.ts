@@ -32,7 +32,13 @@ export class StockRepository extends BaseRepository<Stock> {
         return await this.model.findMany({
             where: { id_factory },
             include: {
-                ProductType: true,
+                ProductType: {
+                    include: {
+                        RiceVariety: true,
+                        RiceLevel: true,
+                        RiceBrand: true,
+                    }
+                },
                 Factory: true
             }
         });
@@ -59,7 +65,13 @@ export class StockRepository extends BaseRepository<Stock> {
                 skip: params.offset || 0,
                 orderBy: { id: 'desc' },
                 include: {
-                    ProductType: true,
+                    ProductType: {
+                        include: {
+                            RiceVariety: true,
+                            RiceLevel: true,
+                            RiceBrand: true,
+                        }
+                    },
                     Factory: true
                 }
             }),

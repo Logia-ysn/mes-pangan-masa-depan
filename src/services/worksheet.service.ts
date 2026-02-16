@@ -18,14 +18,17 @@ import { prisma } from '../libs/prisma';
 import { worksheetRepository, ProductionStats } from '../repositories/worksheet.repository';
 import { stockRepository } from '../repositories/stock.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
+import { BatchNumberingService } from './batch-numbering.service';
 
 export interface InputBatchDTO {
     id_stock: number;
     quantity: number;
     unit_price?: number;
+    batch_code?: string;
 }
 
 export interface SideProductDTO {
+    id_product_type?: number;
     product_code: string;
     product_name: string;
     quantity: number;
@@ -67,6 +70,7 @@ export interface CreateWorksheetDTO {
     side_products?: SideProductDTO[];
     id_machines?: number[];
     id_operators?: number[];
+    id_input_product_type?: number;
 }
 
 export interface UpdateWorksheetDTO extends Partial<CreateWorksheetDTO> {
@@ -86,42 +90,93 @@ class WorksheetService {
      */
     async createWorksheet(dto: CreateWorksheetDTO): Promise<Worksheet> {
         return await prisma.$transaction(async (tx) => {
-            // 1. Create and Save Worksheet
+            // 0. Get Factory for batch code generation
+            const factory = await tx.factory.findUnique({ where: { id: dto.id_factory } });
+            const factoryCode = factory?.code || 'PMD-1';
+            const wsDate = new Date(dto.worksheet_date);
+
+            // 1. Auto-generate batch code for output if not provided
+            let batchCode = dto.batch_code;
+            if (!batchCode && dto.id_output_product) {
+                batchCode = await BatchNumberingService.generateBatchForProduct(
+                    factoryCode,
+                    dto.id_output_product,
+                    wsDate,
+                    tx
+                );
+            }
+
+            // 2. Create and Save Worksheet
             const worksheetData: any = this.mapDtoToWorksheetData(dto);
             worksheetData.rendemen = this.calculateRendemen(dto.gabah_input, dto.beras_output);
+            worksheetData.batch_code = batchCode || worksheetData.batch_code;
 
             const savedWorksheet = await tx.worksheet.create({
                 data: worksheetData
             });
 
-            // 2. Handle Input Batches
+            // 3. Handle Input Batches
             if (dto.input_batches && dto.input_batches.length > 0) {
                 await this.handleInputBatches(tx, savedWorksheet, dto.input_batches, dto.id_user);
             } else {
                 await this.updateStockFromProductionTransactional(tx, savedWorksheet, dto.id_user);
             }
 
-            // 3. Handle Side Products
+            // 4. Handle Side Products — auto-generate batch codes
             const savedSideProducts: WorksheetSideProduct[] = [];
             if (dto.side_products && dto.side_products.length > 0) {
+                // Resolve input variety for side product batch codes
+                let inputVarietyCode = 'UNK';
+                if (dto.id_input_product_type) {
+                    const inputPt = await tx.productType.findUnique({
+                        where: { id: dto.id_input_product_type },
+                        include: { RiceVariety: true }
+                    });
+                    if (inputPt?.RiceVariety) inputVarietyCode = inputPt.RiceVariety.code;
+                }
+
                 for (const spDto of dto.side_products) {
+                    // Auto-generate side product batch code
+                    let spBatchCode: string | undefined;
+                    const sideType = spDto.product_code?.toUpperCase() || '';
+                    // Map common product codes to side product types
+                    let sideProductType = sideType;
+                    if (sideType === 'SKM' || sideType.includes('SEKAM')) sideProductType = 'SEKAM';
+                    else if (sideType === 'DDK' || sideType.includes('DEDAK') || sideType.includes('BEKATUL')) sideProductType = 'BEKATUL';
+                    else if (sideType === 'MNR' || sideType.includes('MENIR')) sideProductType = 'MENIR';
+                    else if (sideType.includes('BROKEN')) sideProductType = 'BROKEN';
+
+                    try {
+                        spBatchCode = await BatchNumberingService.generateSideProductBatch(
+                            factoryCode,
+                            sideProductType,
+                            inputVarietyCode,
+                            wsDate,
+                            tx
+                        );
+                    } catch (e) {
+                        console.warn('Failed to generate side product batch code:', e);
+                    }
+
                     const sp = await tx.worksheetSideProduct.create({
                         data: {
                             id_worksheet: savedWorksheet.id,
+                            id_product_type: spDto.id_product_type,
                             product_code: spDto.product_code,
                             product_name: spDto.product_name,
                             quantity: spDto.quantity,
                             unit_price: spDto.unit_price,
                             total_value: spDto.quantity * (spDto.unit_price || 0),
                             is_auto_calculated: spDto.is_auto_calculated,
-                            auto_percentage: spDto.auto_percentage
+                            auto_percentage: spDto.auto_percentage,
+                            batch_code: spBatchCode || null
                         }
                     });
                     savedSideProducts.push(sp);
                 }
             }
 
-            // 4. Handle Output Stocks
+            // 5. Handle Output Stocks
             await this.addOutputStocksTransactional(tx, savedWorksheet, dto.id_user, savedSideProducts);
 
             return savedWorksheet;
@@ -170,7 +225,8 @@ class WorksheetService {
                     id_stock: batchDto.id_stock,
                     quantity: batchDto.quantity,
                     unit_price: batchDto.unit_price || 0,
-                    total_cost: batchDto.quantity * (batchDto.unit_price || 0)
+                    total_cost: batchDto.quantity * (batchDto.unit_price || 0),
+                    batch_code: batchDto.batch_code
                 }
             });
 
@@ -192,8 +248,10 @@ class WorksheetService {
                         type: 'PRODUCTION_INPUT_BATCH',
                         productCode: stock.ProductType.code,
                         batch_id: batch.id,
-                        batch_code: worksheet.batch_code
-                    })
+                        output_batch_code: worksheet.batch_code,
+                        input_batch_code: batchDto.batch_code
+                    }),
+                    batchDto.batch_code || null
                 );
             }
         }
@@ -207,7 +265,8 @@ class WorksheetService {
         qty: number,
         refType: string,
         refId: number | bigint,
-        notes: string
+        notes: string,
+        batchCode?: string | null
     ) {
         await tx.stockMovement.create({
             data: {
@@ -217,6 +276,7 @@ class WorksheetService {
                 quantity: qty,
                 reference_type: refType,
                 reference_id: refId,
+                batch_code: batchCode || null,
                 notes: notes
             }
         });
@@ -235,7 +295,7 @@ class WorksheetService {
     private async updateStockFromProductionTransactional(tx: any, worksheet: Worksheet, userId: number) {
         // Fallback for non-batch production
         const inputProductCode = (worksheet as any).input_category_code || 'GKP';
-        
+
         // Validation: ensure we have a valid input code
         const productType = await tx.productType.findFirst({ where: { code: inputProductCode } });
         if (!productType) {
@@ -319,7 +379,8 @@ class WorksheetService {
                         productCode: outputCode,
                         output_type: 'main',
                         batch_code: worksheet.batch_code
-                    })
+                    }),
+                    worksheet.batch_code
                 );
             }
         }
@@ -327,7 +388,14 @@ class WorksheetService {
         // 2. Side Products
         for (const sp of sideProducts) {
             if (Number(sp.quantity) > 0) {
-                const pt = await tx.productType.findFirst({ where: { code: sp.product_code } });
+                // Try to find by id_product_type first, then fallback to product_code
+                let pt = null;
+                if (sp.id_product_type) {
+                    pt = await tx.productType.findUnique({ where: { id: sp.id_product_type } });
+                } else {
+                    pt = await tx.productType.findFirst({ where: { code: sp.product_code } });
+                }
+
                 if (pt) {
                     let stock = await tx.stock.findFirst({
                         where: {
@@ -359,8 +427,9 @@ class WorksheetService {
                             type: 'PRODUCTION_OUTPUT',
                             productCode: sp.product_code,
                             output_type: 'side_product',
-                            batch_code: worksheet.batch_code
-                        })
+                            batch_code: sp.batch_code || worksheet.batch_code
+                        }),
+                        sp.batch_code || worksheet.batch_code
                     );
                 }
             }
@@ -423,6 +492,7 @@ class WorksheetService {
                     const sp = await tx.worksheetSideProduct.create({
                         data: {
                             id_worksheet: worksheet.id,
+                            id_product_type: spDto.id_product_type,
                             product_code: spDto.product_code,
                             product_name: spDto.product_name,
                             quantity: spDto.quantity,

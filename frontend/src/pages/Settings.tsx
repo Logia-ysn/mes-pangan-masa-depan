@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 
-import api, { supplierApi, rawMaterialCategoryApi, rawMaterialVarietyApi } from '../services/api';
+import api, {
+    supplierApi,
+    rawMaterialCategoryApi,
+    riceVarietyApi,
+    riceLevelApi,
+    riceBrandApi
+} from '../services/api';
 import QualityConfig from '../components/Settings/QualityConfig';
+import FactoryMaterialConfig from '../components/Settings/FactoryMaterialConfig';
 import { logger } from '../utils/logger';
 
 interface Supplier {
@@ -22,15 +29,16 @@ interface Category {
     is_active: boolean;
 }
 
-interface Variety {
+interface ItemBase {
     id: number;
     code: string;
     name: string;
     description?: string;
     is_active: boolean;
+    sort_order?: number;
 }
 
-type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'quality';
+type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'levels' | 'brands' | 'factory_materials' | 'quality';
 
 const Settings = () => {
     const { showSuccess, showError } = useToast();
@@ -40,13 +48,17 @@ const Settings = () => {
     // Data lists
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [varieties, setVarieties] = useState<Variety[]>([]);
+    const [varieties, setVarieties] = useState<ItemBase[]>([]);
+    const [levels, setLevels] = useState<ItemBase[]>([]);
+    const [brands, setBrands] = useState<ItemBase[]>([]);
     const [confirmText, setConfirmText] = useState('');
 
     // Add forms
     const [newSupplier, setNewSupplier] = useState({ code: '', name: '', contact_person: '', phone: '' });
     const [newCategory, setNewCategory] = useState({ code: '', name: '', description: '' });
     const [newVariety, setNewVariety] = useState({ code: '', name: '', description: '' });
+    const [newLevel, setNewLevel] = useState({ code: '', name: '', sort_order: 0 });
+    const [newBrand, setNewBrand] = useState({ code: '', name: '' });
 
     const [modalConfig, setModalConfig] = useState<{
         isOpen: boolean;
@@ -61,6 +73,8 @@ const Settings = () => {
         if (activeTab === 'suppliers') fetchSuppliers();
         if (activeTab === 'categories') fetchCategories();
         if (activeTab === 'varieties') fetchVarieties();
+        if (activeTab === 'levels') fetchLevels();
+        if (activeTab === 'brands') fetchBrands();
     }, [activeTab]);
 
     const fetchSuppliers = async () => {
@@ -79,8 +93,22 @@ const Settings = () => {
 
     const fetchVarieties = async () => {
         try {
-            const res = await rawMaterialVarietyApi.getAll();
-            setVarieties(res.data?.data || []);
+            const res = await riceVarietyApi.getAll();
+            setVarieties(res.data || []);
+        } catch (e) { logger.error(e); }
+    };
+
+    const fetchLevels = async () => {
+        try {
+            const res = await riceLevelApi.getAll();
+            setLevels(res.data || []);
+        } catch (e) { logger.error(e); }
+    };
+
+    const fetchBrands = async () => {
+        try {
+            const res = await riceBrandApi.getAll();
+            setBrands(res.data || []);
         } catch (e) { logger.error(e); }
     };
 
@@ -133,6 +161,8 @@ const Settings = () => {
             fetchSuppliers();
             fetchCategories();
             fetchVarieties();
+            fetchLevels();
+            fetchBrands();
         } catch (error: any) {
             showError("Gagal membuat data dummy", error.response?.data?.message || error.message);
         } finally {
@@ -152,6 +182,8 @@ const Settings = () => {
             fetchSuppliers();
             fetchCategories();
             fetchVarieties();
+            fetchLevels();
+            fetchBrands();
         } catch (error: any) {
             showError("Gagal menghapus data dummy", error.response?.data?.message || error.message);
         } finally {
@@ -170,6 +202,8 @@ const Settings = () => {
             setSuppliers([]);
             setCategories([]);
             setVarieties([]);
+            setLevels([]);
+            setBrands([]);
         } catch (error: any) {
             showError("Gagal melakukan hard reset", error.response?.data?.message || error.message);
         } finally {
@@ -245,7 +279,7 @@ const Settings = () => {
         }
         setLoading(true);
         try {
-            await rawMaterialVarietyApi.create(newVariety);
+            await riceVarietyApi.create(newVariety);
             setNewVariety({ code: '', name: '', description: '' });
             fetchVarieties();
             showSuccess("Berhasil", "Varietas berhasil ditambahkan");
@@ -259,7 +293,7 @@ const Settings = () => {
     const handleDeleteVariety = async (id: number) => {
         if (!confirm('Hapus varietas ini?')) return;
         try {
-            await api.delete(`/raw-material-varieties/${id}`);
+            await riceVarietyApi.delete(id);
             fetchVarieties();
             showSuccess("Berhasil", "Varietas berhasil dihapus");
         } catch (error: any) {
@@ -267,11 +301,74 @@ const Settings = () => {
         }
     };
 
-    const tabs: { key: TabType | 'quality'; label: string; icon: string }[] = [
+    // === LEVEL CRUD ===
+    const handleAddLevel = async () => {
+        if (!newLevel.code || !newLevel.name) {
+            showError("Validasi", "Kode dan Nama wajib diisi");
+            return;
+        }
+        setLoading(true);
+        try {
+            await riceLevelApi.create(newLevel);
+            setNewLevel({ code: '', name: '', sort_order: 0 });
+            fetchLevels();
+            showSuccess("Berhasil", "Level berhasil ditambahkan");
+        } catch (error: any) {
+            showError("Gagal", error.response?.data?.message || error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteLevel = async (id: number) => {
+        if (!confirm('Hapus level ini?')) return;
+        try {
+            await riceLevelApi.delete(id);
+            fetchLevels();
+            showSuccess("Berhasil", "Level berhasil dihapus");
+        } catch (error: any) {
+            showError("Gagal", error.response?.data?.message || error.message);
+        }
+    };
+
+    // === BRAND CRUD ===
+    const handleAddBrand = async () => {
+        if (!newBrand.code || !newBrand.name) {
+            showError("Validasi", "Kode dan Nama wajib diisi");
+            return;
+        }
+        setLoading(true);
+        try {
+            await riceBrandApi.create(newBrand);
+            setNewBrand({ code: '', name: '' });
+            fetchBrands();
+            showSuccess("Berhasil", "Merk berhasil ditambahkan");
+        } catch (error: any) {
+            showError("Gagal", error.response?.data?.message || error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteBrand = async (id: number) => {
+        if (!confirm('Hapus merk ini?')) return;
+        try {
+            await riceBrandApi.delete(id);
+            fetchBrands();
+            showSuccess("Berhasil", "Merk berhasil dihapus");
+        } catch (error: any) {
+            showError("Gagal", error.response?.data?.message || error.message);
+        }
+    };
+
+    const tabs: { key: TabType; label: string; icon: string }[] = [
         { key: 'data', label: 'Manajemen Data', icon: 'database' },
         { key: 'suppliers', label: 'Supplier', icon: 'local_shipping' },
         { key: 'categories', label: 'Kategori Bahan', icon: 'category' },
-        { key: 'varieties', label: 'Jenis/Varietas', icon: 'grain' },
+        { key: 'varieties', label: 'Varietas Padi', icon: 'grain' },
+        { key: 'levels', label: 'Level Beras', icon: 'stairs' },
+        { key: 'brands', label: 'Merk Beras', icon: 'sell' },
+        { key: 'factory_materials', label: 'Bahan per Pabrik', icon: 'factory' },
         { key: 'quality', label: 'Quality Config', icon: 'tune' },
     ];
 
@@ -472,7 +569,7 @@ const Settings = () => {
                 {activeTab === 'varieties' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Jenis / Varietas Bahan</h3>
+                            <h3 className="card-title">Jenis / Varietas Padi</h3>
                             <span className="badge badge-primary">{varieties.length} varietas</span>
                         </div>
                         <div style={{ padding: 24 }}>
@@ -529,6 +626,113 @@ const Settings = () => {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'levels' && (
+                    <div className="card">
+                        <div className="card-header">
+                            <h3 className="card-title">Level / Kualitas Beras</h3>
+                            <span className="badge badge-primary">{levels.length} level</span>
+                        </div>
+                        <div style={{ padding: 24 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr auto', gap: 12, marginBottom: 24, alignItems: 'end' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Kode *</label>
+                                    <input type="text" className="form-input" placeholder="MEDIUM" value={newLevel.code}
+                                        onChange={e => setNewLevel({ ...newLevel, code: e.target.value.toUpperCase() })} />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Nama Level *</label>
+                                    <input type="text" className="form-input" placeholder="Medium" value={newLevel.name}
+                                        onChange={e => setNewLevel({ ...newLevel, name: e.target.value })} />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Urutan</label>
+                                    <input type="number" className="form-input" value={newLevel.sort_order}
+                                        onChange={e => setNewLevel({ ...newLevel, sort_order: parseInt(e.target.value) })} />
+                                </div>
+                                <button className="btn btn-primary" onClick={handleAddLevel} disabled={loading}>
+                                    <span className="material-symbols-outlined icon-sm">add</span>
+                                    Tambah
+                                </button>
+                            </div>
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Nama</th>
+                                        <th>Urutan</th>
+                                        <th style={{ width: 80 }}>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {levels.map(l => (
+                                        <tr key={l.id}>
+                                            <td><code>{l.code}</code></td>
+                                            <td>{l.name}</td>
+                                            <td>{l.sort_order}</td>
+                                            <td>
+                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteLevel(l.id)}>
+                                                    <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>delete</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'brands' && (
+                    <div className="card">
+                        <div className="card-header">
+                            <h3 className="card-title">Merk / Brand Beras</h3>
+                            <span className="badge badge-primary">{brands.length} merk</span>
+                        </div>
+                        <div style={{ padding: 24 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 12, marginBottom: 24, alignItems: 'end' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Kode *</label>
+                                    <input type="text" className="form-input" placeholder="WALEMU" value={newBrand.code}
+                                        onChange={e => setNewBrand({ ...newBrand, code: e.target.value.toUpperCase() })} />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Nama Merk *</label>
+                                    <input type="text" className="form-input" placeholder="Walemu" value={newBrand.name}
+                                        onChange={e => setNewBrand({ ...newBrand, name: e.target.value })} />
+                                </div>
+                                <button className="btn btn-primary" onClick={handleAddBrand} disabled={loading}>
+                                    <span className="material-symbols-outlined icon-sm">add</span>
+                                    Tambah
+                                </button>
+                            </div>
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Nama</th>
+                                        <th style={{ width: 80 }}>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {brands.map(b => (
+                                        <tr key={b.id}>
+                                            <td><code>{b.code}</code></td>
+                                            <td>{b.name}</td>
+                                            <td>
+                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteBrand(b.id)}>
+                                                    <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>delete</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'factory_materials' && <FactoryMaterialConfig />}
             </div>
 
             {/* Modal */}

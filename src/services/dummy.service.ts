@@ -13,6 +13,7 @@ import {
     Invoice_status_enum,
     PurchaseOrder_status_enum
 } from "@prisma/client";
+import { BatchNumberingService } from "./batch-numbering.service";
 
 export class DummyService {
     private static DUMMY_TAG = '[DUMMY]';
@@ -218,15 +219,29 @@ export class DummyService {
             stats.maintenance = (await tx.maintenance.deleteMany({})).count;
             stats.notifications = (await tx.notification.deleteMany({})).count;
 
-            // Master data
+            // Master data dependencies
+            stats.factory_configs = (await tx.factoryMaterialConfig.deleteMany({})).count;
+            stats.quality_params = (await tx.qualityParameter.deleteMany({})).count;
             stats.output_products = (await tx.outputProduct.deleteMany({})).count;
             stats.machines = (await tx.machine.deleteMany({})).count;
             stats.stocks = (await tx.stock.deleteMany({})).count;
+
+            // Core classification data
             stats.product_types = (await tx.productType.deleteMany({})).count;
+            stats.rice_levels = (await tx.riceLevel.deleteMany({})).count;
+            stats.rice_brands = (await tx.riceBrand.deleteMany({})).count;
+            stats.rice_varieties = (await tx.riceVariety.deleteMany({})).count;
+
+            // Other master data
+            stats.process_categories = (await tx.processCategory.deleteMany({})).count;
             stats.customers = (await tx.customer.deleteMany({})).count;
             stats.suppliers = (await tx.supplier.deleteMany({})).count;
             stats.categories = (await tx.rawMaterialCategory.deleteMany({})).count;
             stats.varieties = (await tx.rawMaterialVariety.deleteMany({})).count;
+
+            // Batch numbering data
+            stats.batch_sequences = (await tx.batchSequence.deleteMany({})).count;
+            stats.batch_mappings = (await tx.batchCodeMapping.deleteMany({})).count;
 
             console.log("Hard Reset Complete", stats);
             return { status: "success", deleted: stats };
@@ -260,23 +275,64 @@ export class DummyService {
     }
 
     private static async ensureProductTypes(tx: any) {
-        const types = [
-            { code: "GKP", name: "Gabah Kering Panen", unit: "kg" },
-            { code: "GKG", name: "Gabah Kering Giling", unit: "kg" },
-            { code: "PK", name: "Pecah Kulit", unit: "kg" },
-            { code: "GLO", name: "Glosor", unit: "kg" },
-            { code: "BRS-MS", name: "Beras Medium/Super", unit: "kg" },
-            { code: "BRS-P", name: "Beras Premium", unit: "kg" },
-            { code: "SKM", name: "Sekam", unit: "kg" },
-            { code: "DDK", name: "Dedak", unit: "kg" },
-            { code: "MNR", name: "Menir", unit: "kg" }
+        // Ensure classification master data first
+        const varieties = [
+            { code: 'IR64', name: 'IR 64' },
+            { code: 'CIHERANG', name: 'Ciherang' },
+            { code: 'INPARI', name: 'Inpari 32' }
         ];
+        for (const v of varieties) {
+            await tx.riceVariety.upsert({ where: { code: v.code }, update: {}, create: v });
+        }
+
+        const levels = [
+            { code: 'PREMIUM', name: 'Premium', sort_order: 1 },
+            { code: 'MEDIUM', name: 'Medium', sort_order: 2 },
+            { code: 'PECAH-KULIT', name: 'Pecah Kulit', sort_order: 3 }
+        ];
+        for (const l of levels) {
+            await tx.riceLevel.upsert({ where: { code: l.code }, update: {}, create: l });
+        }
+
+        const brands = [
+            { code: 'WALEMU', name: 'Walemu' },
+            { code: 'MUNCUL', name: 'Muncul' },
+            { code: 'POLOS', name: 'Tanpa Merk' }
+        ];
+        for (const b of brands) {
+            await tx.riceBrand.upsert({ where: { code: b.code }, update: {}, create: b });
+        }
+
+        const vIR = await tx.riceVariety.findUnique({ where: { code: 'IR64' } });
+        const vCH = await tx.riceVariety.findUnique({ where: { code: 'CIHERANG' } });
+        const lP = await tx.riceLevel.findUnique({ where: { code: 'PREMIUM' } });
+        const lM = await tx.riceLevel.findUnique({ where: { code: 'MEDIUM' } });
+        const lPK = await tx.riceLevel.findUnique({ where: { code: 'PECAH-KULIT' } });
+        const bW = await tx.riceBrand.findUnique({ where: { code: 'WALEMU' } });
+
+        const types = [
+            { code: "GKP-IR64", name: "GKP IR 64", unit: "kg", category: 'RAW_MATERIAL', id_variety: vIR.id },
+            { code: "GKG-IR64", name: "GKG IR 64", unit: "kg", category: 'RAW_MATERIAL', id_variety: vIR.id },
+            { code: "GKP-CHRG", name: "GKP Ciherang", unit: "kg", category: 'RAW_MATERIAL', id_variety: vCH.id },
+            { code: "PK-IR64", name: "PK IR 64", unit: "kg", category: 'INTERMEDIATE', id_variety: vIR.id, id_rice_level: lPK.id },
+            { code: "GLO-IR64", name: "Glosor IR 64", unit: "kg", category: 'INTERMEDIATE', id_variety: vIR.id },
+            { code: "BRS-PREMIUM-IR64-WLM", name: "Premium IR 64 - Walemu", unit: "kg", category: 'FINISHED_RICE', id_variety: vIR.id, id_rice_level: lP.id, id_rice_brand: bW.id },
+            { code: "BRS-MEDIUM-IR64", name: "Medium IR 64", unit: "kg", category: 'FINISHED_RICE', id_variety: vIR.id, id_rice_level: lM.id },
+            { code: "BRS-MEDIUM-CHRG", name: "Medium Ciherang", unit: "kg", category: 'FINISHED_RICE', id_variety: vCH.id, id_rice_level: lM.id },
+            { code: "SKM", name: "Sekam", unit: "kg", category: 'SIDE_PRODUCT', side_product_type: 'SEKAM' },
+            { code: "DDK", name: "Dedak", unit: "kg", category: 'SIDE_PRODUCT', side_product_type: 'BEKATUL' },
+            { code: "MNR", name: "Menir", unit: "kg", category: 'SIDE_PRODUCT', side_product_type: 'MENIR' }
+        ];
+
         const result: Record<string, any> = {};
         for (const t of types) {
             let pt = await tx.productType.findFirst({ where: { code: t.code } });
-            if (!pt) pt = await tx.productType.create({ data: t });
-            // Map code to keys like BRS_MS for easy access
-            result[t.code.replace('-', '_')] = pt;
+            if (!pt) {
+                pt = await tx.productType.create({ data: t });
+            }
+            // Map code to keys
+            const key = t.code.replace(/-/g, '_');
+            result[key] = pt;
         }
         return result;
     }
@@ -347,17 +403,45 @@ export class DummyService {
             const exists = await tx.rawMaterialVariety.findFirst({ where: { code: v.code } });
             if (!exists) await tx.rawMaterialVariety.create({ data: { ...v, is_active: true } });
         }
+
+        // 3. Seed Process Categories
+        const processes = [
+            { code: 'DRYING', name: 'PENGERINGAN (DRYING)', display_order: 1 },
+            { code: 'HULLING', name: 'PECAH KULIT (HULLING)', display_order: 2 },
+            { code: 'WHITENING', name: 'POLES/SOSOB (WHITENING)', display_order: 3 },
+            { code: 'GRADING', name: 'GRADING/SORTIR', display_order: 4 },
+            { code: 'PACKING', name: 'PENGEMASAN (PACKING)', display_order: 5 }
+        ];
+        for (const p of processes) {
+            const exists = await tx.processCategory.findUnique({ where: { code: p.code } });
+            if (!exists) {
+                await tx.processCategory.create({
+                    data: { ...p, is_active: true, is_main_process: true }
+                });
+            }
+        }
     }
 
     private static async ensureStocks(tx: any, pmd1: any, pmd2: any, productTypes: Record<string, any>) {
         const stockMap = [
-            { factory: pmd1, types: ['GKP', 'GKG', 'PK', 'GLO', 'SKM', 'DDK'] },
-            { factory: pmd2, types: ['GKP', 'PK', 'GLO', 'BRS_MS', 'BRS_P', 'MNR'] },
+            {
+                factory: pmd1,
+                inputs: ['GKP_IR64', 'GKG_IR64', 'GKP_CHRG'],
+                outputs: ['PK_IR64', 'GLO_IR64', 'SKM', 'DDK']
+            },
+            {
+                factory: pmd2,
+                inputs: ['PK_IR64', 'GLO_IR64'],
+                outputs: ['BRS_PREMIUM_IR64_WLM', 'BRS_MEDIUM_IR64', 'BRS_MEDIUM_CHRG', 'MNR']
+            },
         ];
         for (const sm of stockMap) {
-            for (const typeKey of sm.types) {
+            const allTypes = [...sm.inputs, ...sm.outputs];
+            for (const typeKey of allTypes) {
                 const pt = productTypes[typeKey];
                 if (!pt) continue;
+
+                // Ensure Stock record
                 const exists = await tx.stock.findFirst({
                     where: { id_factory: sm.factory.id, id_product_type: pt.id }
                 });
@@ -366,17 +450,39 @@ export class DummyService {
                         data: { id_factory: sm.factory.id, id_product_type: pt.id, quantity: 0, unit: pt.unit }
                     });
                 }
+
+                // Ensure FactoryMaterialConfig
+                await tx.factoryMaterialConfig.upsert({
+                    where: {
+                        id_factory_id_product_type: {
+                            id_factory: sm.factory.id,
+                            id_product_type: pt.id
+                        }
+                    },
+                    update: {
+                        is_input: sm.inputs.includes(typeKey),
+                        is_output: sm.outputs.includes(typeKey)
+                    },
+                    create: {
+                        id_factory: sm.factory.id,
+                        id_product_type: pt.id,
+                        is_input: sm.inputs.includes(typeKey),
+                        is_output: sm.outputs.includes(typeKey)
+                    }
+                });
             }
         }
     }
 
     private static async setInitialStocks(tx: any, pmd1: any, pmd2: any, productTypes: Record<string, any>, user: any) {
         const initialStocks = [
-            { factory: pmd1, typeKey: 'GKP', qty: 50000 },
-            { factory: pmd1, typeKey: 'GKG', qty: 10000 },
-            { factory: pmd2, typeKey: 'PK', qty: 15000 },
-            { factory: pmd2, typeKey: 'BRS_P', qty: 5000 },
-            { factory: pmd2, typeKey: 'BRS_MS', qty: 8000 },
+            { factory: pmd1, typeKey: 'GKP_IR64', qty: 50000 },
+            { factory: pmd1, typeKey: 'GKG_IR64', qty: 10000 },
+            { factory: pmd1, typeKey: 'GKP_CHRG', qty: 20000 },
+            { factory: pmd2, typeKey: 'PK_IR64', qty: 15000 },
+            { factory: pmd2, typeKey: 'BRS_PREMIUM_IR64_WLM', qty: 5000 },
+            { factory: pmd2, typeKey: 'BRS_MEDIUM_IR64', qty: 8000 },
+            { factory: pmd2, typeKey: 'BRS_MEDIUM_CHRG', qty: 12000 },
         ];
         for (const is of initialStocks) {
             const pt = productTypes[is.typeKey];
@@ -385,10 +491,15 @@ export class DummyService {
                 where: { id_factory: is.factory.id, id_product_type: pt.id }
             });
             if (stock && Number(stock.quantity) === 0) {
+                // Generate batch code for initial stock
+                const batchCode = await BatchNumberingService.generateBatchForProduct(
+                    is.factory.code, pt.id, new Date(), tx
+                );
                 await this.createMovement(
                     tx, stock, user, StockMovement_movement_type_enum.IN,
                     is.qty, "ADJUSTMENT", stock.id, new Date(),
-                    `${this.DUMMY_TAG} Initial Stock ${pt.code}`
+                    `${this.DUMMY_TAG} Initial Stock ${pt.code}`,
+                    batchCode
                 );
             }
         }
@@ -398,7 +509,7 @@ export class DummyService {
         tx: any, stock: any, user: any,
         type: StockMovement_movement_type_enum,
         qty: number, refType: string, refId: number | bigint,
-        date: Date, note?: string
+        date: Date, note?: string, batchCode?: string
     ) {
         await tx.stockMovement.create({
             data: {
@@ -408,6 +519,7 @@ export class DummyService {
                 quantity: qty,
                 reference_type: refType,
                 reference_id: refId !== undefined ? BigInt(refId) : null,
+                batch_code: batchCode || null,
                 created_at: date,
                 notes: note || `${this.DUMMY_TAG} Auto-generated`
             }
@@ -445,11 +557,19 @@ export class DummyService {
 
                 const husker = await tx.machine.findFirst({ where: { code: 'MSN-HSK-01' } });
 
+                // Generate batch codes using the new system
+                const batchCodePK = await BatchNumberingService.generateBatchForProduct(
+                    'PMD-1', productTypes.PK_IR64.id, date, tx
+                );
+
                 const ws1 = await tx.worksheet.create({
                     data: {
                         id_factory: pmd1.id, id_user: user.id, worksheet_date: date, shift,
-                        id_machine: husker?.id, id_output_product: productTypes.PK.id,
-                        batch_code: `BATCH-PMD1-${dateStr}-${shift}`,
+                        id_machine: husker?.id,
+                        id_output_product: productTypes.PK_IR64.id,
+                        id_input_product_type: productTypes.GKP_IR64.id,
+                        process_steps: 'HULLING',
+                        batch_code: batchCodePK,
                         gabah_input: inPmd1, beras_output: outPK, menir_output: 0,
                         dedak_output: ddk, sekam_output: skm, rendemen: parseFloat(rendemenPmd1.toFixed(2)),
                         machine_hours: 8, downtime_hours: 0, notes: `${this.DUMMY_TAG} PMD 1 Worksheet`,
@@ -461,15 +581,17 @@ export class DummyService {
                 worksheets++;
 
                 // PMD 1 Movements
-                const sGKP = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.GKP.id } });
-                const sPK1 = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.PK.id } });
+                const sGKP = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.GKP_IR64.id } });
+                const sPK1 = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.PK_IR64.id } });
                 const sSKM = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.SKM.id } });
                 const sDDK = await tx.stock.findFirst({ where: { id_factory: pmd1.id, id_product_type: productTypes.DDK.id } });
 
-                if (sGKP) await this.createMovement(tx, sGKP, user, 'OUT', inPmd1, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Input GKP`);
-                if (sPK1) await this.createMovement(tx, sPK1, user, 'IN', outPK, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output PK`);
-                if (sSKM) await this.createMovement(tx, sSKM, user, 'IN', skm, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output Sekam`);
-                if (sDDK) await this.createMovement(tx, sDDK, user, 'IN', ddk, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output Dedak`);
+                if (sGKP) await this.createMovement(tx, sGKP, user, 'OUT', inPmd1, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Input GKP`, batchCodePK);
+                if (sPK1) await this.createMovement(tx, sPK1, user, 'IN', outPK, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output PK`, batchCodePK);
+                const batchCodeSKM = await BatchNumberingService.generateSideProductBatch('PMD-1', 'SEKAM', 'IR64', date, tx);
+                const batchCodeDDK = await BatchNumberingService.generateSideProductBatch('PMD-1', 'BEKATUL', 'IR64', date, tx);
+                if (sSKM) await this.createMovement(tx, sSKM, user, 'IN', skm, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output Sekam`, batchCodeSKM);
+                if (sDDK) await this.createMovement(tx, sDDK, user, 'IN', ddk, "WORKSHEET", ws1.id, date, `${this.DUMMY_TAG} Output Dedak`, batchCodeDDK);
                 movements += 4;
 
                 // --- PMD 2 Production (PK -> BRS) ---
@@ -482,11 +604,19 @@ export class DummyService {
 
                 const polisher = await tx.machine.findFirst({ where: { code: 'MSN-PLB-01' } });
 
+                // Generate batch codes using the new system
+                const batchCodeBRS = await BatchNumberingService.generateBatchForProduct(
+                    'PMD-2', productTypes.BRS_MEDIUM_IR64.id, date, tx
+                );
+
                 const wsP = await tx.worksheet.create({
                     data: {
                         id_factory: pmd2.id, id_user: user.id, worksheet_date: date, shift,
-                        id_machine: polisher?.id, id_output_product: productTypes.BRS_MS.id,
-                        batch_code: `BATCH-PMD2-${dateStr}-${shift}`,
+                        id_machine: polisher?.id,
+                        id_output_product: productTypes.BRS_MEDIUM_IR64.id,
+                        id_input_product_type: productTypes.PK_IR64.id,
+                        process_steps: 'WHITENING,GRADING',
+                        batch_code: batchCodeBRS,
                         gabah_input: inPmdP, beras_output: outBerasTotal, menir_output: mnr,
                         dedak_output: 0, sekam_output: 0, rendemen: parseFloat(rendemenPmdP.toFixed(2)),
                         machine_hours: 8, downtime_hours: 0, notes: `${this.DUMMY_TAG} PMD 2 Worksheet`,
@@ -498,15 +628,16 @@ export class DummyService {
                 worksheets++;
 
                 // PMD 2 Movements
-                const sPK_P = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.PK.id } });
-                const sMS = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.BRS_MS.id } });
-                const sP = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.BRS_P.id } });
+                const sPK_P = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.PK_IR64.id } });
+                const sMS = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.BRS_MEDIUM_IR64.id } });
+                const sP = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.BRS_PREMIUM_IR64_WLM.id } });
                 const sMNR = await tx.stock.findFirst({ where: { id_factory: pmd2.id, id_product_type: productTypes.MNR.id } });
 
-                if (sPK_P) await this.createMovement(tx, sPK_P, user, 'OUT', inPmdP, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Input PK`);
-                if (sMS) await this.createMovement(tx, sMS, user, 'IN', outMS, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Beras MS`);
-                if (sP) await this.createMovement(tx, sP, user, 'IN', outP, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Beras P`);
-                if (sMNR) await this.createMovement(tx, sMNR, user, 'IN', mnr, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Menir`);
+                if (sPK_P) await this.createMovement(tx, sPK_P, user, 'OUT', inPmdP, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Input PK`, batchCodeBRS);
+                if (sMS) await this.createMovement(tx, sMS, user, 'IN', outMS, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Beras MS`, batchCodeBRS);
+                if (sP) await this.createMovement(tx, sP, user, 'IN', outP, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Beras P`, batchCodeBRS);
+                const batchCodeMNR = await BatchNumberingService.generateSideProductBatch('PMD-2', 'MENIR', 'IR64', date, tx);
+                if (sMNR) await this.createMovement(tx, sMNR, user, 'IN', mnr, "WORKSHEET", wsP.id, date, `${this.DUMMY_TAG} Output Menir`, batchCodeMNR);
                 movements += 4;
             }
         }
@@ -582,7 +713,7 @@ export class DummyService {
 
             await tx.invoiceItem.create({
                 data: {
-                    id_invoice: inv.id, id_product_type: productTypes.BRS_P.id,
+                    id_invoice: inv.id, id_product_type: productTypes.BRS_PREMIUM_IR64_WLM.id,
                     quantity: qty, unit_price: 12000, subtotal: total
                 }
             });
@@ -640,7 +771,7 @@ export class DummyService {
 
             const poItem = await tx.purchaseOrderItem.create({
                 data: {
-                    id_purchase_order: po.id, id_product_type: productTypes.GKP.id,
+                    id_purchase_order: po.id, id_product_type: productTypes.GKP_IR64.id,
                     quantity: qty, unit_price: 6000, subtotal: total
                 }
             });
@@ -661,22 +792,28 @@ export class DummyService {
                 });
 
                 // Add Stock Movement for traceability in Worksheet Batch Selection
+                // Generate batch code using the new BatchNumberingService
+                const batchCode = await BatchNumberingService.generateBatchForProduct(
+                    factory.code, productTypes.GKP_IR64.id, date, tx
+                );
+
                 const stock = await tx.stock.findFirst({
-                    where: { id_factory: factory.id, id_product_type: productTypes.GKP.id }
+                    where: { id_factory: factory.id, id_product_type: productTypes.GKP_IR64.id }
                 });
                 if (stock) {
                     await this.createMovement(
                         tx, stock, user, StockMovement_movement_type_enum.IN, qty,
                         'RAW_MATERIAL_RECEIPT', gr.id, date,
                         JSON.stringify({
-                            batchId: `BTC-${factory.code}-${String(i).padStart(3, '0')}`,
+                            batchId: batchCode,
                             supplier: supplier.name,
                             category: 'Padi/Gabah',
                             qualityGrade: 'KW 1',
                             pricePerKg: 6000,
                             isDummy: true,
                             tag: this.DUMMY_TAG
-                        })
+                        }),
+                        batchCode
                     );
                 }
             }
