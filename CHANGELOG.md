@@ -1,5 +1,15 @@
 # Changelog
  
+## [2.19.1] - 2026-02-16
+
+### Ditambahkan
+- **Upload Surat Jalan & Tanda Terima** — Fitur unggah file dokumen fisik pada saat penerimaan bahan baku untuk meningkatkan akuntabilitas data.
+- **Penyimpanan Dokumen Terkategori** — Folder otomatis untuk `surat-jalan` dan `tanda-terima` di server backend.
+
+### Diperbaiki
+- **Konektivitas Vercel-Railway** — Konfigurasi CORS yang lebih fleksibel untuk mendukung domain Vercel dan perbaikan deteksi URL API pada mode production.
+- **Startup Port Railway** — Penanganan port eksplisit (`process.env.PORT`) untuk menjamin backend aktif di lingkungan cloud.
+
 ## [2.19.0] - 2026-02-16
 
 ### Ditambahkan
