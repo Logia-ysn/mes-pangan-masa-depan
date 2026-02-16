@@ -152,7 +152,7 @@ const Login = () => {
                             <span>Semua sistem berjalan normal</span>
                         </div>
                         <div className="app-version">
-                            © 2026 ERP Pangan Masa Depan v1.0.0
+                            © {new Date().getFullYear()} ERP Pangan Masa Depan v{import.meta.env.VITE_APP_VERSION}
                         </div>
                     </div>
                 </div>
