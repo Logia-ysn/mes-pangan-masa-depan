@@ -44,6 +44,10 @@ export class T_submitQualityAnalysis_body {
     @IsOptional()
     @IsNumber()
     yellow_percentage?: number;
+
+    @IsOptional()
+    @IsNumber()
+    empty_weight?: number;
 }
 
 export type T_submitQualityAnalysis = (request: {

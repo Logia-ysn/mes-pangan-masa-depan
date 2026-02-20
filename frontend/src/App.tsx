@@ -30,41 +30,20 @@ const ProductionReport = React.lazy(() => import('./pages/reports/ProductionRepo
 const SalesReport = React.lazy(() => import('./pages/reports/SalesReport'));
 const COGMReport = React.lazy(() => import('./pages/reports/COGMReport'));
 const StockReport = React.lazy(() => import('./pages/reports/StockReport'));
+const QualityTrends = React.lazy(() => import('./pages/reports/QualityTrends'));
 const Users = React.lazy(() => import('./pages/admin/Users'));
+const AuditLogs = React.lazy(() => import('./pages/admin/AuditLogs'));
 
-const PageLoader = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '60vh',
-    color: 'var(--text-secondary)'
-  }}>
-    <span className="material-symbols-outlined" style={{ fontSize: 32, animation: 'spin 1s linear infinite' }}>
-      progress_activity
-    </span>
-  </div>
-);
+import RoleGuard from './components/RoleGuard';
+import LogoLoader from './components/UI/LogoLoader';
+
+const PageLoader = () => <LogoLoader />;
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: 'var(--bg-body)',
-        color: 'var(--text-primary)'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 16, display: 'block' }}>hourglass_empty</span>
-          <span>Loading...</span>
-        </div>
-      </div>
-    );
+    return <LogoLoader fullScreen text="Menghubungkan ke sistem..." />;
   }
 
   if (!user) {
@@ -73,8 +52,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
-
-import RoleGuard from './components/RoleGuard';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -150,12 +127,18 @@ const AppRoutes = () => {
             <Route path="stock" element={
               <RoleGuard requiredRole="SUPERVISOR"><StockReport /></RoleGuard>
             } />
+            <Route path="quality" element={
+              <RoleGuard requiredRole="SUPERVISOR"><QualityTrends /></RoleGuard>
+            } />
           </Route>
 
           {/* Admin Module */}
           <Route path="admin">
             <Route path="users" element={
               <RoleGuard requiredRole="ADMIN"><Users /></RoleGuard>
+            } />
+            <Route path="audit-logs" element={
+              <RoleGuard requiredRole="ADMIN"><AuditLogs /></RoleGuard>
             } />
           </Route>
 

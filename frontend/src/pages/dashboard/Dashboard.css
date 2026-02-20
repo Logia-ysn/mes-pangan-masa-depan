@@ -79,7 +79,7 @@
 }
 
 .kpi-card-value {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.2;
@@ -205,16 +205,11 @@
 }
 
 .panel-header h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
     margin: 0;
 }
 
 .panel-subtitle {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin: 4px 0 0 0;
+    display: block;
 }
 
 .panel-section {

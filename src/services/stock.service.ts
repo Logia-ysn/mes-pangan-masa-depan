@@ -8,6 +8,7 @@ import { prisma } from '../libs/prisma';
 import { stockRepository } from '../repositories/stock.repository';
 import { productTypeRepository } from '../repositories/product-type.repository';
 import { BusinessRuleError } from '../utils/errors';
+import { auditService } from './audit.service';
 
 export interface UpdateStockDTO {
     factoryId: number;
@@ -100,6 +101,16 @@ class StockService {
                 where: { id: stock.id },
                 data: { quantity: newQuantity }
             });
+
+            // Audit Log
+            await auditService.log({
+                userId: dto.userId,
+                action: 'UPDATE',
+                tableName: 'Stock',
+                recordId: stock.id,
+                oldValue: { quantity: stock.quantity, unit: stock.unit },
+                newValue: { quantity: updatedStock.quantity, unit: updatedStock.unit, movement: dto.movementType }
+            }, db);
 
             // Create movement record
             await db.stockMovement.create({
@@ -253,6 +264,25 @@ class StockService {
                 where: { id: destStock.id },
                 data: { quantity: { increment: quantity } }
             });
+
+            // Audit Logs for Transfer
+            await auditService.log({
+                userId,
+                action: 'UPDATE',
+                tableName: 'Stock',
+                recordId: sourceStock.id,
+                oldValue: { quantity: sourceStock.quantity, factory: fromFactoryId },
+                newValue: { quantity: from.quantity, factory: fromFactoryId, transfer_to: toFactoryId }
+            }, tx);
+
+            await auditService.log({
+                userId,
+                action: 'UPDATE',
+                tableName: 'Stock',
+                recordId: destStock.id,
+                oldValue: { quantity: destStock.quantity, factory: toFactoryId },
+                newValue: { quantity: to.quantity, factory: toFactoryId, transfer_from: fromFactoryId }
+            }, tx);
 
             // Create movement records
             await tx.stockMovement.create({

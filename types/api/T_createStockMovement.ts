@@ -30,6 +30,17 @@ export class T_createStockMovement_body {
   @IsOptional()
   @IsString({ message: 'notes must be a string' })
   notes?: string
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'empty_weight must be a number (decimal)' })
+  empty_weight?: number
+  @IsOptional()
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'price_per_kg must be a number (decimal)' })
+  price_per_kg?: number
+  @IsOptional()
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'other_costs must be a number (decimal)' })
+  other_costs?: number
 }
 
 export type T_createStockMovement = (request: {

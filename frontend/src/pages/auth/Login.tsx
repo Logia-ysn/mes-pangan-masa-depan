@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import logo from '../../assets/pmd_logo.png';
-import bgImage from '../../assets/login_bg.png';
+import logo from '../../assets/logo_pmd_white.png';
 import './Login.css';
 
 const Login = () => {
@@ -33,8 +32,19 @@ const Login = () => {
 
     return (
         <div className="login-split-layout">
-            {/* Left Panel - Image & Branding */}
-            <div className="login-left" style={{ backgroundImage: `url(${bgImage})` }}>
+            {/* Left Panel - Video Background & Branding */}
+            <div className="login-left">
+                {/* Background Video Layer */}
+                <div className="video-background-container">
+                    <iframe
+                        src="https://www.youtube.com/embed/IgYQAwB6uMs?autoplay=1&mute=1&loop=1&playlist=IgYQAwB6uMs&controls=0&showinfo=0&autohide=1&modestbranding=1&start=78&rel=0"
+                        title="Company Profile"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                </div>
+
                 <div className="login-left-overlay">
                     <div className="login-brand-top">
                         <div className="brand-logo-container">

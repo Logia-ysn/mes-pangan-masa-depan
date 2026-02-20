@@ -354,6 +354,7 @@ model RawMaterialQualityAnalysis {
   batch_id          String         @db.VarChar(50)
   id_stock_movement Int?
   final_grade       String?        @db.VarChar(20)
+  empty_weight      Decimal?       @db.Decimal(15, 2)
   StockMovement     StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
 }
 
@@ -398,6 +399,9 @@ model StockMovement {
   from_factory_id            Int?
   to_factory_id              Int?
   transfer_id                Int?
+  empty_weight               Decimal?                         @db.Decimal(15, 2)
+  price_per_kg               Decimal?                         @db.Decimal(15, 2)
+  other_costs                Decimal?                         @db.Decimal(15, 2)
   RawMaterialQualityAnalysis RawMaterialQualityAnalysis[]
   Stock                      Stock                            @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_03c884464cad073305dd53ed7b1")
   User                       User                             @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_0645774788e95617e3ffd45b3b7")
@@ -433,6 +437,7 @@ model User {
   created_at    DateTime        @default(now()) @db.Timestamp(6)
   updated_at    DateTime        @updatedAt @db.Timestamp(6)
   Attendance    Attendance[]
+  AuditLog      AuditLog[]
   DailyExpense  DailyExpense[]
   Employee      Employee[]
   GoodsReceipt  GoodsReceipt[]
@@ -444,6 +449,23 @@ model User {
   StockMovement StockMovement[]
   Factory       Factory?        @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
   Worksheet     Worksheet[]
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  tableName String
+  recordId  Int
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  timestamp DateTime @default(now()) @db.Timestamp(6)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([tableName, recordId])
+  @@index([timestamp])
 }
 
 model Worksheet {

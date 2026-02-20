@@ -7,6 +7,7 @@ import { User, User_role_enum } from '@prisma/client';
 import { userRepository } from '../repositories/user.repository';
 import { hashPassword, comparePassword, generateToken, verifyToken, extractToken } from '../../utility/auth';
 import { UnauthorizedError, ValidationError, NotFoundError, ConflictError } from '../utils/errors';
+import { auditService } from './audit.service';
 
 export interface LoginDTO {
     email: string;
@@ -52,6 +53,15 @@ class AuthService {
 
         // Generate token
         const token = generateToken(user as any);
+
+        // Audit Log for Login
+        await auditService.log({
+            userId: user.id,
+            action: 'LOGIN',
+            tableName: 'User',
+            recordId: user.id,
+            newValue: { email: user.email, role: user.role }
+        });
 
         return { token, user };
     }
@@ -132,6 +142,15 @@ class AuthService {
         // Hash and update password
         const newPasswordHash = await hashPassword(dto.newPassword);
         await userRepository.updatePassword(dto.userId, newPasswordHash);
+
+        // Audit Log for Password Change
+        await auditService.log({
+            userId: dto.userId,
+            action: 'UPDATE',
+            tableName: 'User',
+            recordId: dto.userId,
+            newValue: { type: 'PASSWORD_CHANGE' }
+        });
 
         return true;
     }

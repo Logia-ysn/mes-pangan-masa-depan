@@ -271,6 +271,8 @@ export const reportApi = {
         api.get('/reports/sales-summary/excel', { params, responseType: 'blob' }),
     downloadStockExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/stock-report/excel', { params, responseType: 'blob' }),
+    getQualityTrends: (params: { id_factory?: number; start_date: string; end_date: string }) =>
+        api.get('/reports/quality-trends', { params }),
 };
 
 // Notifications
@@ -296,6 +298,12 @@ export const userApi = {
         api.delete(`/users/${id}`),
     resetPassword: (id: number, data: { new_password: string }) =>
         api.put(`/users/${id}/reset-password`, data),
+};
+
+// Audit Logs
+export const auditApi = {
+    getAll: (params?: { userId?: number; tableName?: string; action?: string; limit?: number; offset?: number }) =>
+        api.get('/audit-logs', { params }),
 };
 
 export default api;

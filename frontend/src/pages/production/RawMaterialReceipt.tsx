@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '../../utils/logger';
 import { useFactory } from '../../hooks/useFactory';
 import Pagination from '../../components/UI/Pagination';
+import LogoLoader from '../../components/UI/LogoLoader';
 
 // Interface matching the form and backend
 interface RawMaterialBatch {
@@ -19,9 +20,12 @@ interface RawMaterialBatch {
     materialType: string; // Product Type Name
     qualityGrade: string;
     moistureContent: number;
+    density: number;
+    greenPercentage: number;
     netWeight: number;
     pricePerKg: number;
     otherCosts: number;
+    emptyWeight: number;
     notes: string;
     deliveryNoteUrl?: string; // Surat Jalan
     receiptUrl?: string;      // Tanda Terima
@@ -99,9 +103,11 @@ const RawMaterialReceipt = () => {
         qualityGrade: '-',
         moistureContent: '',
         density: '',
+        greenPercentage: '',
         netWeight: '',
         pricePerKg: '',
         otherCosts: '0',
+        emptyWeight: '0',
         notes: ''
     });
 
@@ -110,6 +116,7 @@ const RawMaterialReceipt = () => {
             ...formData,
             moistureContent: data.moisture,
             density: data.density,
+            greenPercentage: data.greenPercentage,
             qualityGrade: data.qualityGrade,
         });
         setShowAnalysisModal(false);
@@ -200,9 +207,12 @@ const RawMaterialReceipt = () => {
                         varietyId: details.varietyId || '',
                         qualityGrade: details.qualityGrade || '-',
                         moistureContent: details.moistureContent || 0,
+                        density: details.density || 0,
+                        greenPercentage: details.greenPercentage || 0,
                         netWeight: m.quantity,
                         pricePerKg: details.pricePerKg || 0,
-                        otherCosts: details.otherCosts || 0,
+                        otherCosts: m.other_costs || details.otherCosts || 0,
+                        emptyWeight: m.empty_weight || details.emptyWeight || 0,
                         notes: details.notes || '',
                         deliveryNoteUrl: details.deliveryNoteUrl || '',
                         receiptUrl: details.receiptUrl || '',
@@ -381,8 +391,10 @@ const RawMaterialReceipt = () => {
                 qualityGrade: formData.qualityGrade,
                 moistureContent: parseFloat(formData.moistureContent),
                 density: parseFloat(formData.density),
+                greenPercentage: parseFloat(formData.greenPercentage || '0'),
                 pricePerKg: parseFloat(formData.pricePerKg),
                 otherCosts: parseFloat(formData.otherCosts || '0'),
+                emptyWeight: parseFloat(formData.emptyWeight || '0'),
                 notes: formData.notes,
                 deliveryNoteUrl: deliveryNoteUrl || (editingId ? batches.find(b => b.id === editingId)?.deliveryNoteUrl : ''),
                 receiptUrl: receiptUrl || (editingId ? batches.find(b => b.id === editingId)?.receiptUrl : '')
@@ -395,7 +407,10 @@ const RawMaterialReceipt = () => {
                 quantity: quantity,
                 reference_type: 'RAW_MATERIAL_RECEIPT',
                 reference_id: 0,
-                notes: notesPayload
+                notes: notesPayload,
+                empty_weight: parseFloat(formData.emptyWeight || '0'),
+                price_per_kg: parseFloat(formData.pricePerKg || '0'),
+                other_costs: parseFloat(formData.otherCosts || '0')
             };
 
             let stockRes;
@@ -415,8 +430,9 @@ const RawMaterialReceipt = () => {
                         variety_id: parseInt(formData.varietyId),
                         moisture_value: parseFloat(formData.moistureContent),
                         density_value: parseFloat(formData.density),
-                        green_percentage: 0,
+                        green_percentage: parseFloat(formData.greenPercentage || '0'),
                         yellow_percentage: 0,
+                        empty_weight: parseFloat(formData.emptyWeight || '0'),
                         notes: 'Receipt Analysis Updated'
                     });
                 } catch (qaError) {
@@ -435,9 +451,11 @@ const RawMaterialReceipt = () => {
                 qualityGrade: '-',
                 moistureContent: '',
                 density: '',
+                greenPercentage: '',
                 netWeight: '',
                 pricePerKg: '',
                 otherCosts: '0',
+                emptyWeight: '0',
                 notes: ''
             });
             setSuratJalanFile(null);
@@ -579,10 +597,12 @@ const RawMaterialReceipt = () => {
             varietyId: batch.varietyId || '',
             qualityGrade: batch.qualityGrade,
             moistureContent: String(batch.moistureContent),
-            density: '',
+            density: String(batch.density || ''),
+            greenPercentage: String(batch.greenPercentage || ''),
             netWeight: String(batch.netWeight),
             pricePerKg: String(batch.pricePerKg),
             otherCosts: String(batch.otherCosts || 0),
+            emptyWeight: String(batch.emptyWeight || 0),
             notes: batch.notes
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -714,7 +734,7 @@ const RawMaterialReceipt = () => {
                             </div>
                         </div>
 
-                        <div className="grid-4" style={{ marginBottom: 20 }}>
+                        <div className="grid-3" style={{ marginBottom: 20 }}>
                             <div className="form-group">
                                 <label className="form-label">Berat Netto (Kg)</label>
                                 <div className="input-group">
@@ -723,6 +743,19 @@ const RawMaterialReceipt = () => {
                                         className="form-input"
                                         value={formData.netWeight}
                                         onChange={e => setFormData({ ...formData, netWeight: e.target.value })}
+                                        placeholder="0"
+                                    />
+                                    <span className="input-addon">Kg</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Kg Hampa</label>
+                                <div className="input-group">
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={formData.emptyWeight}
+                                        onChange={e => setFormData({ ...formData, emptyWeight: e.target.value })}
                                         placeholder="0"
                                     />
                                     <span className="input-addon">Kg</span>
@@ -741,6 +774,9 @@ const RawMaterialReceipt = () => {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="grid-2" style={{ marginBottom: 20 }}>
                             <div className="form-group">
                                 <label className="form-label">Biaya Lainnya</label>
                                 <input
@@ -876,7 +912,7 @@ const RawMaterialReceipt = () => {
                                     setFormData({
                                         batchId: '', poNumber: '', dateReceived: new Date().toISOString().split('T')[0],
                                         supplierId: '', categoryId: '', varietyId: '', qualityGrade: '-',
-                                        moistureContent: '', density: '', netWeight: '', pricePerKg: '',
+                                        moistureContent: '', density: '', greenPercentage: '', netWeight: '', emptyWeight: '0', pricePerKg: '',
                                         otherCosts: '0', notes: ''
                                     });
                                 }}>Batal Edit</button>
@@ -887,7 +923,7 @@ const RawMaterialReceipt = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div >
             ) : (
                 <div style={{ padding: 24, textAlign: 'center', background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12, marginBottom: 24 }}>
                     <p style={{ color: '#b45309' }}>Silakan pilih pabrik terlebih dahulu untuk menambah data penerimaan.</p>
@@ -901,7 +937,7 @@ const RawMaterialReceipt = () => {
                 </div>
 
                 {loading && batches.length === 0 ? (
-                    <div className="empty-state"><h3>Memuat data...</h3></div>
+                    <LogoLoader small text="Memuat data penerimaan..." />
                 ) : batches.length === 0 ? (
                     <div className="empty-state"><h3>Belum ada data penerimaan</h3></div>
                 ) : (
@@ -916,6 +952,7 @@ const RawMaterialReceipt = () => {
                                         <th>Bahan</th>
                                         <th>Grade / Mhst</th>
                                         <th>Berat</th>
+                                        <th>Hampa</th>
                                         <th>Total Biaya</th>
                                         <th style={{ textAlign: 'right' }}>Aksi</th>
                                     </tr>
@@ -937,6 +974,7 @@ const RawMaterialReceipt = () => {
                                                 <span style={{ marginLeft: 8, fontSize: '0.8rem' }}>{batch.moistureContent}%</span>
                                             </td>
                                             <td><span className="font-mono">{formatNumber(batch.netWeight)}</span> kg</td>
+                                            <td><span className="font-mono" style={{ color: batch.emptyWeight > 0 ? '#dc2626' : 'inherit' }}>{formatNumber(batch.emptyWeight)}</span> kg</td>
                                             <td><span className="font-mono">{formatCurrency(batch.netWeight * batch.pricePerKg + Number(batch.otherCosts))}</span></td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 4 }}>
@@ -992,193 +1030,296 @@ const RawMaterialReceipt = () => {
             </div>
 
             {/* Modals */}
-            {showAnalysisModal && (
-                <QualityAnalysisModal
-                    batchId={formData.batchId}
-                    onClose={() => setShowAnalysisModal(false)}
-                    onSave={handleAnalysisSave}
-                />
-            )}
+            {
+                showAnalysisModal && (
+                    <QualityAnalysisModal
+                        batchId={formData.batchId}
+                        onClose={() => setShowAnalysisModal(false)}
+                        onSave={handleAnalysisSave}
+                    />
+                )
+            }
 
             {/* Add Modals (Simplified for context) */}
-            {showAddSupplierModal && (
-                <div className="modal-overlay">
-                    <div className="modal" style={{ maxWidth: 400 }}>
-                        <div className="modal-header"><h3>Tambah Supplier</h3></div>
-                        <div className="modal-body">
-                            <div className="grid-2" style={{ gap: '1rem' }}>
+            {
+                showAddSupplierModal && (
+                    <div className="modal-overlay">
+                        <div className="modal" style={{ maxWidth: 400 }}>
+                            <div className="modal-header"><h3>Tambah Supplier</h3></div>
+                            <div className="modal-body">
+                                <div className="grid-2" style={{ gap: '1rem' }}>
+                                    <div className="form-group">
+                                        <label className="form-label">Kode</label>
+                                        <input type="text" className="form-input" placeholder="SPL-001" value={newSupplier.code} onChange={e => setNewSupplier({ ...newSupplier, code: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Nama Supplier</label>
+                                        <input type="text" className="form-input" placeholder="Nama..." value={newSupplier.name} onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="grid-2" style={{ gap: '1rem', marginTop: '1rem' }}>
+                                    <div className="form-group">
+                                        <label className="form-label">Kontak (CP)</label>
+                                        <input type="text" className="form-input" placeholder="Nama Kontak..." value={newSupplier.contact_person} onChange={e => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Telepon</label>
+                                        <input type="text" className="form-input" placeholder="08..." value={newSupplier.phone} onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddSupplierModal(false)}>Batal</button>
+                                <button className="btn btn-primary" onClick={handleSaveNewSupplier}>Simpan Supplier</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {
+                showAddCategoryModal && (
+                    <div className="modal-overlay">
+                        <div className="modal" style={{ maxWidth: 400 }}>
+                            <div className="modal-header"><h3>Tambah Kategori</h3></div>
+                            <div className="modal-body">
                                 <div className="form-group">
                                     <label className="form-label">Kode</label>
-                                    <input type="text" className="form-input" placeholder="SPL-001" value={newSupplier.code} onChange={e => setNewSupplier({ ...newSupplier, code: e.target.value })} />
+                                    <input type="text" className="form-input" placeholder="KAT-001" value={newCategory.code} onChange={e => setNewCategory({ ...newCategory, code: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Nama Supplier</label>
-                                    <input type="text" className="form-input" placeholder="Nama..." value={newSupplier.name} onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} />
+                                    <label className="form-label">Nama Kategori</label>
+                                    <input type="text" className="form-input" placeholder="Nama..." value={newCategory.name} onChange={e => setNewCategory({ ...newCategory, name: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Keterangan</label>
+                                    <textarea
+                                        className="form-input"
+                                        placeholder="Deskripsi..."
+                                        rows={2}
+                                        value={newCategory.description}
+                                        onChange={e => setNewCategory({ ...newCategory, description: e.target.value })}
+                                    />
                                 </div>
                             </div>
-                            <div className="grid-2" style={{ gap: '1rem', marginTop: '1rem' }}>
-                                <div className="form-group">
-                                    <label className="form-label">Kontak (CP)</label>
-                                    <input type="text" className="form-input" placeholder="Nama Kontak..." value={newSupplier.contact_person} onChange={e => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Telepon</label>
-                                    <input type="text" className="form-input" placeholder="08..." value={newSupplier.phone} onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} />
-                                </div>
+                            <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddCategoryModal(false)}>Batal</button>
+                                <button className="btn btn-primary" onClick={handleSaveNewCategory}>Simpan Kategori</button>
                             </div>
-                        </div>
-                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                            <button className="btn btn-secondary" onClick={() => setShowAddSupplierModal(false)}>Batal</button>
-                            <button className="btn btn-primary" onClick={handleSaveNewSupplier}>Simpan Supplier</button>
                         </div>
                     </div>
-                </div>
-            )}
-            {showAddCategoryModal && (
-                <div className="modal-overlay">
-                    <div className="modal" style={{ maxWidth: 400 }}>
-                        <div className="modal-header"><h3>Tambah Kategori</h3></div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Kode</label>
-                                <input type="text" className="form-input" placeholder="KAT-001" value={newCategory.code} onChange={e => setNewCategory({ ...newCategory, code: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Nama Kategori</label>
-                                <input type="text" className="form-input" placeholder="Nama..." value={newCategory.name} onChange={e => setNewCategory({ ...newCategory, name: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Keterangan</label>
-                                <textarea
-                                    className="form-input"
-                                    placeholder="Deskripsi..."
-                                    rows={2}
-                                    value={newCategory.description}
-                                    onChange={e => setNewCategory({ ...newCategory, description: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                            <button className="btn btn-secondary" onClick={() => setShowAddCategoryModal(false)}>Batal</button>
-                            <button className="btn btn-primary" onClick={handleSaveNewCategory}>Simpan Kategori</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
-            {showAddVarietyModal && (
-                <div className="modal-overlay">
-                    <div className="modal" style={{ maxWidth: 400 }}>
-                        <div className="modal-header"><h3>Tambah Varietas</h3></div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Kode</label>
-                                <input type="text" className="form-input" placeholder="VAR-001" value={newVariety.code} onChange={e => setNewVariety({ ...newVariety, code: e.target.value })} />
+            {
+                showAddVarietyModal && (
+                    <div className="modal-overlay">
+                        <div className="modal" style={{ maxWidth: 400 }}>
+                            <div className="modal-header"><h3>Tambah Varietas</h3></div>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Kode</label>
+                                    <input type="text" className="form-input" placeholder="VAR-001" value={newVariety.code} onChange={e => setNewVariety({ ...newVariety, code: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Nama Varietas</label>
+                                    <input type="text" className="form-input" placeholder="Nama..." value={newVariety.name} onChange={e => setNewVariety({ ...newVariety, name: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Keterangan</label>
+                                    <textarea
+                                        className="form-input"
+                                        placeholder="Deskripsi..."
+                                        rows={2}
+                                        value={newVariety.description}
+                                        onChange={e => setNewVariety({ ...newVariety, description: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Nama Varietas</label>
-                                <input type="text" className="form-input" placeholder="Nama..." value={newVariety.name} onChange={e => setNewVariety({ ...newVariety, name: e.target.value })} />
+                            <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddVarietyModal(false)}>Batal</button>
+                                <button className="btn btn-primary" onClick={handleSaveNewVariety}>Simpan Varietas</button>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Keterangan</label>
-                                <textarea
-                                    className="form-input"
-                                    placeholder="Deskripsi..."
-                                    rows={2}
-                                    value={newVariety.description}
-                                    onChange={e => setNewVariety({ ...newVariety, description: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                            <button className="btn btn-secondary" onClick={() => setShowAddVarietyModal(false)}>Batal</button>
-                            <button className="btn btn-primary" onClick={handleSaveNewVariety}>Simpan Varietas</button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Print Container (Hidden on screen) */}
-            {printingBatch && (
-                <div id="receipt-print" className="print-receipt print-visible">
-                    <div className="receipt-header">
-                        <h2>TANDA TERIMA BAHAN BAKU</h2>
-                        <h3>Pangan Masa Depan</h3>
+            {
+                printingBatch && (
+                    <div id="receipt-print" className="print-receipt print-visible">
+                        {/* Kop Surat / Letterhead */}
+                        <div className="receipt-letterhead">
+                            <div className="receipt-logo-section">
+                                <img src="/pmd_logo.png" alt="PMD Logo" className="receipt-logo" />
+                            </div>
+                            <div className="receipt-company-section">
+                                <h2 className="receipt-company-name">PT PANGAN MASA DEPAN</h2>
+                                <p className="receipt-company-tagline">Solusi Pangan Berkualitas untuk Indonesia</p>
+                            </div>
+                            <div className="receipt-doc-id">
+                                <span className="receipt-doc-label">No. Dokumen</span>
+                                <span className="receipt-doc-value">{printingBatch.batchId}</span>
+                            </div>
+                        </div>
+
+                        {/* Judul Dokumen */}
+                        <div className="receipt-title-bar">
+                            <h3>TANDA TERIMA PENERIMAAN BAHAN BAKU</h3>
+                        </div>
+
+                        {/* Info Batch - 2 kolom */}
+                        <div className="receipt-info-grid">
+                            <div className="receipt-info-col">
+                                <table className="receipt-info">
+                                    <tbody>
+                                        <tr>
+                                            <td className="receipt-label">No. Batch</td>
+                                            <td>: <strong>{printingBatch.batchId}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td className="receipt-label">No. PO</td>
+                                            <td>: {printingBatch.poNumber || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="receipt-label">Supplier</td>
+                                            <td>: {printingBatch.supplier}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="receipt-info-col">
+                                <table className="receipt-info">
+                                    <tbody>
+                                        <tr>
+                                            <td className="receipt-label">Tanggal Terima</td>
+                                            <td>: {formatDate(printingBatch.dateReceived)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="receipt-label">Pabrik</td>
+                                            <td>: {printingBatch.factoryName || '-'}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Tabel Detail Bahan */}
+                        <table className="receipt-detail-table">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: '5%' }}>No</th>
+                                    <th style={{ width: '20%' }}>Jenis / Varietas</th>
+                                    <th style={{ width: '12%' }}>Grade</th>
+                                    <th style={{ width: '10%' }}>KA (%)</th>
+                                    <th style={{ width: '15%' }}>Bruto (kg)</th>
+                                    <th style={{ width: '15%' }}>Tara (kg)</th>
+                                    <th style={{ width: '15%' }}>Netto (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style={{ textAlign: 'center' }}>1</td>
+                                    <td>{printingBatch.materialType}</td>
+                                    <td>{printingBatch.qualityGrade}</td>
+                                    <td style={{ textAlign: 'center' }}>{printingBatch.moistureContent}%</td>
+                                    <td style={{ textAlign: 'right' }}>{formatNumber(printingBatch.netWeight + (printingBatch.emptyWeight || 0))}</td>
+                                    <td style={{ textAlign: 'right' }}>{formatNumber(printingBatch.emptyWeight || 0)}</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatNumber(printingBatch.netWeight)}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold', border: 'none' }}>Total Berat Bersih :</td>
+                                    <td colSpan={3} style={{ fontWeight: 'bold', fontSize: '11pt' }}>{formatNumber(printingBatch.netWeight)} kg</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        {/* Quality Parameters Analysis - Industrial Style */}
+                        <div className="receipt-analysis-container" style={{ marginTop: '15px' }}>
+                            <div style={{ border: '2px solid #333', padding: '10px' }}>
+                                <div style={{ borderBottom: '2px solid #333', marginBottom: '10px', paddingBottom: '5px' }}>
+                                    <h4 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>LABORATORY QUALITY ANALYSIS REPORT</h4>
+                                </div>
+                                <div className="receipt-info-grid" style={{ marginBottom: 0 }}>
+                                    <div className="receipt-info-col" style={{ borderRight: '1px solid #ccc' }}>
+                                        <table className="receipt-info">
+                                            <tbody>
+                                                <tr>
+                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>MOISTURE CONTENT</td>
+                                                    <td>: {printingBatch.moistureContent}%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>SPECIFIC DENSITY</td>
+                                                    <td>: {printingBatch.density || '-'} g/L</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="receipt-info-col">
+                                        <table className="receipt-info">
+                                            <tbody>
+                                                <tr>
+                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>COLOR ANALYSIS (GREEN)</td>
+                                                    <td>: {printingBatch.greenPercentage || '0'}%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>FINAL QUALITY GRADE</td>
+                                                    <td>: <span style={{ textDecoration: 'underline', fontWeight: 'bold' }}>{printingBatch.qualityGrade}</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: '8px', fontSize: '8pt', color: '#666', fontStyle: 'italic' }}>
+                                    * Automated analysis performed by Computer Vision System.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Catatan */}
+                        {printingBatch.notes && (
+                            <div className="receipt-notes">
+                                <strong>Catatan:</strong><br />
+                                {printingBatch.notes}
+                            </div>
+                        )}
+
+                        {/* Tanda Tangan */}
+                        <div className="receipt-signatures">
+                            <div className="signature-box">
+                                <p className="sig-role">Diserahkan oleh,</p>
+                                <p className="sig-title">Sopir / Pengantar</p>
+                                <div className="signature-line"></div>
+                                <p className="sig-name">(........................)</p>
+                            </div>
+                            <div className="signature-box">
+                                <p className="sig-role">Diterima oleh,</p>
+                                <p className="sig-title">Admin Gudang</p>
+                                <div className="signature-line"></div>
+                                <p className="sig-name">(........................)</p>
+                            </div>
+                            <div className="signature-box">
+                                <p className="sig-role">Mengetahui,</p>
+                                <p className="sig-title">Kepala Pabrik</p>
+                                <div className="signature-line"></div>
+                                <p className="sig-name">(........................)</p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="receipt-footer">
+                            <span>Dokumen ini dicetak secara otomatis oleh sistem ERP PMD.</span>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '6pt', opacity: 0.8 }}>v2.21.0</div>
+                                <span>Dicetak pada: {new Date().toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
                     </div>
-
-                    <table className="receipt-info">
-                        <tbody>
-                            <tr>
-                                <td className="receipt-label">No. Batch</td>
-                                <td>: <strong>{printingBatch.batchId}</strong></td>
-                            </tr>
-                            <tr>
-                                <td className="receipt-label">No. PO</td>
-                                <td>: {printingBatch.poNumber}</td>
-                            </tr>
-                            <tr>
-                                <td className="receipt-label">Supplier</td>
-                                <td>: {printingBatch.supplier}</td>
-                            </tr>
-                            <tr>
-                                <td className="receipt-label">Tanggal Terima</td>
-                                <td>: {formatDate(printingBatch.dateReceived)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <table className="receipt-detail-table">
-                        <thead>
-                            <tr>
-                                <th>Kategori</th>
-                                <th>Jenis / Varietas</th>
-                                <th>Grade</th>
-                                <th>KA (%)</th>
-                                <th>Berat Bersih</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{printingBatch.categoryId || 'N/A'}</td>
-                                <td>{printingBatch.materialType}</td>
-                                <td>{printingBatch.qualityGrade}</td>
-                                <td>{printingBatch.moistureContent}%</td>
-                                <td>{formatNumber(printingBatch.netWeight)} kg</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    {printingBatch.notes && (
-                        <div className="receipt-notes">
-                            <strong>Catatan:</strong><br />
-                            {printingBatch.notes}
-                        </div>
-                    )}
-
-                    <div className="receipt-signatures">
-                        <div className="signature-box">
-                            <p>Admin Gudang</p>
-                            <div className="signature-line"></div>
-                            <p>(........................)</p>
-                        </div>
-                        <div className="signature-box">
-                            <p>Sopir / Pengantar</p>
-                            <div className="signature-line"></div>
-                            <p>(........................)</p>
-                        </div>
-                        <div className="signature-box">
-                            <p>Mengetahui</p>
-                            <div className="signature-line"></div>
-                            <p>(........................)</p>
-                        </div>
-                    </div>
-
-                    <div className="receipt-footer">
-                        Dicetak pada: {new Date().toLocaleString('id-ID')}
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

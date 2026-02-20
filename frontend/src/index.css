@@ -62,15 +62,23 @@ html.light {
 
 /* ============ Typography Scaling ============ */
 h1 {
-  font-size: 2.5rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 h2 {
-  font-size: 2rem;
+  font-size: 1.375rem;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -436,6 +444,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 a {
@@ -692,6 +702,10 @@ html.dark .nav-item.active {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 }
 
 .sidebar-user-info p {
@@ -724,18 +738,26 @@ html.dark .nav-item.active {
 .header-title {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   min-width: 0;
 }
 
 .header-title h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-primary);
 }
 
 .header-subtitle {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .header-search {
@@ -878,11 +900,14 @@ html.dark .nav-item.active {
 }
 
 .stat-card-value {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
   margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-card-trend {
@@ -1364,16 +1389,18 @@ tbody tr:hover {
 }
 
 .page-header-content h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .page-header-content p {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 8px;
+  line-height: 1.5;
 }
 
 .page-header-actions {
@@ -1392,6 +1419,20 @@ tbody tr:hover {
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.card-subtitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .modal,
@@ -1768,6 +1809,15 @@ tbody tr:hover {
   }
 }
 
+@media (max-width: 640px) {
+
+  .grid-4,
+  .grid-3,
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ============ Print Styles ============ */
 @media print {
 
@@ -1866,9 +1916,11 @@ tbody tr:hover {
     display: block !important;
     width: 100%;
     background: white;
-    padding: 20px;
-    font-family: 'Arial', sans-serif;
-    color: black !important;
+    padding: 24px 32px;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    color: #1a1a1a !important;
+    font-size: 10pt;
+    line-height: 1.5;
   }
 
   /* Hide main content components saat body punya class is-printing */
@@ -1896,103 +1948,210 @@ tbody tr:hover {
     display: block !important;
   }
 
-  /* Receipt Header */
-  .receipt-header {
-    text-align: center;
-    margin-bottom: 24px;
-    border-bottom: 2px solid black;
+  /* ===== Letterhead / Kop Surat ===== */
+  .receipt-letterhead {
+    display: flex;
+    align-items: center;
     padding-bottom: 12px;
+    border-bottom: 3px solid #1a1a1a;
+    margin-bottom: 0;
+    gap: 16px;
   }
 
-  .receipt-header h2 {
-    font-size: 18pt;
-    margin: 0;
-    color: black;
+  .receipt-logo-section {
+    flex-shrink: 0;
   }
 
-  .receipt-header h3 {
-    font-size: 13pt;
-    margin: 4px 0 0;
-    font-weight: normal;
-    color: black;
-  }
-
-  /* Receipt Info Table (No. Batch, PO, Supplier, dll) */
-  .receipt-info {
-    width: auto;
-    margin-bottom: 20px;
-    border: none !important;
-  }
-
-  .receipt-info td {
-    padding: 3px 12px 3px 0;
-    border: none !important;
-    font-size: 11pt;
-    color: black;
-  }
-
-  .receipt-label {
-    font-weight: bold;
-    width: 140px;
-  }
-
-  /* Receipt Detail Table (Jenis Bahan, Grade, Berat, Harga) */
-  .receipt-detail-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-  }
-
-  .receipt-detail-table th,
-  .receipt-detail-table td {
-    border: 1px solid black !important;
-    padding: 8px 10px;
-    font-size: 10pt;
-    color: black;
-    text-align: left;
-  }
-
-  .receipt-detail-table th {
-    background: #f0f0f0 !important;
-    font-weight: bold;
+  .receipt-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Catatan */
-  .receipt-notes {
-    margin-bottom: 24px;
-    font-size: 10pt;
-    padding: 8px;
-    border: 1px dashed #999 !important;
+  .receipt-company-section {
+    flex: 1;
   }
 
-  /* 3 Kolom Tanda Tangan */
+  .receipt-company-name {
+    font-size: 16pt;
+    font-weight: 800;
+    margin: 0;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+  }
+
+  .receipt-company-tagline {
+    font-size: 9pt;
+    margin: 2px 0 0;
+    color: #555;
+    font-style: italic;
+  }
+
+  .receipt-doc-id {
+    flex-shrink: 0;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .receipt-doc-label {
+    font-size: 7.5pt;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .receipt-doc-value {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  /* ===== Title Bar ===== */
+  .receipt-title-bar {
+    text-align: center;
+    padding: 8px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .receipt-title-bar h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
+    letter-spacing: 2px;
+  }
+
+  /* ===== Info Grid (2 Kolom) ===== */
+  .receipt-info-grid {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .receipt-info-col {
+    flex: 1;
+  }
+
+  .receipt-info {
+    width: 100%;
+    border: none !important;
+  }
+
+  .receipt-info td {
+    padding: 3px 8px 3px 0;
+    border: none !important;
+    font-size: 10pt;
+    color: #1a1a1a;
+    vertical-align: top;
+  }
+
+  .receipt-label {
+    font-weight: 600;
+    width: 120px;
+    white-space: nowrap;
+    color: #444;
+  }
+
+  /* ===== Detail Table ===== */
+  .receipt-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+
+  .receipt-detail-table th,
+  .receipt-detail-table td {
+    border: 1px solid #333 !important;
+    padding: 7px 10px;
+    font-size: 9.5pt;
+    color: #1a1a1a;
+    text-align: left;
+  }
+
+  .receipt-detail-table th {
+    background: #e8e8e8 !important;
+    font-weight: 700;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .receipt-detail-table tfoot td {
+    border: none !important;
+    padding-top: 8px;
+    font-size: 10pt;
+  }
+
+  /* ===== Catatan ===== */
+  .receipt-notes {
+    margin-bottom: 20px;
+    font-size: 9.5pt;
+    padding: 10px 12px;
+    border: 1px dashed #888 !important;
+    border-radius: 2px;
+    background: #fafafa;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ===== Tanda Tangan ===== */
   .receipt-signatures {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    margin-top: 48px;
+    margin-top: 40px;
+    page-break-inside: avoid;
   }
 
   .signature-box {
     text-align: center;
     width: 30%;
-    font-size: 10pt;
+  }
+
+  .signature-box .sig-role {
+    font-size: 9pt;
+    color: #555;
+    margin: 0 0 2px;
+  }
+
+  .signature-box .sig-title {
+    font-size: 9.5pt;
+    font-weight: 600;
+    margin: 0;
+    color: #1a1a1a;
   }
 
   .signature-line {
-    border-bottom: 1px solid black !important;
-    height: 60px;
-    margin: 8px 0;
+    border-bottom: 1px solid #1a1a1a !important;
+    height: 56px;
+    margin: 8px 0 4px;
   }
 
-  /* Footer (timestamp) */
+  .signature-box .sig-name {
+    font-size: 9pt;
+    margin: 0;
+    color: #555;
+  }
+
+  /* ===== Footer ===== */
   .receipt-footer {
-    margin-top: 32px;
-    font-size: 8pt;
-    color: #666 !important;
-    text-align: right;
+    margin-top: 28px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd !important;
+    font-size: 7.5pt;
+    color: #888 !important;
+    display: flex;
+    justify-content: space-between;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 
@@ -2214,4 +2373,28 @@ tbody tr:hover {
     gap: 16px;
     align-items: flex-start;
   }
+}
+
+/* Recharts Tooltip Styling */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-default-tooltip {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 12px 16px !important;
+  backdrop-filter: blur(8px);
+}
+
+.recharts-tooltip-item-list {
+  color: var(--text-primary) !important;
+}
+
+.recharts-tooltip-label {
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
 }

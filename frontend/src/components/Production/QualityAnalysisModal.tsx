@@ -319,6 +319,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
         const data = {
             moisture,
             density,
+            greenPercentage,
             qualityGrade: finalGrade,
             notes: 'Analyzed via Submodule'
         };

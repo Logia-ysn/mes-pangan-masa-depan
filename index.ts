@@ -121,6 +121,40 @@ server.express.get('/health', (_req, res) => {
   });
 });
 
+// --- Audit Logs API ---
+const auditLogsHandler = async (req: any, res: any) => {
+  console.log(`[DEBUG] Audit logs hit: ${req.method} ${req.originalUrl}`);
+  try {
+    const user = await getUserFromToken(req);
+    // Only ADMIN or SUPERUSER can see audit logs
+    const { User_role_enum } = require('@prisma/client');
+    if (user.role !== User_role_enum.ADMIN && user.role !== User_role_enum.SUPERUSER) {
+      return res.status(403).json({ success: false, error: { message: 'Insufficient permissions' } });
+    }
+
+    const { auditService } = require('./src/services/audit.service');
+    const { userId, tableName, action, limit, offset } = req.query;
+
+    const logs = await auditService.getLogs({
+      userId: userId ? Number(userId) : undefined,
+      tableName: tableName as string,
+      action: action as string,
+      limit: limit ? Number(limit) : 50,
+      offset: offset ? Number(offset) : 0,
+    });
+
+    res.json({ success: true, data: logs });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    console.error(`[DEBUG] Audit logs error: ${error.message} (Status: ${statusCode})`);
+    res.status(statusCode).json({ success: false, error: { message: error.message || 'Failed to fetch audit logs' } });
+  }
+};
+
+server.express.get('/audit-logs', auditLogsHandler);
+server.express.get('/api/audit-logs', auditLogsHandler);
+
+
 // --- Batch Code Generation API ---
 server.express.post('/batch-code/generate', express.json(), async (req, res) => {
   try {
@@ -315,6 +349,54 @@ server.express.get('/reports/stock-report/excel', async (req, res) => {
     res.status(error.statusCode || 500).json({ success: false, error: { message: error.message || 'Failed to generate Excel' } });
   }
 });
+
+// --- Quality Trends API ---
+const qualityTrendsHandler = async (req: any, res: any) => {
+  console.log(`[DEBUG] Quality trends hit: ${req.method} ${req.originalUrl}`);
+  try {
+    await getUserFromToken(req);
+    const { start_date, end_date, id_factory } = req.query;
+
+    if (!start_date || !end_date) {
+      return res.status(400).json({ success: false, error: { message: 'start_date and end_date are required' } });
+    }
+
+    const { prisma: db } = require('./src/libs/prisma');
+
+    // Quality trends from Raw Material Analysis
+    const analyses = await db.rawMaterialQualityAnalysis.findMany({
+      where: {
+        analysis_date: {
+          gte: new Date(start_date as string),
+          lte: new Date(end_date as string),
+        },
+        StockMovement: id_factory ? {
+          Stock: { id_factory: Number(id_factory) }
+        } : undefined
+      },
+      orderBy: { analysis_date: 'asc' },
+      select: {
+        analysis_date: true,
+        moisture_value: true,
+        density_value: true,
+        green_percentage: true,
+        yellow_percentage: true,
+        red_percentage: true,
+        final_grade: true,
+        batch_id: true
+      }
+    });
+
+    res.json({ success: true, data: analyses });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    console.error(`[DEBUG] Quality trends error: ${error.message} (Status: ${statusCode})`);
+    res.status(statusCode).json({ success: false, error: { message: error.message || 'Failed to fetch quality trends' } });
+  }
+};
+
+server.express.get('/reports/quality-trends', qualityTrendsHandler);
+server.express.get('/api/reports/quality-trends', qualityTrendsHandler);
 
 // --- File Upload API ---
 server.express.post('/upload', async (req, res) => {

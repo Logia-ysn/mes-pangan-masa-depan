@@ -50,6 +50,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
                 { label: 'Laporan Penjualan', to: '/reports/sales' },
                 { label: 'HPP (COGM)', to: '/reports/cogm' },
                 { label: 'Laporan Stok', to: '/reports/stock' },
+                { label: 'Tren Kualitas', to: '/reports/quality' },
             ]
         },
         // Admin Section (Conditional)
@@ -58,6 +59,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             icon: 'admin_panel_settings',
             children: [
                 { label: 'Manajemen User', to: '/admin/users' },
+                { label: 'Log Audit', to: '/admin/audit-logs' },
             ]
         }] : [])
     ];

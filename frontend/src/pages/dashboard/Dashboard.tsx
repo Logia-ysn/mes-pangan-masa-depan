@@ -74,6 +74,8 @@ interface ExecutiveDashboardData {
 
 import { useFactory } from '../../hooks/useFactory';
 
+import LogoLoader from '../../components/UI/LogoLoader';
+
 const Dashboard = () => {
     const [data, setData] = useState<ExecutiveDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -137,16 +139,7 @@ const Dashboard = () => {
     }, [data]);
 
     if (loading) {
-        return (
-            <div className="page-content">
-                <div className="empty-state">
-                    <div className="empty-state-icon">
-                        <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                    </div>
-                    <h3>Memuat data...</h3>
-                </div>
-            </div>
-        );
+        return <LogoLoader text="Memuat Dashboard Eksekutif..." />;
     }
 
     const kpis = data?.kpis || {

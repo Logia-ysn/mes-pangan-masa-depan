@@ -14,6 +14,7 @@ export interface SubmitAnalysisDTO {
     // Manual overrides or auto-calculated color
     green_percentage?: number;
     yellow_percentage?: number;
+    empty_weight?: number;
 }
 
 class QualityAnalysisService {
@@ -52,6 +53,7 @@ class QualityAnalysisService {
             color_grade: colorGrade,
             image_url: dto.image_url,
             final_grade: finalGrade,
+            empty_weight: dto.empty_weight,
             notes: dto.notes
         });
     }

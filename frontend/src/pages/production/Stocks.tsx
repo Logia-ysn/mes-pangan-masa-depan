@@ -8,6 +8,7 @@ import { logger } from '../../utils/logger';
 import { useFactory } from '../../hooks/useFactory';
 import Pagination from '../../components/UI/Pagination';
 import { formatDate, formatNumber } from '../../utils/formatUtils';
+import LogoLoader from '../../components/UI/LogoLoader';
 
 interface Stock {
     id: number;
@@ -404,12 +405,7 @@ const Stocks = () => {
                     </div>
 
                     {loading ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">
-                                <span className="material-symbols-outlined animate-pulse">hourglass_empty</span>
-                            </div>
-                            <h3>Memuat data...</h3>
-                        </div>
+                        <LogoLoader small text="Memuat data stok..." />
                     ) : filteredStocks.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-state-icon">

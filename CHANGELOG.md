@@ -1,5 +1,24 @@
 # Changelog
- 
+
+## [2.21.0] - 2026-02-18
+
+### Diubah
+- **Refaktor Tren Kualitas (SPC)** — Pembaruan UI Dasbor Kualitas dengan estetika premium, perbaikan layout grafik (Recharts), dan penambahan loading state menggunakan `LogoLoader`.
+- **Redesain Print-Out Penerimaan Padi** — Tata letak tanda terima yang lebih profesional dengan Kop Surat, logo perusahaan di sisi kiri, dan struktur informasi dua kolom.
+- **Optimasi Logo Loader** — Penggunaan logo transparan (tanpa box putih) untuk tampilan loading yang lebih halus dan terintegrasi dengan tema aplikasi.
+
+## [2.20.0] - 2026-02-17
+
+### Ditambahkan
+- **Unified Audit Log System** — Implementasi sistem jejak audit terpusat untuk mencatat setiap aktivitas pengguna dan perubahan data sensitif.
+- **Audit Dashboard** — Antarmuka premium di Admin Panel untuk memantau log aktivitas dengan fitur filter, paginasi, dan detail JSON perbandingan data (*Before vs After*).
+- **Auto-Logging Services** — Integrasi otomatis Audit Log pada `StockService`, `AuthService`, dan `InvoiceService`.
+- **Infrastruktur PWA (Pondasi)** — Persiapan awal untuk mendukung mode offline dan instalasi aplikasi pada perangkat mobile/desktop.
+
+### Diubah
+- **Database Schema Upgrade** — Penambahan model `AuditLog` dengan index performa tinggi pada timestamp dan table name.
+- **Frontend Dependencies** — Integrasi `date-fns` dan `lucide-react` untuk visualisasi data yang lebih profesional.
+
 ## [2.19.1] - 2026-02-16
 
 ### Ditambahkan

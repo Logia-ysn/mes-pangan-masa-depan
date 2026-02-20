@@ -8,6 +8,7 @@ import { prisma } from '../libs/prisma';
 import { stockService } from './stock.service';
 import { invoiceRepository } from '../repositories/invoice.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
+import { auditService } from './audit.service';
 
 class InvoiceService {
     /**
@@ -118,6 +119,20 @@ class InvoiceService {
                 }
             }
 
+            // Audit Log for Create
+            await auditService.log({
+                userId,
+                action: 'CREATE',
+                tableName: 'Invoice',
+                recordId: createdInvoice.id,
+                newValue: {
+                    number: invoice_number,
+                    total,
+                    customerId: data.id_customer,
+                    factoryId: data.id_factory
+                }
+            }, tx);
+
             return createdInvoice;
         });
 
@@ -168,6 +183,20 @@ class InvoiceService {
         }
 
         await prisma.invoice.update({ where: { id }, data: updateData });
+
+        // Audit Log for Update
+        await auditService.log({
+            userId,
+            action: 'UPDATE',
+            tableName: 'Invoice',
+            recordId: id,
+            oldValue: {
+                status: invoice.status,
+                total: invoice.total,
+                notes: invoice.notes
+            },
+            newValue: updateData
+        });
 
         // If status changed to CANCELLED, reverse stock
         if (data.status === Invoice_status_enum.CANCELLED) {
@@ -259,6 +288,19 @@ class InvoiceService {
             await tx.payment.deleteMany({ where: { id_invoice: id } });
             await tx.invoiceItem.deleteMany({ where: { id_invoice: id } });
             await tx.invoice.delete({ where: { id } });
+
+            // Audit Log for Delete
+            await auditService.log({
+                userId,
+                action: 'DELETE',
+                tableName: 'Invoice',
+                recordId: id,
+                oldValue: {
+                    number: invoice.invoice_number,
+                    total: invoice.total,
+                    status: invoice.status
+                }
+            }, tx);
         });
 
         return { message: 'Invoice deleted successfully' };
