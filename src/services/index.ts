@@ -8,3 +8,4 @@ export * from './user.service';
 export * from './stock.service';
 export * from './worksheet.service';
 export * from './dashboard.service';
+export * from './material-receipt.service';

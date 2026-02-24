@@ -12,6 +12,7 @@ export interface WorksheetListParams {
     id_factory?: number;
     id_user?: number;
     shift?: string;
+    status?: string;
     process_step?: string;
     start_date?: Date;
     end_date?: Date;
@@ -41,6 +42,9 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
                 User: true,
                 ProductType: true,
                 Machine: true,
+                SubmittedByUser: { select: { id: true, fullname: true } },
+                ApprovedByUser: { select: { id: true, fullname: true } },
+                RejectedByUser: { select: { id: true, fullname: true } },
                 WorksheetInputBatch: {
                     include: {
                         Stock: {
@@ -110,6 +114,10 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
 
         if (params.shift) {
             where.shift = params.shift as Worksheet_shift_enum;
+        }
+
+        if (params.status) {
+            where.status = params.status;
         }
 
         if (params.start_date || params.end_date) {

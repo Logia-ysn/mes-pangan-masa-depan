@@ -30,6 +30,16 @@ def _default_profile() -> CalibrationProfile:
             s_min=settings.chalky_s_min, s_max=settings.chalky_s_max,
             v_min=settings.chalky_v_min, v_max=settings.chalky_v_max,
         ),
+        damaged=ColorRange(
+            h_min=settings.damaged_h_min, h_max=settings.damaged_h_max,
+            s_min=settings.damaged_s_min, s_max=settings.damaged_s_max,
+            v_min=settings.damaged_v_min, v_max=settings.damaged_v_max,
+        ),
+        rotten=ColorRange(
+            h_min=settings.rotten_h_min, h_max=settings.rotten_h_max,
+            s_min=settings.rotten_s_min, s_max=settings.rotten_s_max,
+            v_min=settings.rotten_v_min, v_max=settings.rotten_v_max,
+        ),
     )
 
 

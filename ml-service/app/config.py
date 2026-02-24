@@ -3,23 +3,23 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_title: str = "QC Gabah ML Service"
-    app_version: str = "2.0.0"
+    app_version: str = "3.0.0"
     max_image_width: int = 800
 
-    # Green HSV defaults
-    green_h_min: int = 25
+    # Green HSV defaults (unripe grains — checked before yellow)
+    green_h_min: int = 28
     green_h_max: int = 95
     green_s_min: int = 25
     green_s_max: int = 255
     green_v_min: int = 40
     green_v_max: int = 255
 
-    # Yellow HSV defaults
-    yellow_h_min: int = 10
-    yellow_h_max: int = 25
-    yellow_s_min: int = 40
+    # Yellow HSV defaults (broad range to capture all golden shades)
+    yellow_h_min: int = 8
+    yellow_h_max: int = 35
+    yellow_s_min: int = 25
     yellow_s_max: int = 255
-    yellow_v_min: int = 40
+    yellow_v_min: int = 50
     yellow_v_max: int = 255
 
     # Red low HSV defaults
@@ -46,9 +46,25 @@ class Settings(BaseSettings):
     chalky_v_min: int = 180
     chalky_v_max: int = 255
 
+    # Damaged HSV defaults (truly brown/damaged grains only)
+    damaged_h_min: int = 5
+    damaged_h_max: int = 20
+    damaged_s_min: int = 80
+    damaged_s_max: int = 200
+    damaged_v_min: int = 20
+    damaged_v_max: int = 70
+
+    # Rotten HSV defaults (near-black grains only)
+    rotten_h_min: int = 0
+    rotten_h_max: int = 179
+    rotten_s_min: int = 0
+    rotten_s_max: int = 255
+    rotten_v_min: int = 10
+    rotten_v_max: int = 30
+
     # Background thresholds
     bg_white_threshold: int = 240
-    bg_dark_threshold: int = 15
+    bg_dark_threshold: int = 10  # Lowered from 15 to preserve rotten grain pixels
 
     class Config:
         env_prefix = "ML_"

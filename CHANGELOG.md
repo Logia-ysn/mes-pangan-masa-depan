@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.23.0] - 2026-02-23
+
+### Ditambahkan
+- **Model MaterialReceipt** — Tabel database baru khusus untuk penerimaan bahan baku, menggantikan pendekatan sebelumnya yang hanya bergantung pada `StockMovement`. Mencakup relasi lengkap ke `Supplier`, `Factory`, `ProductType`, dan `User`.
+- **Alur Persetujuan 3 Tahap** — Implementasi siklus status `WAITING_APPROVAL → APPROVED → PAID` dengan pelacakan timestamp (`approved_at`, `paid_at`) dan kontrol akses berbasis role.
+- **PaymentModal** — Komponen modal baru untuk mencatat pembayaran dengan pilihan metode (Cash/Transfer/Giro) dan referensi pembayaran.
+- **Nomor Kwitansi Otomatis** — Sistem penomoran kwitansi otomatis (`RCV-YYMMDD-SEQ`) untuk dokumentasi formal.
+- **Quarantine Stock** — Penambahan field `quarantine_quantity` pada model `Stock` untuk pelacakan material yang masuk sebelum lolos QC.
+- **Watermark PDF Invoice** — Stamp watermark berbasis status (DRAFT/SENT/PAID/PARTIAL/CANCEL) pada laporan PDF invoice, termasuk teks diagonal dan badge pojok halaman.
+- **PDF Penerimaan Material** — PDF profesional halaman penuh untuk kwitansi penerimaan bahan baku dengan kop surat, hasil analisis kualitas, dan kolom tanda tangan.
+
+### Diubah
+- **Filter Status UI** — Penambahan filter status penerimaan (Semua/Menunggu/Disetujui/Lunas) pada halaman Penerimaan Bahan Baku.
+- **Analisis Visual (Global Only)** — `GreenPercentage` sekarang selalu menggunakan parameter global tanpa bergantung pada pemilihan varietas padi.
+- **Cleanup Kode Densitas** — Penghapusan komentar konversi densitas yang verbose dan standarisasi ke `g/ml` dengan presisi 3 desimal.
+- **Dummy Generator** — Diperbarui untuk mendukung model `MaterialReceipt` baru.
+
+## [2.22.0] - 2026-02-22
+
+### Ditambahkan
+- **Parameter Kualitas Spesifik IR 64** — Implementasi tabel acuan densitas khusus untuk varietas IR 64 (0.58 - 1.00 g/ml).
+- **Fallback Parameter Global** — Sistem otomatis menggunakan parameter General jika varietas padi tidak dipilih atau tidak memiliki parameter spesifik.
+
+### Diubah
+- **Standarisasi Unit Densitas (g/ml)** — Mengubah unit perhitungan dari g/L ke g/ml (0.6 - 1.0) pada frontend, backend, dan database.
+- **Logika Analisis Visual (Global Only)** — Menetapkan pengecekan "Green Percentage" selalu merujuk pada parameter Global tanpa bergantung pada varietas padi.
+- **Presisi PDF & UI** — Peningkatan presisi angka densitas menjadi 3 desimal (contoh: 0.860) pada modal input dan laporan PDF.
+- **Relasi Database QA** — Optimasi `calculateGrade` untuk menangani prioritas `Variety Specific > Global`.
+
 ## [2.21.0] - 2026-02-18
 
 ### Diubah

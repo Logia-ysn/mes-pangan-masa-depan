@@ -110,6 +110,7 @@ model Factory {
   FactoryMaterialConfig FactoryMaterialConfig[]
   Invoice               Invoice[]
   Machine               Machine[]
+  MaterialReceipt       MaterialReceipt[]
   OutputProduct         OutputProduct[]
   PurchaseOrder         PurchaseOrder[]
   Stock                 Stock[]
@@ -287,6 +288,7 @@ model ProductType {
   side_product_type     SideProductType?
   FactoryMaterialConfig FactoryMaterialConfig[]
   InvoiceItem           InvoiceItem[]
+  MaterialReceipt       MaterialReceipt[]
   RiceBrand             RiceBrand?              @relation(fields: [id_rice_brand], references: [id])
   RiceLevel             RiceLevel?              @relation(fields: [id_rice_level], references: [id])
   RiceVariety           RiceVariety?            @relation(fields: [id_variety], references: [id])
@@ -298,15 +300,19 @@ model ProductType {
 }
 
 model QCGabah {
-  supplier         String?  @db.VarChar(255)
-  lot              String?  @db.VarChar(50)
-  image_url        String
-  green_percentage Decimal  @db.Decimal(5, 2)
-  grade            String   @db.VarChar(20)
-  status           String   @db.VarChar(20)
-  created_at       DateTime @default(now()) @db.Timestamp(6)
-  level            Int      @default(1)
-  id               Int      @id(map: "PK_25e23bf8af8a9efcee9f4b1f1cd") @default(autoincrement())
+  supplier           String?  @db.VarChar(255)
+  lot                String?  @db.VarChar(50)
+  image_url          String
+  green_percentage   Decimal  @db.Decimal(5, 2)
+  yellow_percentage  Decimal? @db.Decimal(5, 2)
+  damaged_percentage Decimal? @db.Decimal(5, 2)
+  rotten_percentage  Decimal? @db.Decimal(5, 2)
+  defect_percentage  Decimal? @db.Decimal(5, 2)
+  grade              String   @db.VarChar(20)
+  status             String   @db.VarChar(20)
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  level              Int      @default(1)
+  id                 Int      @id(map: "PK_25e23bf8af8a9efcee9f4b1f1cd") @default(autoincrement())
 }
 
 model QualityParameter {
@@ -337,25 +343,28 @@ model RawMaterialCategory {
 }
 
 model RawMaterialQualityAnalysis {
-  moisture_value    Decimal?       @db.Decimal(10, 2)
-  density_value     Decimal?       @db.Decimal(10, 2)
-  green_percentage  Decimal?       @db.Decimal(10, 2)
-  yellow_percentage Decimal?       @db.Decimal(10, 2)
-  notes             String?
-  created_at        DateTime       @default(now()) @db.Timestamp(6)
-  updated_at        DateTime       @updatedAt @db.Timestamp(6)
-  analysis_date     DateTime       @default(dbgenerated("('now'::text)::date")) @db.Date
-  moisture_grade    String?        @db.VarChar(20)
-  density_grade     String?        @db.VarChar(20)
-  red_percentage    Decimal?       @db.Decimal(10, 2)
-  color_grade       String?        @db.VarChar(20)
-  image_url         String?
-  id                Int            @id(map: "PK_360eda0c8661d53b9df013fa43b") @default(autoincrement())
-  batch_id          String         @db.VarChar(50)
-  id_stock_movement Int?
-  final_grade       String?        @db.VarChar(20)
-  empty_weight      Decimal?       @db.Decimal(15, 2)
-  StockMovement     StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
+  moisture_value       Decimal?       @db.Decimal(10, 2)
+  density_value        Decimal?       @db.Decimal(10, 2)
+  green_percentage     Decimal?       @db.Decimal(10, 2)
+  yellow_percentage    Decimal?       @db.Decimal(10, 2)
+  damaged_percentage   Decimal?       @db.Decimal(10, 2)
+  rotten_percentage    Decimal?       @db.Decimal(10, 2)
+  defect_percentage    Decimal?       @db.Decimal(10, 2)
+  notes                String?
+  created_at           DateTime       @default(now()) @db.Timestamp(6)
+  updated_at           DateTime       @updatedAt @db.Timestamp(6)
+  analysis_date        DateTime       @default(dbgenerated("('now'::text)::date")) @db.Date
+  moisture_grade       String?        @db.VarChar(20)
+  density_grade        String?        @db.VarChar(20)
+  red_percentage       Decimal?       @db.Decimal(10, 2)
+  color_grade          String?        @db.VarChar(20)
+  image_url            String?
+  id                   Int            @id(map: "PK_360eda0c8661d53b9df013fa43b") @default(autoincrement())
+  batch_id             String         @db.VarChar(50)
+  id_stock_movement    Int?
+  final_grade          String?        @db.VarChar(20)
+  empty_weight         Decimal?       @db.Decimal(15, 2)
+  StockMovement        StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
 }
 
 /// @deprecated Use RiceVariety instead. Kept for backward compatibility.
@@ -373,6 +382,7 @@ model Stock {
   id_factory          Int
   id_product_type     Int
   quantity            Decimal               @default(0) @db.Decimal(15, 2)
+  quarantine_quantity Decimal               @default(0) @db.Decimal(15, 2)
   unit                String                @default("kg") @db.VarChar(20)
   updated_at          DateTime              @updatedAt @db.Timestamp(6)
   Factory             Factory               @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_1e850f690899d16194616041127")
@@ -402,6 +412,7 @@ model StockMovement {
   empty_weight               Decimal?                         @db.Decimal(15, 2)
   price_per_kg               Decimal?                         @db.Decimal(15, 2)
   other_costs                Decimal?                         @db.Decimal(15, 2)
+  MaterialReceipt            MaterialReceipt[]
   RawMaterialQualityAnalysis RawMaterialQualityAnalysis[]
   Stock                      Stock                            @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_03c884464cad073305dd53ed7b1")
   User                       User                             @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_0645774788e95617e3ffd45b3b7")
@@ -423,6 +434,7 @@ model Supplier {
   address        String?
   is_active      Boolean         @default(true)
   created_at     DateTime        @default(now()) @db.Timestamp(6)
+  MaterialReceipt MaterialReceipt[]
   PurchaseOrder  PurchaseOrder[]
 }
 
@@ -443,12 +455,18 @@ model User {
   GoodsReceipt  GoodsReceipt[]
   Invoice       Invoice[]
   Maintenance   Maintenance[]
+  MaterialReceiptOperator MaterialReceipt[] @relation("MaterialReceiptOperator")
+  MaterialReceiptApprover MaterialReceipt[] @relation("MaterialReceiptApprover")
+  MaterialReceiptPaidBy   MaterialReceipt[] @relation("MaterialReceiptPaidBy")
   Notification  Notification[]
   Payment       Payment[]
   PurchaseOrder PurchaseOrder[]
   StockMovement StockMovement[]
-  Factory       Factory?        @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
-  Worksheet     Worksheet[]
+  Factory            Factory?     @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
+  Worksheet          Worksheet[]
+  WorksheetSubmitted Worksheet[]  @relation("WorksheetSubmittedBy")
+  WorksheetApproved  Worksheet[]  @relation("WorksheetApprovedBy")
+  WorksheetRejected  Worksheet[]  @relation("WorksheetRejectedBy")
 }
 
 model AuditLog {
@@ -499,17 +517,31 @@ model Worksheet {
   id_input_product_type Int?
   id_machines           Json?
   id_operators          Json?
+  // Workflow status fields
+  status                Worksheet_status_enum  @default(DRAFT)
+  submitted_at          DateTime?              @db.Timestamp(6)
+  submitted_by          Int?
+  approved_at           DateTime?              @db.Timestamp(6)
+  approved_by           Int?
+  rejected_at           DateTime?              @db.Timestamp(6)
+  rejected_by           Int?
+  rejection_reason      String?
+  completed_at          DateTime?              @db.Timestamp(6)
   ProductType           ProductType?           @relation(fields: [id_output_product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_10ff9fd85814d58f9a6d74a5a7e")
   User                  User                   @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_4389afefb4c0bbc4fc7a1a435f3")
   Factory               Factory                @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b6e3fcc79a8ed4484be3f3d8eeb")
   Machine               Machine?               @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dddd8317548de410ffa729dc394")
   InputProductType      ProductType?           @relation("WorksheetInputProduct", fields: [id_input_product_type], references: [id])
+  SubmittedByUser       User?                  @relation("WorksheetSubmittedBy", fields: [submitted_by], references: [id])
+  ApprovedByUser        User?                  @relation("WorksheetApprovedBy", fields: [approved_by], references: [id])
+  RejectedByUser        User?                  @relation("WorksheetRejectedBy", fields: [rejected_by], references: [id])
   WorksheetInputBatch   WorksheetInputBatch[]
   WorksheetSideProduct  WorksheetSideProduct[]
 
   @@index([id_factory], map: "IDX_worksheet_factory")
   @@index([id_user], map: "IDX_worksheet_user")
   @@index([worksheet_date], map: "IDX_worksheet_date")
+  @@index([status], map: "IDX_worksheet_status")
 }
 
 model WorksheetInputBatch {
@@ -612,6 +644,49 @@ model GoodsReceiptItem {
   PurchaseOrderItem      PurchaseOrderItem @relation(fields: [id_purchase_order_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+model MaterialReceipt {
+  id                 Int                          @id @default(autoincrement())
+  receipt_number     String                       @unique @db.VarChar(50)
+  id_stock_movement  Int
+  id_supplier        Int
+  id_factory         Int
+  id_user            Int
+  id_product_type    Int
+  id_variety         Int?
+  receipt_date       DateTime                     @db.Date
+  batch_code         String                       @db.VarChar(50)
+  quantity           Decimal                      @db.Decimal(15, 2)
+  unit_price         Decimal                      @db.Decimal(15, 2)
+  other_costs        Decimal                      @default(0) @db.Decimal(15, 2)
+  total_amount       Decimal                      @db.Decimal(15, 2)
+  status             MaterialReceipt_status_enum  @default(WAITING_APPROVAL)
+  approved_by        Int?
+  approved_at        DateTime?                    @db.Timestamp(6)
+  paid_by            Int?
+  paid_at            DateTime?                    @db.Timestamp(6)
+  payment_reference  String?                      @db.VarChar(100)
+  payment_method     Payment_payment_method_enum?
+  delivery_note_url  String?
+  receipt_url        String?
+  notes              String?
+  created_at         DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at         DateTime                     @updatedAt @db.Timestamp(6)
+
+  StockMovement      StockMovement                @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Supplier           Supplier                     @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Factory            Factory                      @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User               User                         @relation("MaterialReceiptOperator", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ProductType        ProductType                  @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Approver           User?                        @relation("MaterialReceiptApprover", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  PaidByUser         User?                        @relation("MaterialReceiptPaidBy", fields: [paid_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id_factory])
+  @@index([id_supplier])
+  @@index([status])
+  @@index([receipt_date])
+  @@index([batch_code])
+}
+
 model Notification {
   id             Int                        @id @default(autoincrement())
   id_user        Int
@@ -648,6 +723,12 @@ model BatchSequence {
   updated_at    DateTime @updatedAt
 
   @@unique([sequence_key, sequence_date])
+}
+
+enum MaterialReceipt_status_enum {
+  WAITING_APPROVAL
+  APPROVED
+  PAID
 }
 
 enum PurchaseOrder_status_enum {
@@ -716,8 +797,11 @@ enum User_role_enum {
   SUPERUSER
   ADMIN
   MANAGER
+  ACCOUNTING
   SUPERVISOR
   OPERATOR
+  DIRECTOR
+  BOD
 }
 
 enum Worksheet_shift_enum {
@@ -726,10 +810,21 @@ enum Worksheet_shift_enum {
   SHIFT_3
 }
 
+enum Worksheet_status_enum {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
 enum Notification_type_enum {
   LOW_STOCK
   OVERDUE_INVOICE
   OVERDUE_MAINTENANCE
+  RECEIPT_APPROVED
+  RECEIPT_PAID
   SYSTEM
 }
 

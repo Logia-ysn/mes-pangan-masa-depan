@@ -1,4 +1,4 @@
-# Panduan Deployment Online (v2.1.0)
+# Panduan Deployment Online (v2.23.0)
 
 Aplikasi ini siap di-deploy ke **Railway** (Backend & Database) dan **Vercel** (Frontend).
 
@@ -20,12 +20,13 @@ Aplikasi ini siap di-deploy ke **Railway** (Backend & Database) dan **Vercel** (
 3. Di tab **Settings**, biarkan **Root Directory** kosong (root).
 4. Tambahkan **Variables**:
    - `DATABASE_URL`: `${{Postgres.DATABASE_URL}}` (Hubungkan ke layanan Postgres tadi).
-   - `JWT_SECRET`: (Buat string acah, misal: `erp-pangan-sangat-rahasia-2026`).
+   - `JWT_SECRET`: (Buat string acak, misal: `erp-pangan-sangat-rahasia-2026`).
    - `FRONTEND_URL`: URL dari Vercel (contoh: `https://pangan-masa-depan.vercel.app`).
    - `ML_SERVICE_URL`: URL dari ML Service tadi.
    - `NODE_ENV`: `production`.
    - `PORT`: `3005` (Atau biarkan Railway menentukan).
 5. Railway akan menjalankan `npm run build` dan `npm start`.
+6. **Catatan v2.23.0**: Pastikan migrasi database berjalan (`npx prisma migrate deploy`) karena ada model baru `MaterialReceipt` dan field `quarantine_quantity` pada `Stock`.
 
 ## 4. Persiapan Frontend (Vercel)
 1. Buka dashboard Vercel, pilih **Add New Project**.
@@ -45,6 +46,26 @@ Setelah backend dan database online, Anda perlu menjalankan migrasi dan seeding:
    npm run seed-admin
    ```
    *Atau gunakan tab **Terminal** di dashboard Railway jika tersedia.*
+
+## 6. Update Deployment (v2.23.0)
+Untuk update aplikasi yang sudah berjalan ke v2.23.0:
+
+### Backend (Railway)
+1. Push perubahan ke branch `main` — Railway akan auto-deploy.
+2. Pastikan migrasi database otomatis berjalan (sudah termasuk di `npm start`).
+3. Verifikasi tabel `MaterialReceipt` dan kolom `quarantine_quantity` sudah dibuat.
+
+### Frontend (Vercel)
+1. Push perubahan ke branch `main` — Vercel akan auto-deploy.
+2. Verifikasi halaman Penerimaan Bahan Baku menampilkan filter status dan tombol approval.
+
+### Checklist Pasca-Deploy
+- [ ] Login berhasil dengan superuser
+- [ ] Dashboard menampilkan statistik
+- [ ] Halaman Penerimaan Bahan Baku menampilkan filter status (Menunggu/Disetujui/Lunas)
+- [ ] Fitur approval dan pembayaran berfungsi
+- [ ] PDF Invoice menampilkan watermark status
+- [ ] PDF Kwitansi Penerimaan dapat di-generate
 
 ---
 

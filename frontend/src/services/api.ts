@@ -82,6 +82,11 @@ export const worksheetApi = {
     create: (data: Record<string, any>) => api.post('/worksheets', data),
     update: (id: number, data: Record<string, any>) => api.put(`/worksheets/${id}`, data),
     delete: (id: number) => api.delete(`/worksheets/${id}`),
+    // Workflow
+    submit: (id: number) => api.post(`/worksheets/${id}/submit`),
+    approve: (id: number) => api.post(`/worksheets/${id}/approve`),
+    reject: (id: number, reason: string) => api.post(`/worksheets/${id}/reject`, { reason }),
+    cancel: (id: number, reason?: string) => api.post(`/worksheets/${id}/cancel`, { reason }),
 };
 
 // Stocks
@@ -94,6 +99,18 @@ export const stockApi = {
     // NEW: Transfer stock between factories
     transfer: (data: { fromFactoryId: number; toFactoryId: number; productCode: string; quantity: number; notes?: string }) =>
         api.post('/stocks/transfer', data),
+};
+
+// Material Receipts
+export const materialReceiptApi = {
+    getAll: (params?: Record<string, any>) => api.get('/material-receipts', { params }),
+    getById: (id: number) => api.get(`/material-receipts/${id}`),
+    create: (data: Record<string, any>) => api.post('/material-receipts', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/material-receipts/${id}`, data),
+    delete: (id: number) => api.delete(`/material-receipts/${id}`),
+    approve: (id: number) => api.post(`/material-receipts/${id}/approve`),
+    markAsPaid: (id: number, data: Record<string, any>) => api.post(`/material-receipts/${id}/pay`, data),
+    downloadPdf: (id: number) => api.get(`/material-receipts/${id}/pdf`, { responseType: 'blob' }),
 };
 
 // Product Types
@@ -185,6 +202,7 @@ export const qualityParameterApi = {
     create: (data: Record<string, any>) => api.post('/quality-parameters', data),
     update: (id: number, data: Record<string, any>) => api.put(`/quality-parameters/${id}`, data),
     delete: (id: number) => api.delete(`/quality-parameters/${id}`),
+    resetAll: () => api.post('/quality-parameters/reset'),
 };
 
 // Quality Analysis

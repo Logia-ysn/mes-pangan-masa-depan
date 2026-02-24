@@ -39,44 +39,22 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
 
     // Calculate Density automatically
     // Formula: Dry Weight = Weight * (1 - Moisture/100)
-    //          Density = Dry Weight / 500
+    //          Density = Dry Weight / 500 (ukuran gelas ukur)
+    // Results in g/ml (standard range 0.6 - 1.0)
     useEffect(() => {
         const m = parseFloat(moisture);
         const w = parseFloat(sampleWeight);
 
         if (!isNaN(m) && !isNaN(w) && w > 0) {
             const dryWeight = w * (1 - (m / 100));
-            const calculatedDensity = dryWeight / 500; // 500ml volume
-            // Convert to g/L (which is same as g/500ml * 2 ?? No unit is g/L)
-            // Wait, Density in g/L = (Mass in g) / (Volume in L)
-            // Formula says: Density = Dry Weight / 500. If 500 is ml, then Volume = 0.5L
-            // If formula is strictly Dry Weight / 500, then unit is g/500ml? 
-            // User requirement: "hasil berat kering kemudian/ 500 (ukuran gelas ukur) sehingga menghasilan Densitas 0,6 - 1 g/ml"
-            // Wait 0.6 - 1 g/ml is equivalent to 600 - 1000 g/L.
-            // If Dry Weight is approx 400g (from 500g sample), then 400/500 = 0.8 g/ml.
-            // Correct.
-            // Note: The UI usually expects g/L (e.g. 780-820). 
-            // However, user specifically asked for "0.6 - 1 gr/ml". 
-            // 0.8 g/ml = 800 g/L. 
-            // Let's stick to what user asked: 0.8 (g/ml). 
-            // BUT existing data (KW 1) has min_value ~780 (g/L).
-            // We need to clarify or convert. 
-            // User says: "menghasilan Densitas 0,6 - 1 gr/ml"
-            // Existing default params have values like 780, 800. These are clearly g/L.
-            // 0.8 g/ml * 1000 = 800 g/L.
-            // Implementation: I will calculate in g/ml as requested (0.8), but SAVE/DISPLAY as g/L (800) because that matches existing config.
+            const calculatedDensity = dryWeight / 500; // g/ml
 
-            const densityG_L = (calculatedDensity * 1000);
-            // Actually: dryWeight / 0.5 Liters = dryWeight * 2. 
-            // Formula: dryWeight / 500 (ml) = g/ml.
-            // g/ml * 1000 = g/L.
-            // So: (dryWeight / 500) * 1000 = dryWeight * 2.
-
-            setDensity(densityG_L.toFixed(2));
+            setDensity(calculatedDensity.toFixed(3));
         } else {
             setDensity('');
         }
     }, [moisture, sampleWeight]);
+
 
     useEffect(() => {
         if (config.length > 0) calculateGrades();
@@ -97,22 +75,28 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                 varietyParams = allParams.filter((p: any) => p.id_variety === parseInt(varietyId));
             }
 
-            // Merge: prefer variety-specific, fallback to global for missing types/grades
+            // Merge logic:
+            // 1. For Visual Analysis (Color/GreenPercentage) -> ALWAYS Global Only
+            // 2. For others (Moisture/Density) -> Variety Specific > Global
             const mergedConfig: any[] = [];
             const grades = ['KW 1', 'KW 2', 'KW 3'];
-            const types = ['Moisture', 'Density', 'Color'];
+            const types = ['Moisture', 'Density', 'Color', 'GreenPercentage'];
 
             for (const type of types) {
-                for (const grade of grades) {
-                    // First try variety-specific (if varietyId was selected)
-                    const vParams = varietyParams.filter((p: any) => p.name === type && p.grade === grade);
+                const isVisual = type === 'Color' || type === 'GreenPercentage';
 
-                    if (vParams.length > 0) {
-                        mergedConfig.push(...vParams);
-                    } else {
-                        // Fallback to global
+                for (const grade of grades) {
+                    if (isVisual) {
+                        // Global Only
                         const gParams = globalParams.filter((p: any) => p.name === type && p.grade === grade);
-                        if (gParams.length > 0) {
+                        mergedConfig.push(...gParams);
+                    } else {
+                        // Variety Specific > Global
+                        const vParams = varietyParams.filter((p: any) => p.name === type && p.grade === grade);
+                        if (vParams.length > 0) {
+                            mergedConfig.push(...vParams);
+                        } else {
+                            const gParams = globalParams.filter((p: any) => p.name === type && p.grade === grade);
                             mergedConfig.push(...gParams);
                         }
                     }
@@ -120,6 +104,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
             }
 
             setConfig(mergedConfig);
+
             logger.log('Quality Config loaded:', mergedConfig.length, 'params', varietyId ? `(variety: ${varietyId})` : '(global fallback)');
         } catch (error) {
             logger.error('Failed to fetch quality config:', error);
@@ -237,6 +222,10 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
 
     // State for ML Analysis
     const [greenPercentage, setGreenPercentage] = useState<number | null>(null);
+    const [yellowPercentage, setYellowPercentage] = useState<number | null>(null);
+    const [damagedPercentage, setDamagedPercentage] = useState<number | null>(null);
+    const [rottenPercentage, setRottenPercentage] = useState<number | null>(null);
+    const [defectPercentage, setDefectPercentage] = useState<number | null>(null);
 
     const analyzeImage = async (imageSrc: string) => {
         try {
@@ -279,22 +268,29 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                 qcGabahApi.analyze({
                     image_base64: compressedBase64
                 }).then((res) => {
-                    const { grade, green_percentage, level } = res.data;
+                    const data = res.data;
 
                     // Format grade with level (e.g., "KW 1:2")
-                    // If level is provided, append it.
-                    let displayGrade = grade;
-                    if (level) {
-                        displayGrade = `${grade}:${level}`;
+                    let displayGrade = data.grade;
+                    if (data.level) {
+                        displayGrade = `${data.grade}:${data.level}`;
                     }
 
-                    setColorGrade(displayGrade); // Set displayed grade with level
-                    setGreenPercentage(green_percentage);
+                    setColorGrade(displayGrade);
+                    setGreenPercentage(data.green_percentage ?? null);
+                    setYellowPercentage(data.yellow_percentage ?? null);
+                    setDamagedPercentage(data.damaged_percentage ?? null);
+                    setRottenPercentage(data.rotten_percentage ?? null);
+                    setDefectPercentage(data.defect_percentage ?? null);
                 }).catch((error: any) => {
                     logger.error('ML Analysis Failed:', error);
                     const errorMessage = error.response?.data?.error || error.message || "Unknown Error";
                     setColorGrade('Error');
                     setGreenPercentage(null);
+                    setYellowPercentage(null);
+                    setDamagedPercentage(null);
+                    setRottenPercentage(null);
+                    setDefectPercentage(null);
                     alert(`ML Analysis Failed: ${errorMessage}`);
                 })
             };
@@ -320,6 +316,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
             moisture,
             density,
             greenPercentage,
+            yellowPercentage,
             qualityGrade: finalGrade,
             notes: 'Analyzed via Submodule'
         };
@@ -334,10 +331,13 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                     variety_id: parseInt(varietyId || '0'),
                     moisture_value: parseFloat(moisture),
                     density_value: parseFloat(density),
-                    green_percentage: 0, // Should be updated with real values if we added state
-                    yellow_percentage: 0,
+                    green_percentage: greenPercentage ?? 0,
+                    yellow_percentage: yellowPercentage ?? 0,
+                    damaged_percentage: damagedPercentage ?? undefined,
+                    rotten_percentage: rottenPercentage ?? undefined,
+                    defect_percentage: defectPercentage ?? undefined,
                     final_grade: finalGrade,
-                    notes: `Auto Analysis. Color Grade: ${colorGrade}`
+                    notes: `Auto Analysis. Color Grade: ${colorGrade}. Defect: ${defectPercentage ?? 0}%`
                 });
                 onSave(data);
                 onClose();
@@ -460,7 +460,7 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                             </div>
 
                             <div style={{ marginBottom: 24 }}>
-                                <label className="form-label">Calculated Density (g/L)</label>
+                                <label className="form-label">Calculated Density (g/ml)</label>
                                 <input
                                     type="number"
                                     className="form-input"
@@ -522,14 +522,31 @@ const QualityAnalysisModal = ({ batchId, stockMovementId, varietyId, varietyName
                                 )}
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Green % (ML)</div>
-                                    <div style={{ fontWeight: 700 }}>{greenPercentage !== null ? `${greenPercentage}%` : '-'}</div>
+                            {/* Mini Color Breakdown */}
+                            {yellowPercentage !== null && (
+                                <div style={{ height: 14, borderRadius: 4, overflow: 'hidden', display: 'flex', background: '#e5e7eb', marginBottom: 8 }}>
+                                    {(yellowPercentage ?? 0) > 0 && <div style={{ width: `${yellowPercentage}%`, background: '#eab308' }} title={`Kuning: ${yellowPercentage}%`} />}
+                                    {(greenPercentage ?? 0) > 0 && <div style={{ width: `${greenPercentage}%`, background: '#22c55e' }} title={`Hijau: ${greenPercentage}%`} />}
+                                    {(damagedPercentage ?? 0) > 0 && <div style={{ width: `${damagedPercentage}%`, background: '#a16207' }} title={`Rusak: ${damagedPercentage}%`} />}
+                                    {(rottenPercentage ?? 0) > 0 && <div style={{ width: `${rottenPercentage}%`, background: '#1c1917' }} title={`Busuk: ${rottenPercentage}%`} />}
                                 </div>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Grade</div>
-                                    <div style={{ fontWeight: 700 }}>{colorGrade === '-' ? 'Out of Range' : colorGrade}</div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                <div style={{ padding: '4px 0' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Kuning (Baik)</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#eab308' }}>{yellowPercentage !== null ? `${yellowPercentage}%` : '-'}</div>
+                                </div>
+                                <div style={{ padding: '4px 0' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Hijau (Mentah)</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#22c55e' }}>{greenPercentage !== null ? `${greenPercentage}%` : '-'}</div>
+                                </div>
+                                <div style={{ padding: '4px 0' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Defect (Rusak+Busuk)</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: (defectPercentage ?? 0) > 5 ? '#ef4444' : '#3b82f6' }}>{defectPercentage !== null ? `${defectPercentage}%` : '-'}</div>
+                                </div>
+                                <div style={{ padding: '4px 0' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Grade Visual</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{colorGrade === '-' ? 'N/A' : colorGrade}</div>
                                 </div>
                             </div>
                         </div>

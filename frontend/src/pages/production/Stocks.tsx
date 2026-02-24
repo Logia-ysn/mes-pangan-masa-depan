@@ -15,6 +15,7 @@ interface Stock {
     id_factory: number;
     id_product_type: number;
     quantity: number;
+    quarantine_quantity: number;
     min_quantity: number;
     unit: string;
     last_updated: string;
@@ -424,6 +425,7 @@ const Stocks = () => {
                                             <th>Produk</th>
                                             <th className="hide-mobile">Kategori</th>
                                             <th>Stok Saat Ini</th>
+                                            <th>Karantina</th>
                                             <th className="hide-mobile">Min. Stok</th>
                                             <th>Status</th>
                                             <th className="hide-mobile">Terakhir Update</th>
@@ -471,6 +473,13 @@ const Stocks = () => {
                                                         }}>
                                                             {formatNumber(stock.quantity)} {stock.unit}
                                                         </span>
+                                                    </td>
+                                                    <td>
+                                                        {stock.quarantine_quantity > 0 ? (
+                                                            <span className="badge badge-warning">{formatNumber(stock.quarantine_quantity)} {stock.unit}</span>
+                                                        ) : (
+                                                            <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                                        )}
                                                     </td>
                                                     <td className="hide-mobile font-mono">{formatNumber(stock.min_quantity || 100)} {stock.unit}</td>
                                                     <td>

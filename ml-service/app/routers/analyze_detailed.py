@@ -29,7 +29,14 @@ async def analyze_detailed(request: AnalyzeDetailedRequest):
             
         hsv, mask, valid_count = preprocess(image_bytes)
         colors = detect_colors(hsv, mask, valid_count, profile)
-        grade, level, status = determine_grade(colors.green_percentage, rules)
+
+        # Multi-dimensional grading
+        grade, level, status = determine_grade(
+            yellow_pct=colors.yellow_percentage,
+            green_pct=colors.green_percentage,
+            defect_pct=colors.defect_percentage,
+            rules=rules,
+        )
 
         elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
 
@@ -39,7 +46,10 @@ async def analyze_detailed(request: AnalyzeDetailedRequest):
                 yellow_percentage=colors.yellow_percentage,
                 red_percentage=colors.red_percentage,
                 chalky_percentage=colors.chalky_percentage,
+                damaged_percentage=colors.damaged_percentage,
+                rotten_percentage=colors.rotten_percentage,
                 normal_percentage=colors.normal_percentage,
+                defect_percentage=colors.defect_percentage,
             ),
             grade=grade,
             status=status,

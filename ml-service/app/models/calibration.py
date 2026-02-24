@@ -16,3 +16,5 @@ class CalibrationProfile(BaseModel):
     red_low: ColorRange
     red_high: ColorRange
     chalky: ColorRange
+    damaged: ColorRange
+    rotten: ColorRange

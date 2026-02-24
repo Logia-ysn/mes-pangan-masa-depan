@@ -12,20 +12,26 @@ class ColorBreakdown(BaseModel):
     yellow_percentage: float
     red_percentage: float
     chalky_percentage: float
+    damaged_percentage: float
+    rotten_percentage: float
     normal_percentage: float
+    defect_percentage: float  # damaged + rotten
 
 
 class AnalyzeResponse(BaseModel):
     green_percentage: float
+    yellow_percentage: float
     grade: str
     status: str
     level: int
     supplier: Optional[str] = None
     lot: Optional[str] = None
-    # New optional fields (backward-compatible)
-    yellow_percentage: Optional[float] = None
+    # Full breakdown
     red_percentage: Optional[float] = None
     chalky_percentage: Optional[float] = None
+    damaged_percentage: Optional[float] = None
+    rotten_percentage: Optional[float] = None
+    defect_percentage: Optional[float] = None
     normal_percentage: Optional[float] = None
 
 

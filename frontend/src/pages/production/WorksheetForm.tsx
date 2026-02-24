@@ -1180,7 +1180,8 @@ const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
                     limit: 200
                 };
                 const res = await api.get('/stock-movements', { params });
-                const movements = res.data?.data || [];
+                const rawData = res.data?.data?.data || res.data?.data || res.data || [];
+                const movements = Array.isArray(rawData) ? rawData : (rawData.data || []);
 
                 // Parse notes JSON and build batch list
                 const batches: ReceiptBatch[] = movements
@@ -1199,12 +1200,12 @@ const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
                         return {
                             id: m.id,
                             id_stock: m.id_stock,
-                            batchId: noteData.batchId || `MOV-${m.id}`,
-                            supplier: noteData.supplier || '-',
-                            category: noteData.category || '-',
-                            productName: stock?.ProductType?.name || noteData.category || 'Unknown',
-                            productCode: stock?.ProductType?.code || '-',
-                            qualityGrade: noteData.qualityGrade || '-',
+                            batchId: String(noteData.batchId || `MOV-${m.id}`),
+                            supplier: String(noteData.supplier || '-'),
+                            category: String(noteData.category || '-'),
+                            productName: String(stock?.ProductType?.name || noteData.category || 'Unknown'),
+                            productCode: String(stock?.ProductType?.code || '-'),
+                            qualityGrade: String(noteData.qualityGrade || '-'),
                             quantity: Number(m.quantity),
                             pricePerKg: Number(noteData.pricePerKg) || 0,
                             otherCosts: Number(noteData.otherCosts) || 0,

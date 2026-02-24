@@ -1,8 +1,29 @@
 # Development Log - ERP Pangan Masa Depan
 
-## 🟢 Status: Phase 27 — Automated Batch Numbering System
-**Date**: Feb 16, 2026
-**Current Version**: 2.19.0
+## 🟢 Status: Phase 29 — Material Receipt Approval Flow & PDF Enhancement
+**Date**: Feb 23, 2026
+**Current Version**: 2.23.0
+
+### ✅ Phase 29: Material Receipt Approval Flow & PDF Enhancement (Feb 23, 2026)
+Major overhaul of the Raw Material Receipt module introducing a formal approval/payment workflow and significant PDF improvements.
+1. **MaterialReceipt Model** — Created a dedicated `MaterialReceipt` database model replacing the previous stock-movement-only approach. Full relational links to `Supplier`, `Factory`, `ProductType`, `StockMovement`, and `User` (operator, approver, payer).
+2. **3-Step Workflow** — Implemented `WAITING_APPROVAL → APPROVED → PAID` status lifecycle with role-based actions and timestamp tracking (`approved_at`, `paid_at`).
+3. **PaymentModal Component** — New modal for recording payments with method selection (Cash/Transfer/Giro) and payment reference entry.
+4. **Receipt Number System** — Auto-generated unique receipt numbers (`RCV-YYMMDD-SEQ`) for formal documentation.
+5. **Quarantine Stock** — Added `quarantine_quantity` field to `Stock` model for tracking incoming material before QC approval.
+6. **Invoice PDF Watermark** — Status-based watermark stamps (DRAFT/SENT/PAID/PARTIAL/CANCEL) on invoice PDF reports with diagonal text and corner badge.
+7. **Material Receipt PDF** — Full-page professional PDF for material receipts with company header, quality analysis results, and signature blocks.
+8. **Status Filter UI** — Added receipt status filter (Semua/Menunggu/Disetujui/Lunas) on the Raw Material Receipt page.
+9. **Quality Analysis Visual (Global Only)** — Refined `GreenPercentage` calculation to always use global parameters regardless of variety selection.
+10. **Density Unit Cleanup** — Removed verbose density conversion comments and standardized to `g/ml` with 3-decimal precision.
+
+### ✅ Phase 28: Quality Analysis Logic Refinement (Feb 22, 2026)
+Successfully refined the Quality Analysis (QA) system to support dynamic density units and specific-to-global parameter fallback logic.
+1. **Density Unit Standard (g/ml)** — Updated the density calculation from g/L to g/ml (standard range 0.6 - 1.0) with 3-decimal precision as per industrial requirements.
+2. **Specific > Global Fallback Logic** — Re-engineered the backend `QualityAnalysisService` and frontend `QualityAnalysisModal` to prioritize variety-specific parameters (e.g., IR 64 Density) with automatic fallback to Global (General) parameters if no specific config exists.
+3. **Visual Analysis (Global Only)** — Standardized "Green Percentage" and "Color" analysis to always use global parameters, regardless of rice variety selection.
+4. **PDF Reporting** — Updated the Material Receipt PDF to display Density in `g/ml` instead of `kg/hL` for data consistency.
+5. **Database Parameter Sync** — Seeded comprehensive density and moisture level configurations (IR Specific and Global General) to eliminate "Out of Range" errors.
 
 ### ✅ Phase 27: Automated Batch Numbering System (Feb 16, 2026)
 Implemented a standardized, automated batch code generation system integrated across all production modules.

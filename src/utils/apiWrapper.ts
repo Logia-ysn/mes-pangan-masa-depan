@@ -18,8 +18,9 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
             req.cookies = res.req.cookies || req.cookies;
             req.method = res.req.method || req.method;
             req.url = res.req.url || req.url;
-            req.query = res.req.query || req.query;
-            req.params = res.req.params || req.params;
+            // Some Express props (query, params) are read-only getters — safely try to set
+            try { req.query = res.req.query || req.query; } catch (_) { }
+            try { req.params = res.req.params || req.params; } catch (_) { }
         }
 
         const data = await handler(req, res);

@@ -14,6 +14,7 @@ import {
     PurchaseOrder_status_enum
 } from "@prisma/client";
 import { BatchNumberingService } from "./batch-numbering.service";
+import { seedInitialData } from "../seed/initial-setup/seeder";
 
 export class DummyService {
     private static DUMMY_TAG = '[DUMMY]';
@@ -37,7 +38,8 @@ export class DummyService {
                 transactions: 0,
                 machine_logs: 0,
                 sales: 0,
-                purchasing: 0
+                purchasing: 0,
+                material_receipts: 0
             };
 
             const user = await this.ensureUser(tx);
@@ -82,6 +84,9 @@ export class DummyService {
             const p2 = await this.generatePurchasingData(tx, pmd2, productTypes, user);
             stats.purchasing = p1 + p2;
 
+            // 12. Generate Material Receipt dummy
+            stats.material_receipts = await this.generateMaterialReceiptData(tx, pmd1, productTypes, user);
+
             console.log("Dummy Generation Complete", stats);
             return { status: "success", created: stats };
         }, { timeout: 60000 });
@@ -101,7 +106,8 @@ export class DummyService {
                 invoices: 0,
                 purchase_orders: 0,
                 customers: 0,
-                suppliers: 0
+                suppliers: 0,
+                material_receipts: 0
             };
 
             // 1. Delete transactional data with [DUMMY] tag
@@ -175,7 +181,12 @@ export class DummyService {
                 where: { code: { startsWith: this.DUMMY_SUPPLIER_PREFIX } }
             })).count;
 
-            // 4. Recalculate all stocks based on remaining movements
+            // 4. Delete Material Receipt dummy
+            stats.material_receipts = (await tx.materialReceipt.deleteMany({
+                where: { notes: { contains: this.DUMMY_TAG } }
+            })).count;
+
+            // 5. Recalculate all stocks based on remaining movements
             await this.recalculateAllStocks(tx);
 
             console.log("Delete Dummy Complete", stats);
@@ -199,6 +210,7 @@ export class DummyService {
             const stats: Record<string, number> = {};
 
             // Delete in order to satisfy FK constraints
+            stats.material_receipts = (await tx.materialReceipt.deleteMany({})).count;
             stats.qc_analysis = (await tx.rawMaterialQualityAnalysis.deleteMany({})).count;
             stats.qc_gabah = (await tx.qCGabah.deleteMany({})).count;
             stats.stock_movements = (await tx.stockMovement.deleteMany({})).count;
@@ -221,7 +233,8 @@ export class DummyService {
 
             // Master data dependencies
             stats.factory_configs = (await tx.factoryMaterialConfig.deleteMany({})).count;
-            stats.quality_params = (await tx.qualityParameter.deleteMany({})).count;
+            // NOTE: QualityParameter is NOT deleted by hard reset.
+            // Use the "Reset Parameters" button in Quality Config settings instead.
             stats.output_products = (await tx.outputProduct.deleteMany({})).count;
             stats.machines = (await tx.machine.deleteMany({})).count;
             stats.stocks = (await tx.stock.deleteMany({})).count;
@@ -244,7 +257,13 @@ export class DummyService {
             stats.batch_mappings = (await tx.batchCodeMapping.deleteMany({})).count;
 
             console.log("Hard Reset Complete", stats);
-            return { status: "success", deleted: stats };
+
+            // Re-seed initial setup data (factories, users, categories, etc.)
+            console.log("Re-seeding initial setup data...");
+            const seeded = await seedInitialData(tx);
+            console.log("Initial Setup Seeded", seeded);
+
+            return { status: "success", deleted: stats, seeded };
         }, { timeout: 90000 });
     }
 
@@ -817,6 +836,103 @@ export class DummyService {
                     );
                 }
             }
+            count++;
+        }
+        return count;
+    }
+
+    private static async generateMaterialReceiptData(tx: any, factory: any, productTypes: Record<string, any>, user: any) {
+        let count = 0;
+        const suppliers = await tx.supplier.findMany({
+            where: { code: { startsWith: this.DUMMY_SUPPLIER_PREFIX } },
+            take: 2
+        });
+
+        if (suppliers.length === 0) return 0;
+
+        const varieties = await tx.riceVariety.findMany({ take: 2 });
+
+        for (let i = 1; i <= 5; i++) {
+            const supplier = suppliers[i % suppliers.length];
+            const variety = varieties[i % varieties.length];
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+
+            const receiptNumber = `MR-DUMMY-${dateStr}-${String(i).padStart(4, '0')}`;
+            const batchCode = `BATCH-DUMMY-${dateStr}-${i}`;
+            const qty = 5000 + (i * 100);
+            const price = 6000 + (i * 50);
+
+            // Create StockMovement first (IN, status will stay in quarantine until approved)
+            // But for dummy, let's create it properly
+            const pt = productTypes.GKP_IR64;
+            let stock = await tx.stock.findFirst({
+                where: { id_factory: factory.id, id_product_type: pt.id }
+            });
+
+            const movement = await tx.stockMovement.create({
+                data: {
+                    id_stock: stock.id,
+                    id_user: user.id,
+                    movement_type: 'IN',
+                    quantity: qty,
+                    reference_type: 'RAW_MATERIAL_RECEIPT',
+                    batch_code: batchCode,
+                    notes: JSON.stringify({
+                        batchId: batchCode,
+                        supplier: supplier.id,
+                        qualityGrade: 'KW 1',
+                        moistureContent: 14,
+                        density: 56,
+                        pricePerKg: price,
+                        isDummy: true,
+                        tag: this.DUMMY_TAG
+                    }),
+                    created_at: date
+                }
+            });
+
+            const status = i === 1 ? 'WAITING_APPROVAL' : (i === 2 ? 'APPROVED' : 'PAID');
+
+            await tx.materialReceipt.create({
+                data: {
+                    receipt_number: receiptNumber,
+                    id_stock_movement: movement.id,
+                    id_supplier: supplier.id,
+                    id_factory: factory.id,
+                    id_user: user.id,
+                    id_product_type: pt.id,
+                    id_variety: variety?.id || null,
+                    receipt_date: date,
+                    batch_code: batchCode,
+                    quantity: qty,
+                    unit_price: price,
+                    total_amount: qty * price,
+                    status: status,
+                    notes: `${this.DUMMY_TAG} Auto-generated material receipt`,
+                    approved_by: status !== 'WAITING_APPROVAL' ? user.id : null,
+                    approved_at: status !== 'WAITING_APPROVAL' ? date : null,
+                    paid_by: status === 'PAID' ? user.id : null,
+                    paid_at: status === 'PAID' ? date : null,
+                    payment_method: status === 'PAID' ? 'TRANSFER' : null,
+                    payment_reference: status === 'PAID' ? `REF-DUMMY-${i}` : null
+                }
+            });
+
+            // Update quarantine vs actual quantity based on status
+            if (status === 'WAITING_APPROVAL') {
+                await tx.stock.update({
+                    where: { id: stock.id },
+                    data: { quarantine_quantity: { increment: qty } }
+                });
+            } else {
+                await tx.stock.update({
+                    where: { id: stock.id },
+                    data: { quantity: { increment: qty } }
+                });
+            }
+
             count++;
         }
         return count;

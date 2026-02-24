@@ -25,7 +25,7 @@ HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 | Modul | Status | Deskripsi |
 |-------|--------|-----------|
 | **Core Production** | Selesai | Worksheet, Stok, Mesin, Maintenance, OEE |
-| **Quality Control** | Selesai | ML Grain Analysis, Kalibrasi HSV, Grading |
+| **Quality Control** | Selesai | ML Grain Analysis, Kalibrasi HSV, Grading (v2.22.0) |
 | **Dashboard** | Selesai | KPI, Grafik Produksi, Machine Summary, Inventory Snapshot |
 | **Penerimaan Bahan Baku** | Selesai | Raw Material Receipt + QC Integration |
 | **Penjualan (v2.1.0)** | Selesai | Customer, Invoice, Payment, Stock Deduction, PDF Export |

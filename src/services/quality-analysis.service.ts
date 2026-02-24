@@ -15,6 +15,10 @@ export interface SubmitAnalysisDTO {
     green_percentage?: number;
     yellow_percentage?: number;
     empty_weight?: number;
+    // New visual analysis fields
+    damaged_percentage?: number;
+    rotten_percentage?: number;
+    defect_percentage?: number;
 }
 
 class QualityAnalysisService {
@@ -27,14 +31,16 @@ class QualityAnalysisService {
         const moistureGrade = await this.calculateGrade('Moisture', dto.moisture_value, dto.variety_id);
         const densityGrade = await this.calculateGrade('Density', dto.density_value, dto.variety_id);
 
-        // Color Grade Logic (Mock for now, or based on simple rule if % provided)
-        let colorGrade = 'KW 1'; // Default valid
-        if (dto.green_percentage && dto.yellow_percentage) {
-            // Simple rule: High green = KW 2/3 (Unripe), High Yellow = KW 1 (Ripe)
-            // Based on Green %: < 2% = KW 1, 2-5% = KW 2, >5% = KW 3.
-            if (dto.green_percentage > 5) colorGrade = 'KW 3';
-            else if (dto.green_percentage > 2) colorGrade = 'KW 2';
-            else colorGrade = 'KW 1';
+        // Visual Analysis (Global Only) — uses defect_percentage when available
+        let colorGrade = 'KW 1';
+        const defectPct = dto.defect_percentage ?? ((dto.damaged_percentage ?? 0) + (dto.rotten_percentage ?? 0));
+
+        if (defectPct > 0 || (dto.green_percentage !== undefined && dto.green_percentage > 0)) {
+            colorGrade = this.calculateVisualGrade(
+                dto.yellow_percentage ?? 100,
+                dto.green_percentage ?? 0,
+                defectPct
+            );
         }
 
         // 2. Determine Final Grade (Worst Case)
@@ -50,6 +56,9 @@ class QualityAnalysisService {
             density_grade: densityGrade,
             green_percentage: dto.green_percentage,
             yellow_percentage: dto.yellow_percentage,
+            damaged_percentage: dto.damaged_percentage,
+            rotten_percentage: dto.rotten_percentage,
+            defect_percentage: defectPct > 0 ? defectPct : undefined,
             color_grade: colorGrade,
             image_url: dto.image_url,
             final_grade: finalGrade,
@@ -59,18 +68,50 @@ class QualityAnalysisService {
     }
 
     /**
+     * Multi-dimensional visual grade calculation
+     * Matches the ML service grading logic
+     */
+    private calculateVisualGrade(yellowPct: number, greenPct: number, defectPct: number): string {
+        // Automatic reject for extreme defect levels
+        if (defectPct > 25) return 'REJECT';
+
+        // Grading rules: grade = worst-case across yellow, green, defect
+        const rules = [
+            { grade: 'KW 1', level: 1, minYellow: 95, maxDefect: 1, maxGreen: 2 },
+            { grade: 'KW 1', level: 2, minYellow: 90, maxDefect: 2, maxGreen: 5 },
+            { grade: 'KW 1', level: 3, minYellow: 85, maxDefect: 3, maxGreen: 8 },
+            { grade: 'KW 2', level: 1, minYellow: 75, maxDefect: 5, maxGreen: 15 },
+            { grade: 'KW 2', level: 2, minYellow: 65, maxDefect: 8, maxGreen: 20 },
+            { grade: 'KW 2', level: 3, minYellow: 55, maxDefect: 10, maxGreen: 25 },
+            { grade: 'KW 3', level: 1, minYellow: 0, maxDefect: 15, maxGreen: 100 },
+            { grade: 'KW 3', level: 2, minYellow: 0, maxDefect: 25, maxGreen: 100 },
+        ];
+
+        for (const rule of rules) {
+            if (yellowPct >= rule.minYellow && defectPct <= rule.maxDefect && greenPct <= rule.maxGreen) {
+                return rule.grade;
+            }
+        }
+
+        return 'KW 3';
+    }
+
+    /**
      * Calculate grade for a single parameter based on active config
      */
     private async calculateGrade(paramName: string, value: number, varietyId?: number): Promise<string> {
         // Fetch all params for this name
         let params: QualityParameter[] = [];
 
-        if (varietyId) {
+        // Visual parameters are ALWAYS global as per requirement
+        const isVisualParam = ['Color', 'GreenPercentage'].includes(paramName);
+
+        if (varietyId && !isVisualParam) {
             params = await qualityParameterRepository.findByVariety(varietyId);
             params = params.filter(p => p.name === paramName);
         }
 
-        // Fallback to global params if specific not found or empty
+        // Fallback to global params if specific not found, empty, or if it's a visual param
         if (params.length === 0) {
             params = await qualityParameterRepository.findByName(paramName);
             params = params.filter(p => !p.id_variety);
@@ -92,9 +133,10 @@ class QualityAnalysisService {
     }
 
     /**
-     * Worst Case Logic: KW 3 < KW 2 < KW 1
+     * Worst Case Logic: REJECT < KW 3 < KW 2 < KW 1
      */
     private determineFinalGrade(grades: string[]): string {
+        if (grades.includes('REJECT')) return 'REJECT';
         if (grades.includes('OUT_OF_RANGE')) return 'REJECT';
         if (grades.includes('KW 3')) return 'KW 3';
         if (grades.includes('KW 2')) return 'KW 2';

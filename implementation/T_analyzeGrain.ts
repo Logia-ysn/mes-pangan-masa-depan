@@ -36,9 +36,13 @@ export const t_analyzeGrain: T_analyzeGrain = apiWrapper(async (req, res) => {
     console.log('[ML-INFO] ML Analysis Result:', result);
 
     // Ensure values are numbers before saving
-    const greenPct = typeof result.green_percentage === 'number'
-        ? result.green_percentage
-        : parseFloat(result.green_percentage || '0');
+    const toNum = (v: any, fallback = 0) => typeof v === 'number' ? v : parseFloat(v || String(fallback));
+
+    const greenPct = toNum(result.green_percentage);
+    const yellowPct = toNum(result.yellow_percentage);
+    const damagedPct = toNum(result.damaged_percentage);
+    const rottenPct = toNum(result.rotten_percentage);
+    const defectPct = toNum(result.defect_percentage);
 
     // Save to DB
     const entity = await qcGabahRepository.create({
@@ -46,6 +50,10 @@ export const t_analyzeGrain: T_analyzeGrain = apiWrapper(async (req, res) => {
         lot,
         image_url: "ml_service_processed",
         green_percentage: greenPct,
+        yellow_percentage: yellowPct,
+        damaged_percentage: damagedPct,
+        rotten_percentage: rottenPct,
+        defect_percentage: defectPct,
         grade: result.grade || 'Unknown',
         level: result.level || 1,
         status: result.status || 'WARNING'

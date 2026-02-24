@@ -22,18 +22,28 @@ def _analyze(image_bytes: bytes, supplier: Optional[str], lot: Optional[str]) ->
 
     hsv, mask, valid_count = preprocess(image_bytes)
     colors = detect_colors(hsv, mask, valid_count, profile)
-    grade, level, status = determine_grade(colors.green_percentage, grading.rules)
+
+    # Multi-dimensional grading: yellow, green, defect
+    grade, level, status = determine_grade(
+        yellow_pct=colors.yellow_percentage,
+        green_pct=colors.green_percentage,
+        defect_pct=colors.defect_percentage,
+        rules=grading.rules,
+    )
 
     return AnalyzeResponse(
         green_percentage=colors.green_percentage,
+        yellow_percentage=colors.yellow_percentage,
         grade=grade,
         status=status,
         level=level,
         supplier=supplier,
         lot=lot,
-        yellow_percentage=colors.yellow_percentage,
         red_percentage=colors.red_percentage,
         chalky_percentage=colors.chalky_percentage,
+        damaged_percentage=colors.damaged_percentage,
+        rotten_percentage=colors.rotten_percentage,
+        defect_percentage=colors.defect_percentage,
         normal_percentage=colors.normal_percentage,
     )
 

@@ -11,6 +11,12 @@ import { pdfService } from './src/services/pdf.service';
 import { createWorkbook } from './src/services/excel.service';
 import { worksheetRepository } from './src/repositories/worksheet.repository';
 import fileUpload from 'express-fileupload';
+import {
+  t_submitWorksheet,
+  t_approveWorksheet,
+  t_rejectWorksheet,
+  t_cancelWorksheet
+} from './implementation/T_worksheetWorkflow';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
@@ -431,6 +437,12 @@ server.express.post('/upload', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// --- Worksheet Workflow Routes ---
+server.express.post('/worksheets/:id/submit', express.json(), (req, res) => t_submitWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/approve', express.json(), (req, res) => t_approveWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/reject', express.json(), (req, res) => t_rejectWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/cancel', express.json(), (req, res) => t_cancelWorksheet(req as any, res as any));
 
 // --- Logout (clears httpOnly cookie) ---
 server.express.post('/auth/logout', (_req, res) => {

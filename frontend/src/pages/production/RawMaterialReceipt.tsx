@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
-import api, { stockApi, supplierApi, productTypeApi, rawMaterialCategoryApi, riceVarietyApi, qualityAnalysisApi } from '../../services/api';
+import PaymentModal from '../../components/Production/PaymentModal';
+import api, { supplierApi, productTypeApi, rawMaterialCategoryApi, riceVarietyApi, materialReceiptApi } from '../../services/api';
 import { formatDate, formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { printElement } from '../../utils/printUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,6 +23,7 @@ interface RawMaterialBatch {
     moistureContent: number;
     density: number;
     greenPercentage: number;
+    yellowPercentage: number;
     netWeight: number;
     pricePerKg: number;
     otherCosts: number;
@@ -34,6 +36,13 @@ interface RawMaterialBatch {
     categoryId?: string;
     varietyId?: string;
     factoryName?: string;
+    status: 'WAITING_APPROVAL' | 'APPROVED' | 'PAID';
+    approvedBy?: string;
+    approvedAt?: string;
+    paidAt?: string;
+    paymentReference?: string;
+    paymentMethod?: string;
+    receiptNumber: string;
 }
 
 interface Supplier {
@@ -71,6 +80,8 @@ const RawMaterialReceipt = () => {
     const [newCategory, setNewCategory] = useState({ code: '', name: '', description: '' });
     const [newVariety, setNewVariety] = useState({ code: '', name: '', description: '' });
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string>('');
+    const [showPaymentModal, setShowPaymentModal] = useState<number | null>(null);
 
     // Pagination & Factory hook
     const [page, setPage] = useState(1);
@@ -104,6 +115,7 @@ const RawMaterialReceipt = () => {
         moistureContent: '',
         density: '',
         greenPercentage: '',
+        yellowPercentage: '',
         netWeight: '',
         pricePerKg: '',
         otherCosts: '0',
@@ -117,6 +129,7 @@ const RawMaterialReceipt = () => {
             moistureContent: data.moisture,
             density: data.density,
             greenPercentage: data.greenPercentage,
+            yellowPercentage: data.yellowPercentage ?? '',
             qualityGrade: data.qualityGrade,
         });
         setShowAnalysisModal(false);
@@ -126,7 +139,7 @@ const RawMaterialReceipt = () => {
         if (!factoryLoading) {
             fetchData();
         }
-    }, [selectedFactory, page, factoryLoading]);
+    }, [selectedFactory, page, factoryLoading, statusFilter]);
 
     useEffect(() => {
         fetchSuppliers();
@@ -170,54 +183,53 @@ const RawMaterialReceipt = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/stock-movements', {
-                params: {
-                    limit: ITEMS_PER_PAGE,
-                    offset: (page - 1) * ITEMS_PER_PAGE,
-                    reference_type: 'RAW_MATERIAL_RECEIPT',
-                    id_factory: selectedFactory || undefined
-                }
+            const response = await materialReceiptApi.getAll({
+                limit: ITEMS_PER_PAGE,
+                offset: (page - 1) * ITEMS_PER_PAGE,
+                id_factory: selectedFactory || undefined,
+                status: statusFilter || undefined
             });
 
-            const movements = response.data?.data || response.data || [];
-            const total = response.data?.total || movements.length;
+            const receiptsData = response.data?.data || response.data || [];
+            const total = response.data?.count || receiptsData.length;
 
-            if (movements && Array.isArray(movements)) {
-                const receipts = movements.map((m: any) => {
-                    let details: any = {};
-                    try {
-                        details = JSON.parse(m.notes || '{}');
-                    } catch (e) {
-                        details = { notes: m.notes };
-                    }
-
-                    const stock = m.Stock || m.otm_id_stock || m.stock;
-                    const factory = stock?.Factory || stock?.factory || stock?.otm_id_factory || stock?.otm_factory;
-                    const productType = stock?.ProductType || stock?.product_type || stock?.otm_id_product_type || stock?.otm_product_type;
+            if (receiptsData && Array.isArray(receiptsData)) {
+                const receipts = receiptsData.map((m: any) => {
+                    const qa = (m.StockMovement?.RawMaterialQualityAnalysis && m.StockMovement.RawMaterialQualityAnalysis.length > 0)
+                        ? m.StockMovement.RawMaterialQualityAnalysis[0]
+                        : {};
 
                     return {
                         id: m.id,
-                        batchId: details.batchId || `BATCH-${m.id}`,
-                        poNumber: details.poNumber || '-',
-                        dateReceived: m.created_at,
-                        supplier: details.supplier || 'Unknown',
-                        supplierId: details.supplierId || '',
-                        materialType: productType?.name || details.category || 'Unknown',
-                        categoryId: details.categoryId || '',
-                        varietyId: details.varietyId || '',
-                        qualityGrade: details.qualityGrade || '-',
-                        moistureContent: details.moistureContent || 0,
-                        density: details.density || 0,
-                        greenPercentage: details.greenPercentage || 0,
+                        batchId: m.batch_code,
+                        poNumber: '-',
+                        dateReceived: m.receipt_date || m.created_at,
+                        supplier: m.Supplier?.name || 'Unknown',
+                        supplierId: String(m.id_supplier),
+                        materialType: m.ProductType?.name || 'Unknown',
+                        categoryId: '',
+                        varietyId: String(m.id_variety) || '',
+                        qualityGrade: qa.final_grade || '-',
+                        moistureContent: qa.moisture_value || 0,
+                        density: qa.density_value || 0,
+                        greenPercentage: qa.green_percentage || 0,
+                        yellowPercentage: qa.yellow_percentage || 0,
                         netWeight: m.quantity,
-                        pricePerKg: details.pricePerKg || 0,
-                        otherCosts: m.other_costs || details.otherCosts || 0,
-                        emptyWeight: m.empty_weight || details.emptyWeight || 0,
-                        notes: details.notes || '',
-                        deliveryNoteUrl: details.deliveryNoteUrl || '',
-                        receiptUrl: details.receiptUrl || '',
-                        factoryName: factory?.name || 'Unknown',
-                        createdAt: m.created_at
+                        pricePerKg: m.unit_price,
+                        otherCosts: m.other_costs,
+                        emptyWeight: 0,
+                        notes: m.notes || '',
+                        deliveryNoteUrl: m.delivery_note_url || '',
+                        receiptUrl: m.receipt_url || '',
+                        factoryName: m.Factory?.name || 'Unknown',
+                        createdAt: m.created_at,
+                        status: m.status,
+                        approvedBy: m.Approver?.fullname,
+                        approvedAt: m.approved_at,
+                        paidAt: m.paid_at,
+                        paymentReference: m.payment_reference,
+                        paymentMethod: m.payment_method,
+                        receiptNumber: m.receipt_number
                     };
                 });
                 setBatches(receipts);
@@ -232,7 +244,7 @@ const RawMaterialReceipt = () => {
     };
 
     // Check if all required fields are filled to enable batch generation
-    const isFormReadyForBatch = !!(selectedFactory && formData.supplierId && formData.categoryId && formData.varietyId && formData.netWeight && parseFloat(formData.netWeight) > 0 && formData.pricePerKg && parseFloat(formData.pricePerKg) > 0 && formData.dateReceived);
+    const isFormReadyForBatch = !!(selectedFactory && formData.supplierId && formData.varietyId && formData.netWeight && parseFloat(formData.netWeight) > 0 && formData.pricePerKg && parseFloat(formData.pricePerKg) > 0 && formData.dateReceived);
 
     const [generatingBatch, setGeneratingBatch] = useState(false);
 
@@ -298,8 +310,8 @@ const RawMaterialReceipt = () => {
             return;
         }
 
-        if (!formData.batchId || !formData.netWeight || !formData.categoryId || !formData.supplierId) {
-            showError("Validasi", "Harap lengkapi field yang wajib (Batch ID, Supplier, Kategori, Berat Netto)");
+        if (!formData.batchId || !formData.netWeight || !formData.supplierId) {
+            showError("Validasi", "Harap lengkapi field yang wajib (Batch ID, Supplier, Berat Netto)");
             return;
         }
 
@@ -354,90 +366,32 @@ const RawMaterialReceipt = () => {
                 }
             }
 
-            const factoryId = selectedFactory;
-            const stocksResponse = await stockApi.getAll({
-                id_factory: factoryId,
-                id_product_type: matchedProductType.id
-            });
-            const stocks = Array.isArray(stocksResponse.data) ? stocksResponse.data : stocksResponse.data?.data || [];
-
-            let targetStock = stocks.find((s: any) =>
-                s.id_factory === factoryId && s.id_product_type === matchedProductType.id
-            );
-
-            if (!targetStock) {
-                const newStockRes = await api.post('/stocks', {
-                    id_factory: factoryId,
-                    id_product_type: matchedProductType.id,
-                    quantity: 0,
-                    unit: 'kg'
-                });
-                targetStock = newStockRes.data?.data || newStockRes.data;
-            }
-
-            const quantity = parseFloat(formData.netWeight);
-            const selectedSupplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
-            const selectedCategory = categories.find(c => c.id === parseInt(formData.categoryId));
-
-            const notesPayload = JSON.stringify({
-                batchId: formData.batchId,
-                poNumber: formData.poNumber,
-                supplierId: formData.supplierId,
-                supplier: selectedSupplier?.name || '',
-                categoryId: formData.categoryId,
-                category: selectedCategory?.name || '',
-                varietyId: formData.varietyId,
-                variety: selectedVariety?.name || '',
-                qualityGrade: formData.qualityGrade,
-                moistureContent: parseFloat(formData.moistureContent),
-                density: parseFloat(formData.density),
-                greenPercentage: parseFloat(formData.greenPercentage || '0'),
-                pricePerKg: parseFloat(formData.pricePerKg),
-                otherCosts: parseFloat(formData.otherCosts || '0'),
-                emptyWeight: parseFloat(formData.emptyWeight || '0'),
-                notes: formData.notes,
-                deliveryNoteUrl: deliveryNoteUrl || (editingId ? batches.find(b => b.id === editingId)?.deliveryNoteUrl : ''),
-                receiptUrl: receiptUrl || (editingId ? batches.find(b => b.id === editingId)?.receiptUrl : '')
-            });
-
             const payload = {
-                id_stock: targetStock.id,
-                id_user: user?.id || 1,
-                movement_type: 'IN',
-                quantity: quantity,
-                reference_type: 'RAW_MATERIAL_RECEIPT',
-                reference_id: 0,
-                notes: notesPayload,
-                empty_weight: parseFloat(formData.emptyWeight || '0'),
-                price_per_kg: parseFloat(formData.pricePerKg || '0'),
-                other_costs: parseFloat(formData.otherCosts || '0')
+                id_supplier: parseInt(formData.supplierId),
+                id_factory: selectedFactory,
+                id_product_type: matchedProductType.id,
+                id_variety: formData.varietyId ? parseInt(formData.varietyId) : undefined,
+                receipt_date: formData.dateReceived,
+                batch_code: formData.batchId,
+                quantity: parseFloat(formData.netWeight),
+                unit_price: parseFloat(formData.pricePerKg),
+                other_costs: parseFloat(formData.otherCosts || '0'),
+                delivery_note_url: deliveryNoteUrl || (editingId ? batches.find((b: any) => b.id === editingId)?.deliveryNoteUrl : undefined),
+                receipt_url: receiptUrl || (editingId ? batches.find((b: any) => b.id === editingId)?.receiptUrl : undefined),
+                notes: formData.notes,
+                moisture_value: !isNaN(parseFloat(formData.moistureContent)) ? parseFloat(formData.moistureContent) : undefined,
+                density_value: !isNaN(parseFloat(formData.density)) ? parseFloat(formData.density) : undefined,
+                green_percentage: !isNaN(parseFloat(formData.greenPercentage)) ? parseFloat(formData.greenPercentage) : undefined,
+                yellow_percentage: !isNaN(parseFloat(formData.yellowPercentage)) ? parseFloat(formData.yellowPercentage) : undefined,
+                quality_grade: formData.qualityGrade !== '-' ? formData.qualityGrade : undefined,
             };
 
-            let stockRes;
             if (editingId) {
-                stockRes = await api.put(`/stock-movements/${editingId}`, payload);
+                await materialReceiptApi.update(editingId, payload);
                 showSuccess("Berhasil", "Penerimaan Bahan Baku berhasil diperbarui!");
             } else {
-                stockRes = await api.post('/stock-movements', payload);
+                await materialReceiptApi.create(payload);
                 showSuccess("Berhasil", "Penerimaan Bahan Baku berhasil disimpan!");
-            }
-
-            if (formData.qualityGrade && formData.qualityGrade !== '-' && formData.qualityGrade !== 'Out of Range') {
-                try {
-                    await qualityAnalysisApi.submit({
-                        batch_id: formData.batchId,
-                        id_stock_movement: editingId || stockRes.data?.data?.id || stockRes.data?.id,
-                        variety_id: parseInt(formData.varietyId),
-                        moisture_value: parseFloat(formData.moistureContent),
-                        density_value: parseFloat(formData.density),
-                        green_percentage: parseFloat(formData.greenPercentage || '0'),
-                        yellow_percentage: 0,
-                        empty_weight: parseFloat(formData.emptyWeight || '0'),
-                        notes: 'Receipt Analysis Updated'
-                    });
-                } catch (qaError) {
-                    logger.error("Failed to save quality analysis detail:", qaError);
-                }
             }
 
             setEditingId(null);
@@ -452,6 +406,7 @@ const RawMaterialReceipt = () => {
                 moistureContent: '',
                 density: '',
                 greenPercentage: '',
+                yellowPercentage: '',
                 netWeight: '',
                 pricePerKg: '',
                 otherCosts: '0',
@@ -599,6 +554,7 @@ const RawMaterialReceipt = () => {
             moistureContent: String(batch.moistureContent),
             density: String(batch.density || ''),
             greenPercentage: String(batch.greenPercentage || ''),
+            yellowPercentage: String(batch.yellowPercentage || ''),
             netWeight: String(batch.netWeight),
             pricePerKg: String(batch.pricePerKg),
             otherCosts: String(batch.otherCosts || 0),
@@ -606,6 +562,37 @@ const RawMaterialReceipt = () => {
             notes: batch.notes
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+
+    const handleDownloadPdf = async (batch: RawMaterialBatch) => {
+        try {
+            const response = await materialReceiptApi.downloadPdf(batch.id);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `receipt_${batch.receiptNumber || batch.batchId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            showError('Error', 'Gagal download PDF');
+        }
+    };
+
+    const handleApprove = async (id: number) => {
+        if (!window.confirm('Approve penerimaan bahan baku ini? Stock akan ditambahkan.')) return;
+        setLoading(true);
+        try {
+            await materialReceiptApi.approve(id);
+            showSuccess('Berhasil', 'Penerimaan berhasil di-approve');
+            fetchData();
+        } catch (error: any) {
+            showError('Gagal', error.response?.data?.error?.message || 'Gagal approve penerimaan');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePrint = (batch: RawMaterialBatch) => {
@@ -912,7 +899,7 @@ const RawMaterialReceipt = () => {
                                     setFormData({
                                         batchId: '', poNumber: '', dateReceived: new Date().toISOString().split('T')[0],
                                         supplierId: '', categoryId: '', varietyId: '', qualityGrade: '-',
-                                        moistureContent: '', density: '', greenPercentage: '', netWeight: '', emptyWeight: '0', pricePerKg: '',
+                                        moistureContent: '', density: '', greenPercentage: '', yellowPercentage: '', netWeight: '', emptyWeight: '0', pricePerKg: '',
                                         otherCosts: '0', notes: ''
                                     });
                                 }}>Batal Edit</button>
@@ -932,8 +919,14 @@ const RawMaterialReceipt = () => {
 
             {/* List Table */}
             <div className="card">
-                <div className="card-header">
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 className="card-title">Riwayat Penerimaan</h3>
+                    <select className="form-input form-select" style={{ width: 200 }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+                        <option value="">Semua Status</option>
+                        <option value="WAITING_APPROVAL">Menunggu Approval</option>
+                        <option value="APPROVED">Disetujui</option>
+                        <option value="PAID">Lunas</option>
+                    </select>
                 </div>
 
                 {loading && batches.length === 0 ? (
@@ -954,6 +947,7 @@ const RawMaterialReceipt = () => {
                                         <th>Berat</th>
                                         <th>Hampa</th>
                                         <th>Total Biaya</th>
+                                        <th>Status</th>
                                         <th style={{ textAlign: 'right' }}>Aksi</th>
                                     </tr>
                                 </thead>
@@ -976,6 +970,15 @@ const RawMaterialReceipt = () => {
                                             <td><span className="font-mono">{formatNumber(batch.netWeight)}</span> kg</td>
                                             <td><span className="font-mono" style={{ color: batch.emptyWeight > 0 ? '#dc2626' : 'inherit' }}>{formatNumber(batch.emptyWeight)}</span> kg</td>
                                             <td><span className="font-mono">{formatCurrency(batch.netWeight * batch.pricePerKg + Number(batch.otherCosts))}</span></td>
+                                            <td>
+                                                <span className={`badge ${batch.status === 'WAITING_APPROVAL' ? 'badge-warning' :
+                                                    batch.status === 'APPROVED' ? 'badge-success' :
+                                                        'badge-info'
+                                                    }`}>
+                                                    {batch.status === 'WAITING_APPROVAL' ? 'Menunggu Approval' :
+                                                        batch.status === 'APPROVED' ? 'Disetujui' : 'Lunas'}
+                                                </span>
+                                            </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 4 }}>
                                                     {batch.deliveryNoteUrl && (
@@ -1001,16 +1004,36 @@ const RawMaterialReceipt = () => {
                                                         </a>
                                                     )}
                                                 </div>
-                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handlePrint(batch)} title="Cetak Slip Internal">
+                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDownloadPdf(batch)} title="Download PDF Resmi">
+                                                        <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>picture_as_pdf</span>
+                                                    </button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => handlePrint(batch)} title="Cetak Label/Slip Internal">
                                                         <span className="material-symbols-outlined icon-sm">print</span>
                                                     </button>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(batch)}>
-                                                        <span className="material-symbols-outlined icon-sm">edit</span>
-                                                    </button>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(batch.id)}>
-                                                        <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>delete</span>
-                                                    </button>
+
+                                                    {batch.status === 'WAITING_APPROVAL' && user && ['MANAGER', 'ADMIN', 'SUPERUSER'].includes(user.role) && (
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => handleApprove(batch.id)} title="Approve">
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--success)' }}>check_circle</span>
+                                                        </button>
+                                                    )}
+
+                                                    {batch.status === 'APPROVED' && user && ['ACCOUNTING', 'ADMIN', 'SUPERUSER'].includes(user.role) && (
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => setShowPaymentModal(batch.id)} title="Catat Pembayaran">
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--info)' }}>payments</span>
+                                                        </button>
+                                                    )}
+
+                                                    {batch.status === 'WAITING_APPROVAL' && (
+                                                        <>
+                                                            <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(batch)}>
+                                                                <span className="material-symbols-outlined icon-sm">edit</span>
+                                                            </button>
+                                                            <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(batch.id)}>
+                                                                <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>delete</span>
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1030,6 +1053,15 @@ const RawMaterialReceipt = () => {
             </div>
 
             {/* Modals */}
+
+            {showPaymentModal && (
+                <PaymentModal
+                    receiptId={showPaymentModal}
+                    onClose={() => setShowPaymentModal(null)}
+                    onSuccess={fetchData}
+                />
+            )}
+
             {
                 showAnalysisModal && (
                     <QualityAnalysisModal
@@ -1261,8 +1293,8 @@ const RawMaterialReceipt = () => {
                                         <table className="receipt-info">
                                             <tbody>
                                                 <tr>
-                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>COLOR ANALYSIS (GREEN)</td>
-                                                    <td>: {printingBatch.greenPercentage || '0'}%</td>
+                                                    <td className="receipt-label" style={{ fontWeight: 'bold' }}>COLOR ANALYSIS (YELLOW)</td>
+                                                    <td>: {printingBatch.yellowPercentage || '0'}%</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="receipt-label" style={{ fontWeight: 'bold' }}>FINAL QUALITY GRADE</td>
@@ -1312,7 +1344,7 @@ const RawMaterialReceipt = () => {
                         <div className="receipt-footer">
                             <span>Dokumen ini dicetak secara otomatis oleh sistem ERP PMD.</span>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '6pt', opacity: 0.8 }}>v2.21.0</div>
+                                <div style={{ fontSize: '6pt', opacity: 0.8 }}>v2.23.0</div>
                                 <span>Dicetak pada: {new Date().toLocaleString('id-ID')}</span>
                             </div>
                         </div>

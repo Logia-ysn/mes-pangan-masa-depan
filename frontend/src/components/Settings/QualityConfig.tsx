@@ -306,7 +306,28 @@ const QualityConfig = () => {
                         <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>tune</span>
                         <h3 className="card-title">Quality Parameter Configuration</h3>
                     </div>
-                    {loading && <span className="material-symbols-outlined animate-spin icon-sm">sync</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {loading && <span className="material-symbols-outlined animate-spin icon-sm">sync</span>}
+                        <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--error)' }}
+                            onClick={async () => {
+                                if (!confirm('Reset SEMUA parameter ke default?\nSemua konfigurasi custom akan dihapus dan diganti dengan nilai standar.')) return;
+                                try {
+                                    await qualityParameterApi.resetAll();
+                                    showToast('Parameter berhasil di-reset ke default!', 'success');
+                                    fetchAllParams();
+                                    fetchParams();
+                                } catch (e) {
+                                    logger.error(e);
+                                    showToast('Gagal reset parameter', 'error');
+                                }
+                            }}
+                        >
+                            <span className="material-symbols-outlined icon-sm">restart_alt</span>
+                            Reset Default
+                        </button>
+                    </div>
                 </div>
 
                 <div style={{ padding: 24 }}>

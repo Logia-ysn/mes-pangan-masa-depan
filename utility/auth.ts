@@ -21,6 +21,7 @@ export interface JwtPayload {
 const ROLE_HIERARCHY: Record<string, number> = {
     OPERATOR: 1,
     SUPERVISOR: 2,
+    ACCOUNTING: 3,
     MANAGER: 3,
     ADMIN: 4,
     SUPERUSER: 5,

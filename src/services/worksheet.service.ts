@@ -1,6 +1,10 @@
 /**
  * Worksheet Service
  * Handles production worksheet business logic using Prisma
+ * 
+ * Workflow: DRAFT → SUBMITTED → COMPLETED (via Approve)
+ *                            → REJECTED → DRAFT (edit & resubmit)
+ * Cancel: DRAFT/SUBMITTED/COMPLETED → CANCELLED (COMPLETED triggers stock reversal)
  */
 
 import {
@@ -12,6 +16,7 @@ import {
     Stock,
     ProductType,
     Worksheet_shift_enum,
+    Worksheet_status_enum,
     StockMovement_movement_type_enum
 } from '@prisma/client';
 import { prisma } from '../libs/prisma';
@@ -86,7 +91,8 @@ export const PROCESS_STEPS = {
 
 class WorksheetService {
     /**
-     * Create new worksheet and update stock
+     * Create new worksheet as DRAFT — NO stock movement yet
+     * Stock only moves when Supervisor approves (approveWorksheet)
      */
     async createWorksheet(dto: CreateWorksheetDTO): Promise<Worksheet> {
         return await prisma.$transaction(async (tx) => {
@@ -106,40 +112,46 @@ class WorksheetService {
                 );
             }
 
-            // 2. Create and Save Worksheet
+            // 2. Create Worksheet as DRAFT — NO stock movement
             const worksheetData: any = this.mapDtoToWorksheetData(dto);
             worksheetData.rendemen = this.calculateRendemen(dto.gabah_input, dto.beras_output);
             worksheetData.batch_code = batchCode || worksheetData.batch_code;
+            worksheetData.status = Worksheet_status_enum.DRAFT;
 
             const savedWorksheet = await tx.worksheet.create({
                 data: worksheetData
             });
 
-            // 3. Handle Input Batches
+            // 3. Save Input Batches as DATA ONLY (no stock movement)
             if (dto.input_batches && dto.input_batches.length > 0) {
-                await this.handleInputBatches(tx, savedWorksheet, dto.input_batches, dto.id_user);
-            } else {
-                await this.updateStockFromProductionTransactional(tx, savedWorksheet, dto.id_user);
+                for (const batchDto of dto.input_batches) {
+                    await tx.worksheetInputBatch.create({
+                        data: {
+                            id_worksheet: savedWorksheet.id,
+                            id_stock: batchDto.id_stock,
+                            quantity: batchDto.quantity,
+                            unit_price: batchDto.unit_price || 0,
+                            total_cost: batchDto.quantity * (batchDto.unit_price || 0),
+                            batch_code: batchDto.batch_code
+                        }
+                    });
+                }
             }
 
-            // 4. Handle Side Products — auto-generate batch codes
-            const savedSideProducts: WorksheetSideProduct[] = [];
+            // 4. Save Side Products as DATA ONLY (no stock movement)
             if (dto.side_products && dto.side_products.length > 0) {
-                // Resolve input variety for side product batch codes
                 let inputVarietyCode = 'UNK';
                 if (dto.id_input_product_type) {
                     const inputPt = await tx.productType.findUnique({
                         where: { id: dto.id_input_product_type },
                         include: { RiceVariety: true }
                     });
-                    if (inputPt?.RiceVariety) inputVarietyCode = inputPt.RiceVariety.code;
+                    if (inputPt?.RiceVariety) inputVarietyCode = (inputPt.RiceVariety as any).code;
                 }
 
                 for (const spDto of dto.side_products) {
-                    // Auto-generate side product batch code
                     let spBatchCode: string | undefined;
                     const sideType = spDto.product_code?.toUpperCase() || '';
-                    // Map common product codes to side product types
                     let sideProductType = sideType;
                     if (sideType === 'SKM' || sideType.includes('SEKAM')) sideProductType = 'SEKAM';
                     else if (sideType === 'DDK' || sideType.includes('DEDAK') || sideType.includes('BEKATUL')) sideProductType = 'BEKATUL';
@@ -148,17 +160,13 @@ class WorksheetService {
 
                     try {
                         spBatchCode = await BatchNumberingService.generateSideProductBatch(
-                            factoryCode,
-                            sideProductType,
-                            inputVarietyCode,
-                            wsDate,
-                            tx
+                            factoryCode, sideProductType, inputVarietyCode, wsDate, tx
                         );
                     } catch (e) {
                         console.warn('Failed to generate side product batch code:', e);
                     }
 
-                    const sp = await tx.worksheetSideProduct.create({
+                    await tx.worksheetSideProduct.create({
                         data: {
                             id_worksheet: savedWorksheet.id,
                             id_product_type: spDto.id_product_type,
@@ -172,14 +180,221 @@ class WorksheetService {
                             batch_code: spBatchCode || null
                         }
                     });
-                    savedSideProducts.push(sp);
                 }
             }
 
-            // 5. Handle Output Stocks
-            await this.addOutputStocksTransactional(tx, savedWorksheet, dto.id_user, savedSideProducts);
-
+            // NOTE: No stock movement — will happen when Supervisor approves
             return savedWorksheet;
+        });
+    }
+
+    /**
+     * Submit worksheet for approval: DRAFT/REJECTED → SUBMITTED
+     */
+    async submitWorksheet(id: number, userId: number): Promise<Worksheet> {
+        return await prisma.$transaction(async (tx) => {
+            const worksheet = await tx.worksheet.findUnique({
+                where: { id },
+                include: { WorksheetInputBatch: true, WorksheetSideProduct: true }
+            });
+
+            if (!worksheet) throw new NotFoundError('Worksheet', id);
+
+            if (worksheet.status !== Worksheet_status_enum.DRAFT && worksheet.status !== Worksheet_status_enum.REJECTED) {
+                throw new BusinessRuleError(
+                    `Worksheet hanya bisa di-submit dari status DRAFT atau REJECTED. Status saat ini: ${worksheet.status}`
+                );
+            }
+            if (worksheet.id_user !== userId) {
+                throw new BusinessRuleError('Hanya pembuat worksheet yang bisa men-submit');
+            }
+            if (!worksheet.WorksheetInputBatch || worksheet.WorksheetInputBatch.length === 0) {
+                throw new BusinessRuleError('Input batches wajib diisi sebelum submit');
+            }
+            if (!worksheet.id_output_product) {
+                throw new BusinessRuleError('Output product (SKU) wajib dipilih sebelum submit');
+            }
+            if (Number(worksheet.beras_output) <= 0) {
+                throw new BusinessRuleError('Output quantity harus lebih dari 0');
+            }
+
+            return await tx.worksheet.update({
+                where: { id },
+                data: {
+                    status: Worksheet_status_enum.SUBMITTED,
+                    submitted_at: new Date(),
+                    submitted_by: userId,
+                    rejected_at: null,
+                    rejected_by: null,
+                    rejection_reason: null
+                }
+            });
+        });
+    }
+
+    /**
+     * Approve worksheet — THIS IS WHERE STOCK MOVES
+     * SUBMITTED → COMPLETED (stok IN untuk output, OUT untuk input)
+     */
+    async approveWorksheet(id: number, approverId: number): Promise<Worksheet> {
+        return await prisma.$transaction(async (tx) => {
+            const worksheet = await tx.worksheet.findUnique({
+                where: { id },
+                include: {
+                    WorksheetInputBatch: {
+                        include: { Stock: { include: { ProductType: true } } }
+                    },
+                    WorksheetSideProduct: true
+                }
+            });
+
+            if (!worksheet) throw new NotFoundError('Worksheet', id);
+            if (worksheet.status !== Worksheet_status_enum.SUBMITTED) {
+                throw new BusinessRuleError(
+                    `Worksheet hanya bisa di-approve dari status SUBMITTED. Status saat ini: ${worksheet.status}`
+                );
+            }
+
+            // 1. Process Input Batches → Stock OUT
+            for (const batch of worksheet.WorksheetInputBatch) {
+                if (batch.Stock?.ProductType) {
+                    await this.createStockMovementTransactional(
+                        tx,
+                        batch.id_stock,
+                        approverId,
+                        StockMovement_movement_type_enum.OUT,
+                        Number(batch.quantity),
+                        'WORKSHEET',
+                        worksheet.id,
+                        JSON.stringify({
+                            type: 'PRODUCTION_INPUT_BATCH',
+                            productCode: (batch.Stock.ProductType as any).code,
+                            batch_id: batch.id,
+                            output_batch_code: worksheet.batch_code,
+                            input_batch_code: batch.batch_code
+                        }),
+                        batch.batch_code || null
+                    );
+                }
+            }
+
+            // 2. Process Main Output + Side Products → Stock IN
+            await this.addOutputStocksTransactional(tx, worksheet as any, approverId, worksheet.WorksheetSideProduct);
+
+            // 3. Calculate HPP server-side
+            const rawMaterialCost = worksheet.WorksheetInputBatch.reduce(
+                (sum, b) => sum + Number(b.quantity) * Number(b.unit_price || 0), 0
+            );
+            const sideProductRevenue = worksheet.WorksheetSideProduct.reduce(
+                (sum, sp) => sum + Number(sp.quantity) * Number(sp.unit_price || 0), 0
+            );
+            const productionCost = Number(worksheet.production_cost || 0);
+            const hpp = rawMaterialCost + productionCost - sideProductRevenue;
+            const berasOutput = Number(worksheet.beras_output);
+            const hppPerKg = berasOutput > 0 ? hpp / berasOutput : 0;
+
+            // 4. Update worksheet to COMPLETED
+            return await tx.worksheet.update({
+                where: { id },
+                data: {
+                    status: Worksheet_status_enum.COMPLETED,
+                    approved_at: new Date(),
+                    approved_by: approverId,
+                    completed_at: new Date(),
+                    raw_material_cost: rawMaterialCost,
+                    side_product_revenue: sideProductRevenue,
+                    hpp,
+                    hpp_per_kg: hppPerKg
+                }
+            });
+        });
+    }
+
+    /**
+     * Reject worksheet: SUBMITTED → REJECTED
+     */
+    async rejectWorksheet(id: number, rejectorId: number, reason: string): Promise<Worksheet> {
+        return await prisma.$transaction(async (tx) => {
+            const worksheet = await tx.worksheet.findUnique({ where: { id } });
+            if (!worksheet) throw new NotFoundError('Worksheet', id);
+            if (worksheet.status !== Worksheet_status_enum.SUBMITTED) {
+                throw new BusinessRuleError(
+                    `Worksheet hanya bisa di-reject dari status SUBMITTED. Status saat ini: ${worksheet.status}`
+                );
+            }
+            if (!reason || reason.trim().length === 0) {
+                throw new BusinessRuleError('Alasan penolakan wajib diisi');
+            }
+
+            return await tx.worksheet.update({
+                where: { id },
+                data: {
+                    status: Worksheet_status_enum.REJECTED,
+                    rejected_at: new Date(),
+                    rejected_by: rejectorId,
+                    rejection_reason: reason.trim()
+                }
+            });
+        });
+    }
+
+    /**
+     * Cancel worksheet:
+     * - DRAFT/SUBMITTED → CANCELLED (no stock effect)
+     * - COMPLETED → CANCELLED (with stock reversal)
+     */
+    async cancelWorksheet(id: number, userId: number, reason?: string): Promise<Worksheet> {
+        return await prisma.$transaction(async (tx) => {
+            const worksheet = await tx.worksheet.findUnique({
+                where: { id },
+                include: {
+                    WorksheetInputBatch: { include: { Stock: { include: { ProductType: true } } } },
+                    WorksheetSideProduct: true
+                }
+            });
+
+            if (!worksheet) throw new NotFoundError('Worksheet', id);
+
+            const allowedStatuses: Worksheet_status_enum[] = [
+                Worksheet_status_enum.DRAFT,
+                Worksheet_status_enum.SUBMITTED,
+                Worksheet_status_enum.COMPLETED
+            ];
+            if (!allowedStatuses.includes(worksheet.status as Worksheet_status_enum)) {
+                throw new BusinessRuleError(
+                    `Worksheet tidak bisa di-cancel dari status ${worksheet.status}`
+                );
+            }
+
+            // If COMPLETED → reverse stock movements
+            if (worksheet.status === Worksheet_status_enum.COMPLETED) {
+                // Reverse input batches (add back to stock)
+                for (const batch of worksheet.WorksheetInputBatch) {
+                    if (batch.Stock?.ProductType) {
+                        await this.createStockMovementTransactional(
+                            tx,
+                            batch.id_stock,
+                            userId,
+                            StockMovement_movement_type_enum.IN,
+                            Number(batch.quantity),
+                            'WORKSHEET_REVERSAL',
+                            worksheet.id,
+                            `Reversal: cancel approved worksheet #${worksheet.id}`
+                        );
+                    }
+                }
+                // Reverse output stocks
+                await this.revertOutputStocksTransactional(tx, worksheet.id);
+            }
+
+            const newNotes = reason
+                ? `${worksheet.notes || ''}\n[CANCELLED] ${reason}`.trim()
+                : worksheet.notes;
+
+            return await tx.worksheet.update({
+                where: { id },
+                data: { status: Worksheet_status_enum.CANCELLED, notes: newNotes }
+            });
         });
     }
 
@@ -202,10 +417,10 @@ class WorksheetService {
             process_step: dto.process_step,
             id_output_product: dto.id_output_product,
             batch_code: dto.batch_code,
-            raw_material_cost: dto.raw_material_cost || 0,
-            side_product_revenue: dto.side_product_revenue || 0,
-            hpp: dto.hpp || 0,
-            hpp_per_kg: dto.hpp_per_kg || 0,
+            raw_material_cost: 0,
+            side_product_revenue: 0,
+            hpp: 0,
+            hpp_per_kg: 0,
             process_steps: dto.process_steps,
             id_machines: dto.id_machines || null,
             id_operators: dto.id_operators || null,
@@ -296,7 +511,6 @@ class WorksheetService {
         // Fallback for non-batch production
         const inputProductCode = (worksheet as any).input_category_code || 'GKP';
 
-        // Validation: ensure we have a valid input code
         const productType = await tx.productType.findFirst({ where: { code: inputProductCode } });
         if (!productType) {
             console.error(`Production Fallback Error: ProductType ${inputProductCode} not found for Worksheet ${worksheet.id}`);
@@ -388,7 +602,6 @@ class WorksheetService {
         // 2. Side Products
         for (const sp of sideProducts) {
             if (Number(sp.quantity) > 0) {
-                // Try to find by id_product_type first, then fallback to product_code
                 let pt = null;
                 if (sp.id_product_type) {
                     pt = await tx.productType.findUnique({ where: { id: sp.id_product_type } });
@@ -427,9 +640,9 @@ class WorksheetService {
                             type: 'PRODUCTION_OUTPUT',
                             productCode: sp.product_code,
                             output_type: 'side_product',
-                            batch_code: sp.batch_code || worksheet.batch_code
+                            batch_code: (sp as any).batch_code || worksheet.batch_code
                         }),
-                        sp.batch_code || worksheet.batch_code
+                        (sp as any).batch_code || worksheet.batch_code
                     );
                 }
             }
@@ -441,11 +654,22 @@ class WorksheetService {
         return (output / input) * 100;
     }
 
+    /**
+     * Update worksheet — only allowed for DRAFT or REJECTED status
+     * No stock movements since stock only moves on approve
+     */
     async updateWorksheet(dto: UpdateWorksheetDTO): Promise<Worksheet> {
         return await prisma.$transaction(async (tx) => {
             const worksheet = await tx.worksheet.findUnique({ where: { id: dto.id } });
             if (!worksheet) {
                 throw new NotFoundError('Worksheet', dto.id);
+            }
+
+            // Status guard: only DRAFT or REJECTED can be edited
+            if (worksheet.status !== Worksheet_status_enum.DRAFT && worksheet.status !== Worksheet_status_enum.REJECTED) {
+                throw new BusinessRuleError(
+                    `Worksheet hanya bisa diedit pada status DRAFT atau REJECTED. Status saat ini: ${worksheet.status}`
+                );
             }
 
             const updateData: any = {};
@@ -463,10 +687,6 @@ class WorksheetService {
             if (dto.id_machine !== undefined) updateData.id_machine = dto.id_machine;
             if (dto.id_output_product !== undefined) updateData.id_output_product = dto.id_output_product;
             if (dto.batch_code !== undefined) updateData.batch_code = dto.batch_code;
-            if (dto.raw_material_cost !== undefined) updateData.raw_material_cost = dto.raw_material_cost;
-            if (dto.side_product_revenue !== undefined) updateData.side_product_revenue = dto.side_product_revenue;
-            if (dto.hpp !== undefined) updateData.hpp = dto.hpp;
-            if (dto.hpp_per_kg !== undefined) updateData.hpp_per_kg = dto.hpp_per_kg;
             if (dto.process_steps !== undefined) updateData.process_steps = dto.process_steps;
             if (dto.id_machines !== undefined) updateData.id_machines = dto.id_machines ? JSON.stringify(dto.id_machines) : null;
             if (dto.id_operators !== undefined) updateData.id_operators = dto.id_operators ? JSON.stringify(dto.id_operators) : null;
@@ -483,13 +703,28 @@ class WorksheetService {
                 data: updateData
             });
 
-            if (dto.side_products) {
-                await this.revertOutputStocksTransactional(tx, worksheet.id);
-                await tx.worksheetSideProduct.deleteMany({ where: { id_worksheet: worksheet.id } });
+            // Update input batches data (no stock movement)
+            if (dto.input_batches !== undefined) {
+                await tx.worksheetInputBatch.deleteMany({ where: { id_worksheet: worksheet.id } });
+                for (const batchDto of dto.input_batches) {
+                    await tx.worksheetInputBatch.create({
+                        data: {
+                            id_worksheet: worksheet.id,
+                            id_stock: batchDto.id_stock,
+                            quantity: batchDto.quantity,
+                            unit_price: batchDto.unit_price || 0,
+                            total_cost: batchDto.quantity * (batchDto.unit_price || 0),
+                            batch_code: batchDto.batch_code
+                        }
+                    });
+                }
+            }
 
-                const savedSideProducts: WorksheetSideProduct[] = [];
+            // Update side products data (no stock movement)
+            if (dto.side_products !== undefined) {
+                await tx.worksheetSideProduct.deleteMany({ where: { id_worksheet: worksheet.id } });
                 for (const spDto of dto.side_products) {
-                    const sp = await tx.worksheetSideProduct.create({
+                    await tx.worksheetSideProduct.create({
                         data: {
                             id_worksheet: worksheet.id,
                             id_product_type: spDto.id_product_type,
@@ -502,10 +737,7 @@ class WorksheetService {
                             auto_percentage: spDto.auto_percentage
                         }
                     });
-                    savedSideProducts.push(sp);
                 }
-
-                await this.addOutputStocksTransactional(tx, updatedWorksheet, worksheet.id_user, savedSideProducts);
             }
 
             return updatedWorksheet;
@@ -533,7 +765,9 @@ class WorksheetService {
     }
 
     /**
-     * Delete worksheet and reverse all stock movements
+     * Delete worksheet
+     * Only DRAFT, REJECTED, or CANCELLED can be deleted directly
+     * COMPLETED must be cancelled first
      */
     async deleteWorksheet(id: number, userId: number): Promise<boolean> {
         return await prisma.$transaction(async (tx) => {
@@ -549,54 +783,24 @@ class WorksheetService {
                 throw new NotFoundError('Worksheet', id);
             }
 
-            // 1. Reverse Input Stock
-            // If it used batches
-            for (const batch of worksheet.WorksheetInputBatch) {
-                if (batch.Stock?.ProductType) {
-                    await this.createStockMovementTransactional(
-                        tx,
-                        batch.id_stock,
-                        userId,
-                        StockMovement_movement_type_enum.IN,
-                        Number(batch.quantity),
-                        'WORKSHEET_REVERSAL',
-                        worksheet.id,
-                        `Reversal input batch ${batch.id} from worksheet deletion`
-                    );
-                }
+            // Only DRAFT, REJECTED, CANCELLED can be deleted
+            if (
+                worksheet.status !== Worksheet_status_enum.DRAFT &&
+                worksheet.status !== Worksheet_status_enum.REJECTED &&
+                worksheet.status !== Worksheet_status_enum.CANCELLED
+            ) {
+                throw new BusinessRuleError(
+                    `Worksheet hanya bisa dihapus pada status DRAFT, REJECTED, atau CANCELLED. ` +
+                    `Status saat ini: ${worksheet.status}. Gunakan Cancel untuk membatalkan worksheet yang sudah approved.`
+                );
             }
 
-            // If it used simple input (fallback)
-            if (worksheet.WorksheetInputBatch.length === 0) {
-                const inputProductCode = (worksheet as any).input_category_code || 'GKP';
-                const pt = await tx.productType.findFirst({ where: { code: inputProductCode } });
-                if (pt) {
-                    const stock = await tx.stock.findFirst({
-                        where: { id_factory: worksheet.id_factory, id_product_type: pt.id }
-                    });
-                    if (stock) {
-                        await this.createStockMovementTransactional(
-                            tx,
-                            stock.id,
-                            userId,
-                            StockMovement_movement_type_enum.IN,
-                            Number(worksheet.gabah_input),
-                            'WORKSHEET_REVERSAL',
-                            worksheet.id,
-                            `Reversal input from worksheet deletion`
-                        );
-                    }
-                }
-            }
+            // For DRAFT/REJECTED: no stock movement to reverse
+            // For CANCELLED: stock was already reversed during cancel
 
-            // 2. Reverse Output Stock (Main + Side Products)
-            await this.revertOutputStocksTransactional(tx, worksheet.id);
-
-            // 3. Delete related records
+            // Delete related records
             await tx.worksheetInputBatch.deleteMany({ where: { id_worksheet: id } });
             await tx.worksheetSideProduct.deleteMany({ where: { id_worksheet: id } });
-
-            // 4. Delete worksheet
             await tx.worksheet.delete({ where: { id } });
 
             return true;
@@ -615,6 +819,7 @@ class WorksheetService {
         limit?: number;
         offset?: number;
         id_factory?: number;
+        status?: string;
         start_date?: string;
         end_date?: string;
     }): Promise<{ worksheets: Worksheet[], total: number }> {

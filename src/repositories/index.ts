@@ -20,3 +20,4 @@ export * from './process-category.repository';
 export * from './raw-material-category.repository';
 export * from './raw-material-variety.repository';
 export * from './qc-gabah.repository';
+export * from './material-receipt.repository';

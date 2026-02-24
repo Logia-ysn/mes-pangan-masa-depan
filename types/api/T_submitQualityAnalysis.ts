@@ -48,6 +48,18 @@ export class T_submitQualityAnalysis_body {
     @IsOptional()
     @IsNumber()
     empty_weight?: number;
+
+    @IsOptional()
+    @IsNumber()
+    damaged_percentage?: number;
+
+    @IsOptional()
+    @IsNumber()
+    rotten_percentage?: number;
+
+    @IsOptional()
+    @IsNumber()
+    defect_percentage?: number;
 }
 
 export type T_submitQualityAnalysis = (request: {
