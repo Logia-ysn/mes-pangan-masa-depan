@@ -30,6 +30,7 @@ HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 | **Penerimaan Bahan Baku** | Selesai | Raw Material Receipt + QC Integration |
 | **Penjualan (v2.1.0)** | Selesai | Customer, Invoice, Payment, Stock Deduction, PDF Export |
 | **Pembelian (v2.2.0)** | Selesai | Purchase Order, Goods Receipt, Stock Integration |
+| **Phase 4 (v2.26.0)** | Selesai | DO, QC Produk Jadi, Drying Log, Stock Opname, Financial Dash |
 | **Authentication** | Selesai | Login, Register, Role-based Access (5 level) |
 | **Multi-Factory** | Selesai | Support PMD-1 & PMD-2 |
 | **Mobile UX (v2.17.0)** | Selesai | Horizontal scroll factory selector, typography scaling |
@@ -81,16 +82,16 @@ HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 ```
 erp-pangan-masa-depan/
 ├── prisma/
-│   ├── schema.prisma            # Database schema (27 models, 6 enums)
+│   ├── schema.prisma            # Database schema (41 models, 12 enums)
 │   └── migrations/              # Prisma migrations
 ├── types/
-│   ├── api/                     # 103 API type definitions (NAIV)
+│   ├── api/                     # 151 API type definitions (NAIV)
 │   ├── model/                   # Database model types
 │   └── schema/                  # Shared schemas (Auth, Pagination, etc.)
-├── implementation/              # 103 API handler implementations
+├── implementation/              # 151 API handler implementations
 ├── src/
-│   ├── repositories/            # 26 data access repositories
-│   ├── services/                # 12 business logic services
+│   ├── repositories/            # 29 data access repositories
+│   ├── services/                # 18 business logic services
 │   ├── dto/                     # Data Transfer Objects
 │   ├── utils/                   # apiWrapper, errors, response
 │   ├── libs/                    # Prisma client instance
@@ -292,19 +293,19 @@ Cancel PO → Reverse all stock, set CANCELLED
 
 ## API Overview
 
-Total **103 API endpoints** yang di-generate oleh NAIV framework:
+Total **151 API endpoints** yang di-generate oleh NAIV framework:
 
 | Domain | Endpoints | Contoh |
 |--------|-----------|--------|
 | Auth | 4 | login, register, changePassword, seedSuperuser |
-| Dashboard | 3 | stats, executive, productionSummary |
-| Production | 20+ | worksheet, outputProduct, processCategory |
-| Inventory | 10+ | stock, stockMovement |
+| Dashboard | 4 | stats, executive, productionSummary, dailyExpenses |
+| Production | 30+ | worksheet, outputProduct, dryingLog, qcResult |
+| Inventory | 15+ | stock, stockMovement, stockOpname |
 | Quality | 5 | analyzeGrain, qualityParameter, submitAnalysis |
-| Sales | 15 | customer, invoice, payment, invoiceItem |
-| Purchasing | 12 | purchaseOrder, goodsReceipt, approve, cancel, stats |
-| Settings | 15+ | supplier, productType, rawMaterial, factory, machine |
-| User | 5 | CRUD + role management |
+| Sales | 20+ | customer, invoice, payment, deliveryOrder |
+| Purchasing | 15+ | purchaseOrder, goodsReceipt, approve, cancel |
+| Settings | 20+ | supplier, productType, factory, machine, employee |
+| User | 6 | CRUD + role management, attendance |
 
 ---
 

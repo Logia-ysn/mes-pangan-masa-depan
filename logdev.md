@@ -202,6 +202,27 @@ Fokus pada integritas data operasional dan otomatisasi alur kerja produksi untuk
 
 ---
 
+## Phase 4: Financial Operations & Traceability (2026-02-25)
+
+Fokus pada penyelesaian modul operasional hulu-ke-hilir dan integrasi laporan finansial eksekutif.
+
+### 4.1 Production Core: Drying & QC (v2.26.0)
+- **Drying Log**: Implementasi pencatatan penyusutan gabah otomatis. Backend menghitung `shrinkage_kg` dan `shrinkage_pct` secara *real-time*.
+- **QC Produk Jadi**: Sistem evaluasi beras pasca-produksi (Moisture, Milling Degree, Broken %). Terhubung dengan `Worksheet` untuk *traceability* kualitas.
+
+### 4.2 Sales & Logistics: Delivery Order (v2.26.0)
+- **Surat Jalan**: Entitas baru `DeliveryOrder` untuk memisahkan proses penagihan (Invoice) dengan pengiriman fisik.
+- **Transaksional**: Integrasi *deep-join* ke tabel `Invoice` untuk memastikan validitas kuantitas yang dikirim.
+
+### 4.3 Inventory: Stock Opname (v2.26.0)
+- **Adjustment Logic**: Sistem penyesuaian stok otomatis. Jika terdapat selisih saat opname, sistem akan men-generate `StockMovement` tipe `ADJUSTMENT` untuk menyeimbangkan saldo.
+
+### 4.4 Dashboard: Financial Summary (v2.26.0)
+- **KPI Dash**: Integrasi 3 metriks finansial utama: Revenue (dari Invoice), Expense (dari DailyExpense), dan Gross Profit.
+- **Visualisasi**: Penambahan kartu indikator premium dengan skema warna HSL yang harmonis.
+
+---
+
 ## Belum Dikerjakan (Next Steps)
 
 - [ ] Quality Trending Dashboard (SPC Charts)
