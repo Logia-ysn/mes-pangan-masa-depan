@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 
 import api, {
-    supplierApi,
     rawMaterialCategoryApi,
     riceVarietyApi,
     riceLevelApi,
@@ -11,15 +10,6 @@ import api, {
 import QualityConfig from '../components/Settings/QualityConfig';
 import FactoryMaterialConfig from '../components/Settings/FactoryMaterialConfig';
 import { logger } from '../utils/logger';
-
-interface Supplier {
-    id: number;
-    code: string;
-    name: string;
-    contact_person?: string;
-    phone?: string;
-    is_active: boolean;
-}
 
 interface Category {
     id: number;
@@ -43,10 +33,9 @@ type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'levels' | 'b
 const Settings = () => {
     const { showSuccess, showError } = useToast();
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<TabType>('data');
+    const [activeTab, setActiveTab] = useState<TabType>('categories');
 
     // Data lists
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [varieties, setVarieties] = useState<ItemBase[]>([]);
     const [levels, setLevels] = useState<ItemBase[]>([]);
@@ -54,7 +43,6 @@ const Settings = () => {
     const [confirmText, setConfirmText] = useState('');
 
     // Add forms
-    const [newSupplier, setNewSupplier] = useState({ code: '', name: '', contact_person: '', phone: '' });
     const [newCategory, setNewCategory] = useState({ code: '', name: '', description: '' });
     const [newVariety, setNewVariety] = useState({ code: '', name: '', description: '' });
     const [newLevel, setNewLevel] = useState({ code: '', name: '', sort_order: 0 });
@@ -70,19 +58,11 @@ const Settings = () => {
     } | null>(null);
 
     useEffect(() => {
-        if (activeTab === 'suppliers') fetchSuppliers();
         if (activeTab === 'categories') fetchCategories();
         if (activeTab === 'varieties') fetchVarieties();
         if (activeTab === 'levels') fetchLevels();
         if (activeTab === 'brands') fetchBrands();
     }, [activeTab]);
-
-    const fetchSuppliers = async () => {
-        try {
-            const res = await supplierApi.getAll();
-            setSuppliers(res.data?.data || []);
-        } catch (e) { logger.error(e); }
-    };
 
     const fetchCategories = async () => {
         try {
@@ -158,7 +138,6 @@ const Settings = () => {
             showSuccess("Berhasil",
                 `Data dummy berhasil dibuat! ${c.worksheets} worksheets, ${c.transactions} movements, ${c.sales} invoices, ${c.purchasing} POs.`
             );
-            fetchSuppliers();
             fetchCategories();
             fetchVarieties();
             fetchLevels();
@@ -179,7 +158,6 @@ const Settings = () => {
             showSuccess("Berhasil",
                 `Data dummy berhasil dihapus! ${d.worksheets} worksheets, ${d.movements} movements, ${d.invoices} invoices, ${d.purchase_orders} POs.`
             );
-            fetchSuppliers();
             fetchCategories();
             fetchVarieties();
             fetchLevels();
@@ -199,7 +177,6 @@ const Settings = () => {
             const totalDeleted = Object.values(res.data.deleted as Record<string, number>)
                 .reduce((sum, val) => sum + val, 0);
             showSuccess("Hard Reset Berhasil", `${totalDeleted} records berhasil dihapus.`);
-            setSuppliers([]);
             setCategories([]);
             setVarieties([]);
             setLevels([]);
@@ -208,36 +185,6 @@ const Settings = () => {
             showError("Gagal melakukan hard reset", error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
-        }
-    };
-
-    // === SUPPLIER CRUD ===
-    const handleAddSupplier = async () => {
-        if (!newSupplier.code || !newSupplier.name) {
-            showError("Validasi", "Kode dan Nama wajib diisi");
-            return;
-        }
-        setLoading(true);
-        try {
-            await supplierApi.create(newSupplier);
-            setNewSupplier({ code: '', name: '', contact_person: '', phone: '' });
-            fetchSuppliers();
-            showSuccess("Berhasil", "Supplier berhasil ditambahkan");
-        } catch (error: any) {
-            showError("Gagal", error.response?.data?.message || error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeleteSupplier = async (id: number) => {
-        if (!confirm('Hapus supplier ini?')) return;
-        try {
-            await supplierApi.delete(id);
-            fetchSuppliers();
-            showSuccess("Berhasil", "Supplier berhasil dihapus");
-        } catch (error: any) {
-            showError("Gagal", error.response?.data?.message || error.message);
         }
     };
 
@@ -362,8 +309,6 @@ const Settings = () => {
     };
 
     const tabs: { key: TabType; label: string; icon: string }[] = [
-        { key: 'data', label: 'Manajemen Data', icon: 'database' },
-        { key: 'suppliers', label: 'Supplier', icon: 'local_shipping' },
         { key: 'categories', label: 'Kategori Bahan', icon: 'category' },
         { key: 'varieties', label: 'Varietas Padi', icon: 'grain' },
         { key: 'levels', label: 'Level Beras', icon: 'stairs' },
@@ -433,74 +378,6 @@ const Settings = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'suppliers' && (
-                    <div className="card">
-                        <div className="card-header">
-                            <h3 className="card-title">Daftar Supplier</h3>
-                            <span className="badge badge-primary">{suppliers.length} supplier</span>
-                        </div>
-                        <div style={{ padding: 24 }}>
-                            {/* Add Form */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr auto', gap: 12, marginBottom: 24, alignItems: 'end' }}>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label">Kode *</label>
-                                    <input type="text" className="form-input" placeholder="SUP-001" value={newSupplier.code}
-                                        onChange={e => setNewSupplier({ ...newSupplier, code: e.target.value.toUpperCase() })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label">Nama Supplier *</label>
-                                    <input type="text" className="form-input" placeholder="PT. Nama" value={newSupplier.name}
-                                        onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label">Kontak</label>
-                                    <input type="text" className="form-input" placeholder="Nama PIC" value={newSupplier.contact_person}
-                                        onChange={e => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label">Telepon</label>
-                                    <input type="text" className="form-input" placeholder="08xxx" value={newSupplier.phone}
-                                        onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} />
-                                </div>
-                                <button className="btn btn-primary" onClick={handleAddSupplier} disabled={loading}>
-                                    <span className="material-symbols-outlined icon-sm">add</span>
-                                    Tambah
-                                </button>
-                            </div>
-                            {/* Table */}
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Kode</th>
-                                        <th>Nama</th>
-                                        <th>Kontak</th>
-                                        <th>Telepon</th>
-                                        <th style={{ width: 80 }}>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {suppliers.map(s => (
-                                        <tr key={s.id}>
-                                            <td><code>{s.code}</code></td>
-                                            <td>{s.name}</td>
-                                            <td>{s.contact_person || '-'}</td>
-                                            <td>{s.phone || '-'}</td>
-                                            <td>
-                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteSupplier(s.id)} title="Hapus">
-                                                    <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>delete</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {suppliers.length === 0 && (
-                                        <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ada data supplier</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 )}

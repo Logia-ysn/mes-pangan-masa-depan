@@ -45,6 +45,7 @@ const DeliveryOrders = React.lazy(() => import('./pages/sales/DeliveryOrders'));
 const DeliveryOrderForm = React.lazy(() => import('./pages/sales/DeliveryOrderForm'));
 const DryingLogs = React.lazy(() => import('./pages/production/DryingLogs'));
 const QCResults = React.lazy(() => import('./pages/production/QCResults'));
+const Suppliers = React.lazy(() => import('./pages/purchasing/Suppliers'));
 
 import RoleGuard from './components/RoleGuard';
 import LogoLoader from './components/UI/LogoLoader';
@@ -90,7 +91,7 @@ const AppRoutes = () => {
             <Route path="purchase-orders/:id" element={
               <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrderDetail /></RoleGuard>
             } />
-            <Route path="suppliers" element={<Settings />} />
+            <Route path="suppliers" element={<Suppliers />} />
             <Route path="goods-receipts" element={
               <RoleGuard requiredRole="SUPERVISOR"><GoodsReceipts /></RoleGuard>
             } />
