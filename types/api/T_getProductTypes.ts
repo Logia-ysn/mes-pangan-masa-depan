@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { ClassConstructor, Transform, Type, plainToInstance } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsObject, IsBoolean, IsOptional, IsISO8601, IsString, IsEnum, ValidateNested, IsArray, ValidationError, validateOrReject } from "class-validator";
-import { ProductType } from '@prisma/client'
+import { ProductType } from '../model/table/ProductType'
 
 export class T_getProductTypes_headers {
   @IsNotEmpty({ message: 'authorization cannot be empty' })
@@ -20,12 +20,6 @@ export class T_getProductTypes_query {
   @IsOptional()
   @IsString({ message: 'search must be a string' })
   search?: string
-  @IsOptional()
-  @IsString({ message: 'category must be a string' })
-  category?: string
-  @IsOptional()
-  @IsString({ message: 'isActive must be a string' })
-  isActive?: string
 }
 class ReturnType_0 {
   @IsNotEmpty({ message: 'total cannot be empty' })
@@ -35,7 +29,7 @@ class ReturnType_0 {
   @IsNotEmpty({ message: 'data cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Object)
+  @Type(() => ProductType)
   data!: ProductType[]
 }
 

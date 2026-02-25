@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.26.0] - 2026-02-26
+
+### Ditambahkan
+- **Fase 4: Restrukturisasi Database & Modul Baru** — Menyelesaikan migrasi database Prisma secara keseluruhan untuk modul Production, Inventory, dan Sales.
+- **Delivery Order (Surat Jalan)** — Penambahan modul DO dengan tabel baru `DeliveryOrder` & `DeliveryOrderItem`, relasi mendalam ke Invoice, serta form cetak surat jalan di frontend (`/sales/delivery-orders`).
+- **QC Produk Jadi (QC Beras)** — Modul otomatisasi evaluasi kualitas beras pasca-produksi (`/production/qc-results`) yang mencakup pemantauan moisture, milling degree, broken percentage, dan visual grade.
+- **Drying Log (Log Penjemuran)** — Pemantauan efisiensi pengeringan gabah (`/production/drying-logs`), lengkap dengan kalkulasi penyusutan otomatis berdasarkan berat gabah basah awal dan gabah kering.
+- **Financial Summary Dashboard** — Dasbor ringkasan performa finansial real-time (Revenue, Expense, Gross Profit) pada tampilan eksekutif beranda aplikasi. Menggabungkan arus kas operasional, penjualan, dan pembelian bahan secara dinamis.
+
+## [2.25.0] - 2026-02-25
+
+### Ditambahkan
+- **Restrukturisasi Sidebar** — Navigasi direorganisasi dari 6 modul menjadi 11 modul mengikuti alur bisnis hulu ke hilir: Pembelian → Penerimaan Bahan → Produksi → Inventory → Penjualan → Keuangan → Mesin & Maintenance → Laporan → Admin Panel.
+- **Halaman Rendemen Monitor** (`/production/rendemen`) — Dashboard visualisasi tren rendemen gabah ke beras per pabrik dengan grafik dan indikator performa produksi versus target.
+- **Halaman Absensi Karyawan** (`/admin/attendance`) — Tabel presensi harian dengan badge status (Hadir, Absen, Sakit, Izin, Terlambat) dan form input cepat untuk menambah data absensi baru.
+- **Halaman Riwayat Transfer Stok** (`/inventory/transfers`) — Tampilan daftar riwayat pergerakan stok (transfer) antar lokasi pabrik atau gudang.
+- **Halaman Pembayaran** (`/sales/payments`) — Riwayat pembayaran masuk dengan filter metode, summary cards (total, cash/transfer), dan tabel berpaginasi.
+- **Halaman Data Karyawan** (`/admin/employees`) — Manajemen data personel dengan filter pencarian, pabrik, dan status (aktif/nonaktif).
+- **Halaman Penerimaan Barang** (`/purchasing/goods-receipts`) — Daftar goods receipt terpisah dari detail PO dengan ringkasan dan paginasi.
+- **Halaman Pengeluaran Harian** (`/finance/expenses`) — Pencatatan biaya operasional harian dengan summary cards dan tabel berkategori.
+- **Modul Keuangan** — Modul sidebar baru untuk fitur keuangan (Pengeluaran Harian).
+- **API Baru Terkait Karyawan & Absensi** — Endpoint `GET /attendances` dan `POST /attendances` dengan repository baru.
+- **API DailyExpense** — Backend endpoint baru `GET /daily-expenses` dengan repository, filter pabrik, dan range tanggal.
+
+### Diubah
+- **Navigasi QC Bahan Baku** — QC Gabah yang sebelumnya tersembunyi kini tampil di sidebar di bawah modul Penerimaan Bahan.
+- **Route Legacy** — Semua route lama (`/production/stocks`, `/production/machines`, dll.) otomatis redirect ke route baru.
+- **Pembelian diperluas** — Modul Pembelian sekarang mencakup Purchase Order, Penerimaan Barang, dan Supplier.
+
+## [2.24.0] - 2026-02-23
+
+### Ditambahkan
+- **Integrasi Audit Log Worksheet** — Setiap langkah workflow worksheet (`Submit`, `Approve`, `Reject`, `Cancel`) kini dicatat secara detail dalam Audit Log, termasuk data HPP dan alasan penolakan.
+- **Audit Log Penerimaan Bahan Baku** — Pelacakan otomatis untuk pembuatan, persetujuan, dan pembayaran kwitansi bahan baku guna menjamin integritas data keuangan dan stok.
+- **Pencatatan CRUD Worksheet** — Operasi pembuatan, pembaruan, dan penghapusan worksheet sekarang memiliki rekam jejak yang dapat diaudit oleh administrator.
+- **Auto-Logging Material Receipt Operations** — Integrasi Audit Log pada `MaterialReceiptService` untuk seluruh aksi status (`WAITING_APPROVAL`, `APPROVED`, `PAID`).
+
+### Diubah
+- **Optimasi UI Workflow Worksheet** — Perbaikan layout pada dropdown filter status dan tombol aksi untuk mencegah elemen terpotong pada resolusi tertentu.
+- **Peningkatan Visual Worksheet Detail** — Penambahan banner status yang lebih informatif dan detail eksekutor (Submitter/Approver) untuk transparansi alur kerja.
+
+### Diperbaiki
+- **Text Cut-off Bug** — Memperbaiki masalah visual pada status filter di halaman daftar worksheet dengan penyesuaian padding dan ukuran font yang lebih ergonomis.
+
 ## [2.23.0] - 2026-02-23
 
 ### Ditambahkan

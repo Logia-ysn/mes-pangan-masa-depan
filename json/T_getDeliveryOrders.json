@@ -1,0 +1,14 @@
+{
+    "RequestURL": "/delivery-orders",
+    "RequestMethod": "GET",
+    "RequestParams": {
+        "limit": "number - Optional (default 20)",
+        "offset": "number - Optional (default 0)",
+        "id_invoice": "number - Optional",
+        "status": "string - Optional"
+    },
+    "Response": {
+        "data": "array of { id: number, do_number: string, delivery_date: string, status: string, Invoice: { invoice_number: string, Customer: { name: string } } }",
+        "total": "number"
+    }
+}

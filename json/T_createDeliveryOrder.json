@@ -1,0 +1,20 @@
+{
+    "RequestURL": "/delivery-orders",
+    "RequestMethod": "POST",
+    "RequestBody": {
+        "id_invoice": "number - Required",
+        "do_number": "string - Required",
+        "delivery_date": "string - Required (YYYY-MM-DD)",
+        "driver_name": "string - Optional",
+        "vehicle_number": "string - Optional",
+        "notes": "string - Optional",
+        "items": "array of { id_invoice_item: number, quantity_delivered: number } - Required"
+    },
+    "Response": {
+        "id": "number",
+        "id_invoice": "number",
+        "do_number": "string",
+        "delivery_date": "string",
+        "status": "string"
+    }
+}

@@ -60,7 +60,7 @@ class ReturnType_0 {
   @IsNotEmpty({ message: 'production_trend cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Object)
+  @Type(() => ReturnType_0_6)
   production_trend!: ReturnType_0_6[]
 }
 

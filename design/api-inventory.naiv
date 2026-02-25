@@ -1,0 +1,60 @@
+api get /stock-opnames {
+  alias getStockOpnames
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    status string
+  }
+  return {
+    total number required
+    data array table.StockOpname required
+  } required
+}
+
+api get /stock-opnames/:id {
+  alias getStockOpnameById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.StockOpname required
+}
+
+api post /stock-opnames {
+  alias createStockOpname
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    opname_date string required
+    notes string
+    items array {
+      id_stock number required
+      system_quantity number required
+      actual_quantity number required
+      notes string
+    } required
+  }
+  return table.StockOpname required
+}
+
+api put /stock-opnames/:id/status {
+  alias updateStockOpnameStatus
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    status string required
+  }
+  return schema.MessageResponse required
+}

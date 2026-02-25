@@ -282,3 +282,77 @@ enum AttendanceStatus {
   LEAVE
   PERMISSION
 }
+
+table DryingLog {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  batch_code varchar(50) notnull
+  drying_date date notnull
+  method varchar(50) notnull default="SUN_DRY"
+  initial_weight decimal(15,2) notnull
+  final_weight decimal(15,2) notnull
+  initial_moisture decimal(5,2)
+  final_moisture decimal(5,2)
+  downtime_hours decimal(5,2)
+  shrinkage_kg decimal(15,2)
+  shrinkage_pct decimal(5,2)
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+table DeliveryOrder {
+  id bigint pk inc notnull
+  id_invoice Invoice.id notnull
+  id_user User.id notnull
+  do_number varchar(50) unique notnull
+  delivery_date date notnull
+  received_date date
+  driver_name varchar(100)
+  vehicle_number varchar(20)
+  status varchar(20) notnull default="PENDING"
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+table DeliveryOrderItem {
+  id bigint pk inc notnull
+  id_delivery_order DeliveryOrder.id notnull
+  id_invoice_item InvoiceItem.id notnull
+  quantity_delivered decimal(15,2) notnull
+}
+
+table StockOpname {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  opname_date date notnull
+  status varchar(20) notnull default="DRAFT"
+  notes text
+  created_at timestamp notnull default=NOW()
+}
+
+table StockOpnameItem {
+  id bigint pk inc notnull
+  id_stock_opname StockOpname.id notnull
+  id_stock Stock.id notnull
+  system_quantity decimal(15,2) notnull
+  actual_quantity decimal(15,2) notnull
+  difference decimal(15,2) notnull
+  notes text
+}
+
+table QCResult {
+  id bigint pk inc notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  qc_date date notnull
+  batch_code varchar(50)
+  id_worksheet Worksheet.id
+  moisture_content decimal(5,2)
+  broken_percentage decimal(5,2)
+  whiteness_degree decimal(5,2)
+  grade varchar(50)
+  notes text
+  created_at timestamp notnull default=NOW()
+}

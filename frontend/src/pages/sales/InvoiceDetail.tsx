@@ -267,6 +267,10 @@ const InvoiceDetail = () => {
                         Kembali
                     </button>
                     <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-primary" onClick={() => navigate(`/sales/delivery-orders/new/${invoice.id}`)}>
+                            <span className="material-symbols-outlined icon-sm">local_shipping</span>
+                            Buat DO
+                        </button>
                         <button className="btn btn-primary" onClick={handlePrintPDF}>
                             <span className="material-symbols-outlined icon-sm">picture_as_pdf</span>
                             Cetak PDF

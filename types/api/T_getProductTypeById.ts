@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { ClassConstructor, Transform, Type, plainToInstance } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsObject, IsBoolean, IsOptional, IsISO8601, IsString, IsEnum, ValidateNested, IsArray, ValidationError, validateOrReject } from "class-validator";
-import { ProductType } from '@prisma/client'
+import { ProductType } from '../model/table/ProductType'
 
 export class T_getProductTypeById_headers {
   @IsNotEmpty({ message: 'authorization cannot be empty' })

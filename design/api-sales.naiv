@@ -1,0 +1,47 @@
+api get /delivery-orders {
+  alias getDeliveryOrders
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_invoice number
+    status string
+  }
+  return {
+    total number required
+    data array table.DeliveryOrder required
+  } required
+}
+
+api get /delivery-orders/:id {
+  alias getDeliveryOrderById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.DeliveryOrder required
+}
+
+api post /delivery-orders {
+  alias createDeliveryOrder
+  headers {
+    authorization string required
+  }
+  body {
+    id_invoice number required
+    do_number string required
+    delivery_date string required
+    driver_name string
+    vehicle_number string
+    notes string
+    items array {
+      id_invoice_item number required
+      quantity_delivered number required
+    } required
+  }
+  return table.DeliveryOrder required
+}

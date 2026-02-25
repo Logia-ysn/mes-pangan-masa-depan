@@ -44,7 +44,7 @@ class ReturnType_0 {
   @IsNotEmpty({ message: 'breakdown cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Object)
+  @Type(() => ReturnType_0_3)
   breakdown!: ReturnType_0_3[]
 }
 

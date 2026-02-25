@@ -1,0 +1,23 @@
+{
+    "RequestURL": "/delivery-orders/:id",
+    "RequestMethod": "GET",
+    "Response": {
+        "id": "number",
+        "id_invoice": "number",
+        "do_number": "string",
+        "delivery_date": "string",
+        "received_date": "string",
+        "driver_name": "string",
+        "vehicle_number": "string",
+        "status": "string",
+        "notes": "string",
+        "Invoice": {
+            "invoice_number": "string",
+            "Customer": {
+                "name": "string",
+                "address": "string"
+            }
+        },
+        "DeliveryOrderItem": "array of { id: number, quantity_delivered: number, InvoiceItem: { quantity: number, price: number, ProductType: { name: string } } }"
+    }
+}

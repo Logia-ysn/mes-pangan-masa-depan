@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, invoiceApi, purchaseOrderApi } from '../../services/api';
+import api from '../../services/api'; // For daily-expenses
 import { useTheme } from '../../contexts/ThemeContext';
 import KPICard from '../../components/Dashboard/KPICard';
 import MachinePanel from '../../components/Dashboard/MachinePanel';
@@ -78,6 +79,7 @@ import LogoLoader from '../../components/UI/LogoLoader';
 
 const Dashboard = () => {
     const [data, setData] = useState<ExecutiveDashboardData | null>(null);
+    const [finances, setFinances] = useState({ revenue: 0, expense: 0, profit: 0 });
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'7' | '30'>('7');
     const { theme } = useTheme();
@@ -97,6 +99,28 @@ const Dashboard = () => {
                     selectedFactory ? { id_factory: selectedFactory } : undefined
                 );
                 setData(response.data);
+
+                // Fetch financial data (naive aggregation for demo purposes)
+                const dateParams = dateRange === '30'
+                    ? { lte: new Date().toISOString(), gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
+                    : { lte: new Date().toISOString(), gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() };
+
+                const [invoices, expenses, pos] = await Promise.all([
+                    invoiceApi.getAll({ limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte }),
+                    api.get('/daily-expenses', { params: { limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte } }),
+                    purchaseOrderApi.getAll({ limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte })
+                ]);
+
+                // Calculate Revenue (from COMPLETED/PAID invoices ideally, but we'll sum total_amount)
+                const revenue = (invoices.data?.data || []).reduce((sum: number, inv: any) => sum + (Number(inv.total_amount) || 0), 0);
+
+                // Calculate Expenses
+                const accExpenses = (expenses.data?.data || []).reduce((sum: number, exp: any) => sum + (Number(exp.amount) || 0), 0);
+                const posExpenses = (pos.data?.data || []).reduce((sum: number, po: any) => sum + (Number(po.total_amount) || 0), 0);
+                const expense = accExpenses + posExpenses;
+
+                setFinances({ revenue, expense, profit: revenue - expense });
+
             } catch (error) {
                 logger.error('Error fetching executive dashboard:', error);
             } finally {
@@ -110,6 +134,9 @@ const Dashboard = () => {
 
     const formatNumber = (num: number) =>
         new Intl.NumberFormat('id-ID').format(Number(num));
+
+    const formatRp = (num: number) =>
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(num));
 
     const formatWeight = (kg: number) => {
         if (kg >= 1000) {
@@ -241,6 +268,33 @@ const Dashboard = () => {
                         <span className="material-symbols-outlined icon-sm">download</span>
                         Export
                     </button>
+                </div>
+            </div>
+
+            {/* Section 0: Financial Summary */}
+            <div className="card" style={{ marginBottom: 24 }}>
+                <div className="card-header">
+                    <h3 className="card-title">Ringkasan Keuangan ({dateRange} Hari Terakhir)</h3>
+                </div>
+                <div className="kpi-grid" style={{ marginTop: 0 }}>
+                    <KPICard
+                        label="Total Pendapatan (Revenue)"
+                        value={formatRp(finances.revenue)}
+                        icon="payments"
+                        status="good"
+                    />
+                    <KPICard
+                        label="Total Pengeluaran (Expense)"
+                        value={formatRp(finances.expense)}
+                        icon="receipt_long"
+                        status={finances.expense > finances.revenue ? 'critical' : 'warning'}
+                    />
+                    <KPICard
+                        label="Laba Kotor (Gross Profit)"
+                        value={formatRp(finances.profit)}
+                        icon="account_balance_wallet"
+                        status={finances.profit > 0 ? 'good' : finances.profit < 0 ? 'critical' : 'warning'}
+                    />
                 </div>
             </div>
 

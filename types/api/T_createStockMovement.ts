@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { ClassConstructor, Transform, Type, plainToInstance } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsObject, IsBoolean, IsOptional, IsISO8601, IsString, IsEnum, ValidateNested, IsArray, ValidationError, validateOrReject } from "class-validator";
-import { StockMovement } from '@prisma/client'
+import { StockMovement } from '../model/table/StockMovement'
 
 export class T_createStockMovement_headers {
   @IsNotEmpty({ message: 'authorization cannot be empty' })
@@ -30,17 +30,6 @@ export class T_createStockMovement_body {
   @IsOptional()
   @IsString({ message: 'notes must be a string' })
   notes?: string
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'empty_weight must be a number (decimal)' })
-  empty_weight?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'price_per_kg must be a number (decimal)' })
-  price_per_kg?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'other_costs must be a number (decimal)' })
-  other_costs?: number
 }
 
 export type T_createStockMovement = (request: {

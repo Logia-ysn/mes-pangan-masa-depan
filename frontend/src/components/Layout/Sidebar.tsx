@@ -16,15 +16,38 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
     const navItems: NavItemConfig[] = [
         { label: 'Dashboard', icon: 'dashboard', to: '/' },
         {
+            label: 'Pembelian',
+            icon: 'shopping_cart',
+            children: [
+                { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
+                { label: 'Penerimaan Barang', to: '/purchasing/goods-receipts' },
+                { label: 'Supplier', to: '/purchasing/suppliers' },
+            ]
+        },
+        {
+            label: 'Penerimaan Bahan',
+            icon: 'inventory_2',
+            children: [
+                { label: 'Daftar Penerimaan', to: '/receiving/raw-materials' },
+                { label: 'QC Bahan Baku', to: '/receiving/qc-gabah' },
+            ]
+        },
+        {
             label: 'Produksi',
             icon: 'factory',
             children: [
                 { label: 'Worksheet', to: '/production/worksheets' },
-                { label: 'Penerimaan Bahan', to: '/production/raw-materials' },
-                { label: 'Stok & Inventory', to: '/production/stocks' },
-                { label: 'Mesin', to: '/production/machines' },
-                { label: 'Maintenance', to: '/production/maintenance' },
-                { label: 'OEE Monitor', to: '/production/oee' },
+                { label: 'Drying Log', to: '/production/drying-logs' },
+                { label: 'QC Beras', to: '/production/qc-results' },
+            ]
+        },
+        {
+            label: 'Inventory',
+            icon: 'warehouse',
+            children: [
+                { label: 'Stok Real-time', to: '/inventory/stocks' },
+                { label: 'Transfer Stok', to: '/inventory/transfers' },
+                { label: 'Stock Opname', to: '/inventory/stock-opname' },
             ]
         },
         {
@@ -33,13 +56,24 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             children: [
                 { label: 'Pelanggan', to: '/sales/customers' },
                 { label: 'Invoice', to: '/sales/invoices' },
+                { label: 'Surat Jalan (DO)', to: '/sales/delivery-orders' },
+                { label: 'Pembayaran', to: '/sales/payments' },
             ]
         },
         {
-            label: 'Pembelian',
-            icon: 'shopping_cart',
+            label: 'Keuangan',
+            icon: 'account_balance',
             children: [
-                { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
+                { label: 'Pengeluaran Harian', to: '/finance/expenses' },
+            ]
+        },
+        {
+            label: 'Mesin & Maintenance',
+            icon: 'precision_manufacturing',
+            children: [
+                { label: 'Daftar Mesin', to: '/equipment/machines' },
+                { label: 'Maintenance', to: '/equipment/maintenance' },
+                { label: 'OEE Monitor', to: '/equipment/oee' },
             ]
         },
         {
@@ -59,6 +93,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             icon: 'admin_panel_settings',
             children: [
                 { label: 'Manajemen User', to: '/admin/users' },
+                { label: 'Data Karyawan', to: '/admin/employees' },
+                { label: 'Absensi Karyawan', to: '/admin/attendance' },
                 { label: 'Log Audit', to: '/admin/audit-logs' },
             ]
         }] : [])

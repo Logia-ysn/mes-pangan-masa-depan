@@ -24,7 +24,7 @@ import { worksheetRepository, ProductionStats } from '../repositories/worksheet.
 import { stockRepository } from '../repositories/stock.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
 import { BatchNumberingService } from './batch-numbering.service';
-
+import { auditService } from './audit.service';
 export interface InputBatchDTO {
     id_stock: number;
     quantity: number;
@@ -183,6 +183,19 @@ class WorksheetService {
                 }
             }
 
+            // Audit Log: CREATE
+            await auditService.log({
+                userId: dto.id_user,
+                action: 'CREATE',
+                tableName: 'Worksheet',
+                recordId: savedWorksheet.id,
+                newValue: {
+                    batch_code: savedWorksheet.batch_code,
+                    factory: dto.id_factory,
+                    gabah_input: dto.gabah_input
+                }
+            }, tx);
+
             // NOTE: No stock movement — will happen when Supervisor approves
             return savedWorksheet;
         });
@@ -218,7 +231,7 @@ class WorksheetService {
                 throw new BusinessRuleError('Output quantity harus lebih dari 0');
             }
 
-            return await tx.worksheet.update({
+            const updatedWorksheet = await tx.worksheet.update({
                 where: { id },
                 data: {
                     status: Worksheet_status_enum.SUBMITTED,
@@ -229,6 +242,18 @@ class WorksheetService {
                     rejection_reason: null
                 }
             });
+
+            // Audit Log: UPDATE (SUBMIT)
+            await auditService.log({
+                userId,
+                action: 'UPDATE',
+                tableName: 'Worksheet',
+                recordId: id,
+                oldValue: { status: worksheet.status },
+                newValue: { status: Worksheet_status_enum.SUBMITTED }
+            }, tx);
+
+            return updatedWorksheet;
         });
     }
 
@@ -294,7 +319,7 @@ class WorksheetService {
             const hppPerKg = berasOutput > 0 ? hpp / berasOutput : 0;
 
             // 4. Update worksheet to COMPLETED
-            return await tx.worksheet.update({
+            const completedWorksheet = await tx.worksheet.update({
                 where: { id },
                 data: {
                     status: Worksheet_status_enum.COMPLETED,
@@ -307,6 +332,22 @@ class WorksheetService {
                     hpp_per_kg: hppPerKg
                 }
             });
+
+            // Audit Log: UPDATE (APPROVE)
+            await auditService.log({
+                userId: approverId,
+                action: 'UPDATE',
+                tableName: 'Worksheet',
+                recordId: id,
+                oldValue: { status: worksheet.status },
+                newValue: {
+                    status: Worksheet_status_enum.COMPLETED,
+                    hpp,
+                    hpp_per_kg: hppPerKg
+                }
+            }, tx);
+
+            return completedWorksheet;
         });
     }
 
@@ -326,7 +367,7 @@ class WorksheetService {
                 throw new BusinessRuleError('Alasan penolakan wajib diisi');
             }
 
-            return await tx.worksheet.update({
+            const rejectedWorksheet = await tx.worksheet.update({
                 where: { id },
                 data: {
                     status: Worksheet_status_enum.REJECTED,
@@ -335,6 +376,21 @@ class WorksheetService {
                     rejection_reason: reason.trim()
                 }
             });
+
+            // Audit Log: UPDATE (REJECT)
+            await auditService.log({
+                userId: rejectorId,
+                action: 'UPDATE',
+                tableName: 'Worksheet',
+                recordId: id,
+                oldValue: { status: worksheet.status },
+                newValue: {
+                    status: Worksheet_status_enum.REJECTED,
+                    rejection_reason: reason.trim()
+                }
+            }, tx);
+
+            return rejectedWorksheet;
         });
     }
 
@@ -391,10 +447,22 @@ class WorksheetService {
                 ? `${worksheet.notes || ''}\n[CANCELLED] ${reason}`.trim()
                 : worksheet.notes;
 
-            return await tx.worksheet.update({
+            const cancelledWorksheet = await tx.worksheet.update({
                 where: { id },
                 data: { status: Worksheet_status_enum.CANCELLED, notes: newNotes }
             });
+
+            // Audit Log: UPDATE (CANCEL)
+            await auditService.log({
+                userId,
+                action: 'UPDATE',
+                tableName: 'Worksheet',
+                recordId: id,
+                oldValue: { status: worksheet.status },
+                newValue: { status: Worksheet_status_enum.CANCELLED, cancel_reason: reason }
+            }, tx);
+
+            return cancelledWorksheet;
         });
     }
 
@@ -740,6 +808,16 @@ class WorksheetService {
                 }
             }
 
+            // Audit Log: UPDATE
+            await auditService.log({
+                userId: worksheet.id_user,
+                action: 'UPDATE',
+                tableName: 'Worksheet',
+                recordId: dto.id,
+                oldValue: { gabah_input: worksheet.gabah_input, beras_output: worksheet.beras_output },
+                newValue: updateData
+            }, tx);
+
             return updatedWorksheet;
         });
     }
@@ -802,6 +880,15 @@ class WorksheetService {
             await tx.worksheetInputBatch.deleteMany({ where: { id_worksheet: id } });
             await tx.worksheetSideProduct.deleteMany({ where: { id_worksheet: id } });
             await tx.worksheet.delete({ where: { id } });
+
+            // Audit Log: DELETE
+            await auditService.log({
+                userId,
+                action: 'DELETE',
+                tableName: 'Worksheet',
+                recordId: id,
+                oldValue: { batch_code: worksheet.batch_code, status: worksheet.status }
+            }, tx);
 
             return true;
         });

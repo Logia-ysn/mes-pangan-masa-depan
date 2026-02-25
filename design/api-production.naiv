@@ -397,3 +397,100 @@ api delete /maintenances/:id {
   }
   return schema.MessageResponse required
 }
+
+api get /drying-logs {
+  alias getDryingLogs
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    batch_code string
+  }
+  return {
+    total number required
+    data array table.DryingLog required
+  } required
+}
+
+api get /drying-logs/:id {
+  alias getDryingLogById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.DryingLog required
+}
+
+api post /drying-logs {
+  alias createDryingLog
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    batch_code string required
+    drying_date string required
+    method string required
+    initial_weight number required
+    final_weight number required
+    initial_moisture number
+    final_moisture number
+    downtime_hours number
+    shrinkage_kg number
+    shrinkage_pct number
+    notes string
+  }
+  return table.DryingLog required
+}
+
+api get /qc-results {
+  alias getQCResults
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_factory number
+    batch_code string
+  }
+  return {
+    total number required
+    data array table.QCResult required
+  } required
+}
+
+api get /qc-results/:id {
+  alias getQCResultById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.QCResult required
+}
+
+api post /qc-results {
+  alias createQCResult
+  headers {
+    authorization string required
+  }
+  body {
+    id_factory number required
+    qc_date string required
+    batch_code string
+    id_worksheet number
+    moisture_content number
+    broken_percentage number
+    whiteness_degree number
+    grade string
+    notes string
+  }
+  return table.QCResult required
+}

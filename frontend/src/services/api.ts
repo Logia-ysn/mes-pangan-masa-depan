@@ -216,6 +216,20 @@ export const qcGabahApi = {
         api.post('/analyze-grain', data),
 };
 
+// QC Result (Produk Jadi)
+export const qcResultApi = {
+    getAll: (params?: Record<string, any>) => api.get('/qc-results', { params }),
+    getById: (id: number) => api.get(`/qc-results/${id}`),
+    create: (data: Record<string, any>) => api.post('/qc-results', data),
+};
+
+// Drying Log (Pengeringan)
+export const dryingLogApi = {
+    getAll: (params?: Record<string, any>) => api.get('/drying-logs', { params }),
+    getById: (id: number) => api.get(`/drying-logs/${id}`),
+    create: (data: Record<string, any>) => api.post('/drying-logs', data),
+};
+
 // Customers
 export const customerApi = {
     getAll: (params?: Record<string, any>) => api.get('/customers', { params }),
@@ -237,11 +251,30 @@ export const invoiceApi = {
     downloadPDF: (id: number) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
 };
 
+// Delivery Orders (Surat Jalan)
+export const deliveryOrderApi = {
+    getAll: (params?: Record<string, any>) => api.get('/delivery-orders', { params }),
+    getById: (id: number) => api.get(`/delivery-orders/${id}`),
+    create: (data: Record<string, any>) => api.post('/delivery-orders', data),
+};
+
 // Payments
 export const paymentApi = {
     getAll: (params?: Record<string, any>) => api.get('/payments', { params }),
     create: (data: Record<string, any>) => api.post('/payments', data),
     delete: (id: number) => api.delete(`/payments/${id}`),
+};
+
+// Attendance
+export const attendanceApi = {
+    getAll: (params?: Record<string, any>) => api.get('/attendances', { params }),
+    create: (data: Record<string, any>) => api.post('/attendances', data),
+};
+
+// Stock Opname
+export const stockOpnameApi = {
+    getAll: (params?: Record<string, any>) => api.get('/stock-opnames', { params }),
+    create: (data: Record<string, any>) => api.post('/stock-opnames', data),
 };
 
 // Employees

@@ -33,6 +33,18 @@ const StockReport = React.lazy(() => import('./pages/reports/StockReport'));
 const QualityTrends = React.lazy(() => import('./pages/reports/QualityTrends'));
 const Users = React.lazy(() => import('./pages/admin/Users'));
 const AuditLogs = React.lazy(() => import('./pages/admin/AuditLogs'));
+const GoodsReceipts = React.lazy(() => import('./pages/purchasing/GoodsReceipts'));
+const Employees = React.lazy(() => import('./pages/admin/Employees'));
+const Payments = React.lazy(() => import('./pages/sales/Payments'));
+const Expenses = React.lazy(() => import('./pages/finance/Expenses'));
+const Attendance = React.lazy(() => import('./pages/admin/Attendance'));
+const RendemenMonitor = React.lazy(() => import('./pages/production/RendemenMonitor'));
+const StockTransfers = React.lazy(() => import('./pages/inventory/StockTransfers'));
+const StockOpname = React.lazy(() => import('./pages/inventory/StockOpname'));
+const DeliveryOrders = React.lazy(() => import('./pages/sales/DeliveryOrders'));
+const DeliveryOrderForm = React.lazy(() => import('./pages/sales/DeliveryOrderForm'));
+const DryingLogs = React.lazy(() => import('./pages/production/DryingLogs'));
+const QCResults = React.lazy(() => import('./pages/production/QCResults'));
 
 import RoleGuard from './components/RoleGuard';
 import LogoLoader from './components/UI/LogoLoader';
@@ -70,7 +82,29 @@ const AppRoutes = () => {
           <Route index element={<Dashboard />} />
           <Route path="settings" element={<Settings />} />
 
-          {/* Production Module */}
+          {/* ===== Pembelian (Procurement) Module ===== */}
+          <Route path="purchasing">
+            <Route path="purchase-orders" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrders /></RoleGuard>
+            } />
+            <Route path="purchase-orders/:id" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrderDetail /></RoleGuard>
+            } />
+            <Route path="suppliers" element={<Settings />} />
+            <Route path="goods-receipts" element={
+              <RoleGuard requiredRole="SUPERVISOR"><GoodsReceipts /></RoleGuard>
+            } />
+          </Route>
+
+          {/* ===== Penerimaan Bahan Baku Module ===== */}
+          <Route path="receiving">
+            <Route path="raw-materials" element={
+              <RoleGuard requiredRole="OPERATOR"><RawMaterialReceipt /></RoleGuard>
+            } />
+            <Route path="qc-gabah" element={<QCGabah />} />
+          </Route>
+
+          {/* ===== Produksi Module ===== */}
           <Route path="production">
             <Route path="worksheets" element={<Worksheets />} />
             <Route path="worksheets/new" element={
@@ -80,17 +114,36 @@ const AppRoutes = () => {
             <Route path="worksheets/:id/edit" element={
               <RoleGuard requiredRole="SUPERVISOR"><WorksheetForm /></RoleGuard>
             } />
-            <Route path="stocks" element={<Stocks />} />
-            <Route path="raw-materials" element={
-              <RoleGuard requiredRole="OPERATOR"><RawMaterialReceipt /></RoleGuard>
+            <Route path="rendemen" element={
+              <RoleGuard requiredRole="SUPERVISOR"><RendemenMonitor /></RoleGuard>
             } />
-            <Route path="machines" element={<Machines />} />
-            <Route path="maintenance" element={<Maintenance />} />
-            <Route path="oee" element={<OEE />} />
-            <Route path="qc-gabah" element={<QCGabah />} />
+            <Route path="drying-logs" element={
+              <RoleGuard requiredRole="SUPERVISOR"><DryingLogs /></RoleGuard>
+            } />
+            <Route path="qc-results" element={
+              <RoleGuard requiredRole="SUPERVISOR"><QCResults /></RoleGuard>
+            } />
+            {/* Legacy routes still accessible */}
+            <Route path="stocks" element={<Navigate to="/inventory/stocks" replace />} />
+            <Route path="raw-materials" element={<Navigate to="/receiving/raw-materials" replace />} />
+            <Route path="machines" element={<Navigate to="/equipment/machines" replace />} />
+            <Route path="maintenance" element={<Navigate to="/equipment/maintenance" replace />} />
+            <Route path="oee" element={<Navigate to="/equipment/oee" replace />} />
+            <Route path="qc-gabah" element={<Navigate to="/receiving/qc-gabah" replace />} />
           </Route>
 
-          {/* Sales Module */}
+          {/* ===== Inventory Module ===== */}
+          <Route path="inventory">
+            <Route path="stocks" element={<Stocks />} />
+            <Route path="transfers" element={
+              <RoleGuard requiredRole="SUPERVISOR"><StockTransfers /></RoleGuard>
+            } />
+            <Route path="stock-opname" element={
+              <RoleGuard requiredRole="SUPERVISOR"><StockOpname /></RoleGuard>
+            } />
+          </Route>
+
+          {/* ===== Penjualan (Sales) Module ===== */}
           <Route path="sales">
             <Route path="customers" element={
               <RoleGuard requiredRole="SUPERVISOR"><Customers /></RoleGuard>
@@ -101,19 +154,32 @@ const AppRoutes = () => {
             <Route path="invoices/:id" element={
               <RoleGuard requiredRole="SUPERVISOR"><InvoiceDetail /></RoleGuard>
             } />
+            <Route path="delivery-orders" element={
+              <RoleGuard requiredRole="SUPERVISOR"><DeliveryOrders /></RoleGuard>
+            } />
+            <Route path="delivery-orders/new/:invoiceId" element={
+              <RoleGuard requiredRole="SUPERVISOR"><DeliveryOrderForm /></RoleGuard>
+            } />
+            <Route path="payments" element={
+              <RoleGuard requiredRole="SUPERVISOR"><Payments /></RoleGuard>
+            } />
           </Route>
 
-          {/* Purchasing Module */}
-          <Route path="purchasing">
-            <Route path="purchase-orders" element={
-              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrders /></RoleGuard>
-            } />
-            <Route path="purchase-orders/:id" element={
-              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrderDetail /></RoleGuard>
+          {/* ===== Keuangan (Finance) Module ===== */}
+          <Route path="finance">
+            <Route path="expenses" element={
+              <RoleGuard requiredRole="SUPERVISOR"><Expenses /></RoleGuard>
             } />
           </Route>
 
-          {/* Reports Module */}
+          {/* ===== Mesin & Maintenance Module ===== */}
+          <Route path="equipment">
+            <Route path="machines" element={<Machines />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="oee" element={<OEE />} />
+          </Route>
+
+          {/* ===== Laporan Module ===== */}
           <Route path="reports">
             <Route path="production" element={
               <RoleGuard requiredRole="SUPERVISOR"><ProductionReport /></RoleGuard>
@@ -132,7 +198,7 @@ const AppRoutes = () => {
             } />
           </Route>
 
-          {/* Admin Module */}
+          {/* ===== Admin Module ===== */}
           <Route path="admin">
             <Route path="users" element={
               <RoleGuard requiredRole="ADMIN"><Users /></RoleGuard>
@@ -140,11 +206,17 @@ const AppRoutes = () => {
             <Route path="audit-logs" element={
               <RoleGuard requiredRole="ADMIN"><AuditLogs /></RoleGuard>
             } />
+            <Route path="employees" element={
+              <RoleGuard requiredRole="ADMIN"><Employees /></RoleGuard>
+            } />
+            <Route path="attendance" element={
+              <RoleGuard requiredRole="ADMIN"><Attendance /></RoleGuard>
+            } />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}
           <Route path="worksheets" element={<Navigate to="/production/worksheets" replace />} />
-          <Route path="stocks" element={<Navigate to="/production/stocks" replace />} />
+          <Route path="stocks" element={<Navigate to="/inventory/stocks" replace />} />
 
           {/* 404 fallback */}
           <Route path="*" element={

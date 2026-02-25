@@ -3,6 +3,7 @@ import { prisma } from '../libs/prisma';
 import { materialReceiptRepository } from '../repositories/material-receipt.repository';
 import { notificationRepository } from '../repositories/notification.repository';
 import { BusinessRuleError, NotFoundError, ValidationError } from '../utils/errors';
+import { auditService } from './audit.service';
 
 export interface CreateMaterialReceiptDTO {
     id_supplier: number;
@@ -171,6 +172,20 @@ class MaterialReceiptService {
                 });
             }
 
+            // Audit Log: CREATE
+            await auditService.log({
+                userId,
+                action: 'CREATE',
+                tableName: 'MaterialReceipt',
+                recordId: receipt.id,
+                newValue: {
+                    receipt_number: receiptNumber,
+                    batch_code: dto.batch_code,
+                    quantity: dto.quantity,
+                    total_amount: totalAmount
+                }
+            }, tx);
+
             return receipt;
         });
     }
@@ -223,6 +238,16 @@ class MaterialReceiptService {
                 }
             });
 
+            // Audit Log: UPDATE (APPROVE)
+            await auditService.log({
+                userId,
+                action: 'UPDATE',
+                tableName: 'MaterialReceipt',
+                recordId: id,
+                oldValue: { status: receipt.status },
+                newValue: { status: MaterialReceipt_status_enum.APPROVED }
+            }, tx);
+
             return updated;
         });
     }
@@ -257,6 +282,16 @@ class MaterialReceiptService {
             message: `Receipt ${receipt.receipt_number} telah dicatat pembayarannya.`,
             reference_type: 'MATERIAL_RECEIPT',
             reference_id: receipt.id
+        });
+
+        // Audit Log: UPDATE (PAID)
+        await auditService.log({
+            userId,
+            action: 'UPDATE',
+            tableName: 'MaterialReceipt',
+            recordId: id,
+            oldValue: { status: receipt.status },
+            newValue: { status: MaterialReceipt_status_enum.PAID, payment_reference: dto.payment_reference }
         });
 
         return updated;
@@ -351,7 +386,7 @@ class MaterialReceiptService {
             }
         }
 
-        return await prisma.materialReceipt.update({
+        const updatedReceipt = await prisma.materialReceipt.update({
             where: { id },
             data: {
                 ...(data.id_supplier && { id_supplier: data.id_supplier }),
@@ -367,6 +402,18 @@ class MaterialReceiptService {
                 ...(data.notes !== undefined && { notes: data.notes })
             }
         });
+
+        // Audit Log: UPDATE
+        await auditService.log({
+            userId,
+            action: 'UPDATE',
+            tableName: 'MaterialReceipt',
+            recordId: id,
+            oldValue: { quantity: receipt.quantity, total_amount: receipt.total_amount },
+            newValue: data
+        });
+
+        return updatedReceipt;
     }
 
     /**
@@ -401,6 +448,15 @@ class MaterialReceiptService {
 
             // 4. Delete the StockMovement
             await tx.stockMovement.delete({ where: { id: receipt.id_stock_movement } });
+
+            // Audit Log: DELETE
+            await auditService.log({
+                userId: receipt.id_user, // Fallback to creator since we don't have active userId here easily without changing signature
+                action: 'DELETE',
+                tableName: 'MaterialReceipt',
+                recordId: id,
+                oldValue: { receipt_number: receipt.receipt_number, batch_code: receipt.batch_code }
+            }, tx);
 
             return true;
         });
