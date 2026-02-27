@@ -59,6 +59,7 @@ services:
       PORT: ${PORT:-3000}
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key}
       ML_SERVICE_URL: http://ml-service:8000
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-erp_pangan_masa_depan}?schema=public
     restart: always
 
   # ==================================
