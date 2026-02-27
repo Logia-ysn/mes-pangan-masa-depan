@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import QualityAnalysisModal from '../../components/Production/QualityAnalysisModal';
 import PaymentModal from '../../components/Production/PaymentModal';
-import api, { supplierApi, productTypeApi, rawMaterialCategoryApi, riceVarietyApi, materialReceiptApi } from '../../services/api';
+import api, { supplierApi, productTypeApi, rawMaterialCategoryApi, riceVarietyApi, materialReceiptApi, purchaseOrderApi } from '../../services/api';
 import { formatDate, formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { printElement } from '../../utils/printUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -135,6 +135,72 @@ const RawMaterialReceipt = () => {
         setShowAnalysisModal(false);
     };
 
+    // PO State & Fetching
+    const [linkedPO, setLinkedPO] = useState<any>(null);
+    const [poItems, setPoItems] = useState<any[]>([]);
+    const [fetchingPO, setFetchingPO] = useState(false);
+    const [selectedPoItemId, setSelectedPoItemId] = useState<number | null>(null);
+
+    const handleFetchPO = async () => {
+        if (!formData.poNumber) return;
+        setFetchingPO(true);
+        try {
+            // First search PO by number in get all
+            const pRes = await purchaseOrderApi.getAll({ search: formData.poNumber });
+            const pos = pRes.data?.data || pRes.data || [];
+            const foundPO = pos.find((p: any) => p.po_number === formData.poNumber);
+
+            if (!foundPO) {
+                showWarning("Tidak Ditemukan", "PO dengan nomor tersebut tidak ditemukan");
+                return;
+            }
+
+            // Fetch receivable items
+            const itemsRes = await purchaseOrderApi.getReceivableItems(foundPO.id);
+            const { po, receivableItems } = itemsRes.data?.data || itemsRes.data;
+
+            if (receivableItems.length === 0) {
+                showWarning("PO Selesai", "Semua item pada PO ini sudah diterima sepenuhnya.");
+                return;
+            }
+
+            setLinkedPO(po);
+            setPoItems(receivableItems);
+
+            // Auto-fill form if PO has supplier
+            if (po.Supplier) {
+                setFormData(f => ({ ...f, supplierId: String(po.Supplier.id) }));
+            }
+            showSuccess("PO Ditemukan", `${receivableItems.length} item siap diterima.`);
+
+        } catch (error: any) {
+            logger.error("Error fetching PO limits:", error);
+            showError("Gagal", "Kesalahan mengambil data PO");
+        } finally {
+            setFetchingPO(false);
+        }
+    };
+
+    const handlePoItemSelect = (itemIdStr: string) => {
+        if (!itemIdStr) {
+            setSelectedPoItemId(null);
+            return;
+        }
+        const itemId = parseInt(itemIdStr);
+        setSelectedPoItemId(itemId);
+
+        const item = poItems.find(i => i.id === itemId);
+        if (item) {
+            // Fill varieties, net weight safely, pricing
+            setFormData(f => ({
+                ...f,
+                pricePerKg: String(item.unit_price),
+                netWeight: String(item.remaining_quantity), // Max remaining as default suggestion
+                varietyId: item.ProductType?.id_variety ? String(item.ProductType.id_variety) : f.varietyId
+            }));
+        }
+    };
+
     useEffect(() => {
         if (!factoryLoading) {
             fetchData();
@@ -245,6 +311,8 @@ const RawMaterialReceipt = () => {
 
     // Check if all required fields are filled to enable batch generation
     const isFormReadyForBatch = !!(selectedFactory && formData.supplierId && formData.varietyId && formData.netWeight && parseFloat(formData.netWeight) > 0 && formData.pricePerKg && parseFloat(formData.pricePerKg) > 0 && formData.dateReceived);
+
+    // Filter varieties by category RAW_MATERIAL logic (simplifying here since it's just ID based)
 
     const [generatingBatch, setGeneratingBatch] = useState(false);
 
@@ -384,6 +452,8 @@ const RawMaterialReceipt = () => {
                 green_percentage: !isNaN(parseFloat(formData.greenPercentage)) ? parseFloat(formData.greenPercentage) : undefined,
                 yellow_percentage: !isNaN(parseFloat(formData.yellowPercentage)) ? parseFloat(formData.yellowPercentage) : undefined,
                 quality_grade: formData.qualityGrade !== '-' ? formData.qualityGrade : undefined,
+                id_purchase_order: linkedPO ? linkedPO.id : undefined,
+                id_purchase_order_item: selectedPoItemId || undefined,
             };
 
             if (editingId) {
@@ -415,6 +485,9 @@ const RawMaterialReceipt = () => {
             });
             setSuratJalanFile(null);
             setTandaTerimaFile(null);
+            setLinkedPO(null);
+            setPoItems([]);
+            setSelectedPoItemId(null);
             fetchData();
 
         } catch (error: any) {
@@ -667,15 +740,48 @@ const RawMaterialReceipt = () => {
                             </div>
                             <div className="form-group">
                                 <label className="form-label">PO Number</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="PO-88421"
-                                    value={formData.poNumber}
-                                    onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
-                                />
+                                <div className="input-group">
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="PO-88421"
+                                        value={formData.poNumber}
+                                        onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
+                                        onKeyDown={e => e.key === 'Enter' && handleFetchPO()}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                                        onClick={handleFetchPO}
+                                        disabled={fetchingPO || !formData.poNumber}
+                                    >
+                                        {fetchingPO ? '...' : <span className="material-symbols-outlined icon-sm">search</span>}
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        {poItems.length > 0 && (
+                            <div className="card mb-4" style={{ backgroundColor: 'var(--surface-hover)', padding: '16px', border: '1px solid var(--border)' }}>
+                                <label className="form-label" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span className="material-symbols-outlined icon-sm">receipt_long</span>
+                                    Item PO yang Tersedia
+                                </label>
+                                <select
+                                    className="form-input form-select"
+                                    value={selectedPoItemId || ''}
+                                    onChange={(e) => handlePoItemSelect(e.target.value)}
+                                >
+                                    <option value="">-- Pilih Item dari PO {linkedPO?.po_number} --</option>
+                                    {poItems.map((item: any) => (
+                                        <option key={item.id} value={item.id}>
+                                            {item.ProductType?.name} - Sisa: {item.remaining_quantity} {item.ProductType?.unit || 'kg'} (Harga: {formatCurrency(item.unit_price)})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <div className="grid-3" style={{ marginBottom: 20 }}>
                             <div className="form-group">
@@ -729,7 +835,10 @@ const RawMaterialReceipt = () => {
                                         type="number"
                                         className="form-input"
                                         value={formData.netWeight}
-                                        onChange={e => setFormData({ ...formData, netWeight: e.target.value })}
+                                        onChange={e => {
+                                            // Optional: warn if value exceeds selected PO item remaining
+                                            setFormData({ ...formData, netWeight: e.target.value });
+                                        }}
                                         placeholder="0"
                                     />
                                     <span className="input-addon">Kg</span>

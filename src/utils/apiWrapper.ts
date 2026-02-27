@@ -29,6 +29,9 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
         // Naiv framework might handle return values as responses. 
         // We will return data so Naiv can handle it, OR we can send it here.
         // Safer approach given Naiv's behavior (observed in T_ handlers): return data.
+        if (data !== undefined && !res.headersSent) {
+            res.json(data);
+        }
         return data;
     } catch (error: any) {
         console.error('API Error:', error);

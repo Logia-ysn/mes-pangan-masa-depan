@@ -11,11 +11,7 @@
 import { prisma } from "../libs/prisma";
 import { Prisma } from "@prisma/client";
 
-// Fallback mappings when BatchCodeMapping table is empty or missing entries
-const FALLBACK_FACTORY_MAP: Record<string, string> = {
-    'PMD-1': 'P1',
-    'PMD-2': 'P2',
-};
+
 
 const FALLBACK_JENIS_MAP: Record<string, string> = {
     'RAW_MATERIAL': 'PD',
@@ -252,8 +248,19 @@ export class BatchNumberingService {
      * Map factory code (e.g. 'PMD-1') to batch code (e.g. 'P1')
      */
     private static async getFactoryBatchCode(factoryCode: string, db: any): Promise<string> {
+        // 1. Ambil langsung dari Factory record
+        const factory = await db.factory.findFirst({
+            where: { code: factoryCode },
+            select: { batch_code_prefix: true }
+        });
+        if (factory?.batch_code_prefix) return factory.batch_code_prefix;
+
+        // 2. Fallback ke BatchCodeMapping table (backward compat)
         const mapped = await this.getMapping('FACTORY', factoryCode, db);
-        return mapped || FALLBACK_FACTORY_MAP[factoryCode] || factoryCode.replace('PMD-', 'P');
+        if (mapped) return mapped;
+
+        // 3. Last resort: generic dari kode factory
+        return factoryCode.replace(/[^A-Z0-9]/gi, '').substring(0, 4).toUpperCase();
     }
 
     /**
@@ -331,9 +338,6 @@ export class BatchNumberingService {
         if (count > 0) return 0;
 
         const mappings = [
-            // Factory
-            { param_type: 'FACTORY', param_key: 'PMD-1', batch_code: 'P1' },
-            { param_type: 'FACTORY', param_key: 'PMD-2', batch_code: 'P2' },
             // Jenis
             { param_type: 'JENIS', param_key: 'RAW_MATERIAL', batch_code: 'PD' },
             { param_type: 'JENIS', param_key: 'INTERMEDIATE_PK', batch_code: 'PK' },

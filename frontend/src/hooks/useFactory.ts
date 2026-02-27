@@ -6,6 +6,8 @@ interface Factory {
     id: number;
     code: string;
     name: string;
+    batch_code_prefix?: string;
+    is_active?: boolean;
 }
 
 export const useFactory = () => {
@@ -20,15 +22,14 @@ export const useFactory = () => {
         const fetchFactories = async () => {
             try {
                 setLoading(true);
-                const res = await factoryApi.getAll();
+                const res = await factoryApi.getAll({ limit: 100 });
                 const data = res.data?.data || res.data || [];
-                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
-                setFactories(pmdFactories);
+                const factoriesData = data.filter((f: Factory) => f.is_active !== false);
+                setFactories(factoriesData);
 
                 // Set default if none selected or previous selection not in list
-                if (selectedFactory === null) {
-                    const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
-                    const defaultId = pmd1 ? pmd1.id : (pmdFactories.length > 0 ? pmdFactories[0].id : null);
+                if (selectedFactory === null || !factoriesData.find((f: Factory) => f.id === selectedFactory)) {
+                    const defaultId = factoriesData.length > 0 ? factoriesData[0].id : null;
                     if (defaultId) {
                         setSelectedFactory(defaultId);
                         localStorage.setItem('selectedFactoryId', String(defaultId));

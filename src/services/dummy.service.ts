@@ -45,8 +45,8 @@ export class DummyService {
             const user = await this.ensureUser(tx);
 
             // 1. Ensure both factories
-            const pmd1 = await this.ensureFactory(tx, 'PMD-1', 'PMD 1 - Penggilingan', 'Jl. Raya Padi No.1, Karawang');
-            const pmd2 = await this.ensureFactory(tx, 'PMD-2', 'PMD 2 - Finishing', 'Jl. Raya Beras No.2, Karawang');
+            const pmd1 = await this.ensureFactory(tx, 'PMD-1', 'PMD 1', 'Jl. Raya Padi No.1, Karawang');
+            const pmd2 = await this.ensureFactory(tx, 'PMD-2', 'PMD 2', 'Jl. Raya Beras No.2, Karawang');
 
             // 2. Ensure ProductTypes
             const productTypes = await this.ensureProductTypes(tx);

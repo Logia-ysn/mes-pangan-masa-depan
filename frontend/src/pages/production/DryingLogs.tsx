@@ -22,6 +22,7 @@ interface DryingLog {
     shrinkage_kg: number | null;
     shrinkage_pct: number | null;
     notes: string | null;
+    id_factory: number;
     Factory: { id: number; name: string };
     User: { id: number; fullname: string };
 }
@@ -38,6 +39,8 @@ const DryingLogs = () => {
     const [searchBatch, setSearchBatch] = useState('');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [currentId, setCurrentId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         id_factory: '',
@@ -101,13 +104,11 @@ const DryingLogs = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleCreateSubmit = async (e: React.FormEvent) => {
+    const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         let initialWt = parseFloat(formData.initial_weight) || 0;
         let finalWt = parseFloat(formData.final_weight) || 0;
-        let shrinkage_kg = initialWt - finalWt;
-        let shrinkage_pct = initialWt > 0 ? (shrinkage_kg / initialWt) * 100 : 0;
 
         try {
             setSubmitting(true);
@@ -118,31 +119,72 @@ const DryingLogs = () => {
                 initial_moisture: formData.initial_moisture ? parseFloat(formData.initial_moisture) : undefined,
                 final_moisture: formData.final_moisture ? parseFloat(formData.final_moisture) : undefined,
                 downtime_hours: formData.downtime_hours ? parseFloat(formData.downtime_hours) : undefined,
-                shrinkage_kg,
-                shrinkage_pct
             };
 
-            await dryingLogApi.create(payload);
-            showSuccess('Sukses', 'Catatan Pengeringan berhasil ditambahkan');
+            if (isEditMode && currentId) {
+                await dryingLogApi.update(currentId, payload);
+                showSuccess('Sukses', 'Catatan Pengeringan berhasil diperbarui');
+            } else {
+                await dryingLogApi.create(payload);
+                showSuccess('Sukses', 'Catatan Pengeringan berhasil ditambahkan');
+            }
+
             setIsModalOpen(false);
-            setFormData({
-                id_factory: selectedFactory || '',
-                batch_code: '',
-                drying_date: new Date().toISOString().split('T')[0],
-                method: 'SUN_DRY',
-                initial_weight: '',
-                final_weight: '',
-                initial_moisture: '',
-                final_moisture: '',
-                downtime_hours: '',
-                notes: ''
-            });
+            resetForm();
             fetchLogs();
         } catch (error: any) {
-            console.error('Error creating drying log:', error);
-            showError('Error', error.response?.data?.message || 'Gagal menambahkan log pengeringan');
+            console.error('Error saving drying log:', error);
+            showError('Error', error.response?.data?.message || 'Gagal menyimpan log pengeringan');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const resetForm = () => {
+        setIsEditMode(false);
+        setCurrentId(null);
+        setFormData({
+            id_factory: selectedFactory || '',
+            batch_code: '',
+            drying_date: new Date().toISOString().split('T')[0],
+            method: 'SUN_DRY',
+            initial_weight: '',
+            final_weight: '',
+            initial_moisture: '',
+            final_moisture: '',
+            downtime_hours: '',
+            notes: ''
+        });
+    };
+
+    const handleEdit = (log: DryingLog) => {
+        setIsEditMode(true);
+        setCurrentId(log.id);
+        setFormData({
+            id_factory: log.id_factory ? log.id_factory.toString() : log.Factory?.id?.toString() || '',
+            batch_code: log.batch_code,
+            drying_date: new Date(log.drying_date).toISOString().split('T')[0],
+            method: log.method,
+            initial_weight: log.initial_weight.toString(),
+            final_weight: log.final_weight.toString(),
+            initial_moisture: log.initial_moisture?.toString() || '',
+            final_moisture: log.final_moisture?.toString() || '',
+            downtime_hours: log.downtime_hours?.toString() || '',
+            notes: log.notes || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id: number) => {
+        if (window.confirm('Hapus catatan pengeringan ini?')) {
+            try {
+                await dryingLogApi.delete(id);
+                showSuccess('Sukses', 'Catatan Pengeringan berhasil dihapus');
+                fetchLogs();
+            } catch (error: any) {
+                console.error('Error deleting drying log:', error);
+                showError('Error', 'Gagal menghapus log pengeringan');
+            }
         }
     };
 
@@ -153,7 +195,7 @@ const DryingLogs = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 className="card-title">Drying Log (Pengeringan)</h2>
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                    <button className="btn btn-primary" onClick={() => { resetForm(); setIsModalOpen(true); }}>
                         <span className="material-symbols-outlined icon-sm">add</span>
                         Tambah Log
                     </button>
@@ -216,7 +258,8 @@ const DryingLogs = () => {
                                             <th style={{ textAlign: 'right' }}>K.A. Awal (%)</th>
                                             <th style={{ textAlign: 'right' }}>K.A. Akhir (%)</th>
                                             <th style={{ textAlign: 'right' }}>Total Susut</th>
-                                            <th>Dicatat Oleh</th>
+                                            <th>Analis</th>
+                                            <th style={{ textAlign: 'center' }}>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -242,6 +285,24 @@ const DryingLogs = () => {
                                                     ) : '-'}
                                                 </td>
                                                 <td>{log.User?.fullname || '-'}</td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                                        <button
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            onClick={() => handleEdit(log)}
+                                                            title="Edit"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: 18 }}>edit</span>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            onClick={() => handleDelete(log.id)}
+                                                            title="Hapus"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 18 }}>delete</span>
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -263,13 +324,13 @@ const DryingLogs = () => {
                 <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
                         <div className="modal-header">
-                            <h3 className="modal-title">Tambah Log Pengeringan</h3>
+                            <h3 className="modal-title">{isEditMode ? 'Edit Log Pengeringan' : 'Tambah Log Pengeringan'}</h3>
                             <button className="modal-close" onClick={() => setIsModalOpen(false)}>
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
                         <div className="modal-body">
-                            <form onSubmit={handleCreateSubmit}>
+                            <form onSubmit={handleFormSubmit}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                     <div className="form-group">
                                         <label className="form-label">Batch Code</label>
@@ -415,7 +476,7 @@ const DryingLogs = () => {
                                         Batal
                                     </button>
                                     <button type="submit" className="btn btn-primary" disabled={submitting}>
-                                        {submitting ? 'Menyimpan...' : 'Simpan Log'}
+                                        {submitting ? 'Menyimpan...' : (isEditMode ? 'Perbarui Log' : 'Simpan Log')}
                                     </button>
                                 </div>
                             </form>

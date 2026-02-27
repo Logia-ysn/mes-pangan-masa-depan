@@ -21,6 +21,9 @@ export class T_createFactory_body {
   @IsOptional()
   @IsString({ message: 'phone must be a string' })
   phone?: string
+  @IsNotEmpty({ message: 'batch_code_prefix cannot be empty' })
+  @IsString({ message: 'batch_code_prefix must be a string' })
+  batch_code_prefix!: string
 }
 
 export type T_createFactory = (request: {

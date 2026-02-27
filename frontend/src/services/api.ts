@@ -68,7 +68,8 @@ export const dashboardApi = {
 
 // Factory
 export const factoryApi = {
-    getAll: (params?: { limit?: number; offset?: number }) => api.get('/factories', { params }),
+    getAll: (params?: { limit?: number; offset?: number; is_active?: string }) =>
+        api.get('/factories', { params: { is_active: 'true', ...params } }),
     getById: (id: number) => api.get(`/factories/${id}`),
     create: (data: Record<string, any>) => api.post('/factories', data),
     update: (id: number, data: Record<string, any>) => api.put(`/factories/${id}`, data),
@@ -87,6 +88,7 @@ export const worksheetApi = {
     approve: (id: number) => api.post(`/worksheets/${id}/approve`),
     reject: (id: number, reason: string) => api.post(`/worksheets/${id}/reject`, { reason }),
     cancel: (id: number, reason?: string) => api.post(`/worksheets/${id}/cancel`, { reason }),
+    downloadPdf: (id: number) => api.get(`/worksheets/${id}/pdf`, { responseType: 'blob' }),
 };
 
 // Stocks
@@ -221,6 +223,8 @@ export const qcResultApi = {
     getAll: (params?: Record<string, any>) => api.get('/qc-results', { params }),
     getById: (id: number) => api.get(`/qc-results/${id}`),
     create: (data: Record<string, any>) => api.post('/qc-results', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/qc-results/${id}`, data),
+    delete: (id: number) => api.delete(`/qc-results/${id}`),
 };
 
 // Drying Log (Pengeringan)
@@ -228,6 +232,8 @@ export const dryingLogApi = {
     getAll: (params?: Record<string, any>) => api.get('/drying-logs', { params }),
     getById: (id: number) => api.get(`/drying-logs/${id}`),
     create: (data: Record<string, any>) => api.post('/drying-logs', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/drying-logs/${id}`, data),
+    delete: (id: number) => api.delete(`/drying-logs/${id}`),
 };
 
 // Customers
@@ -296,6 +302,7 @@ export const purchaseOrderApi = {
     approve: (id: number) => api.post(`/purchase-orders/${id}/approve`),
     cancel: (id: number) => api.post(`/purchase-orders/${id}/cancel`),
     getStats: (params?: Record<string, any>) => api.get('/purchase-orders/stats', { params }),
+    getReceivableItems: (id: number) => api.get(`/purchase-orders/${id}/receivable-items`),
 };
 
 // Goods Receipts

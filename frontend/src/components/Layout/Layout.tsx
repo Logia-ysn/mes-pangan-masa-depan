@@ -3,7 +3,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { LayoutContext } from '../../contexts/LayoutContext';
-import { getPageTitle } from '../../utils/routeUtils';
+import Breadcrumbs from '../UI/Breadcrumbs';
+import { getPageTitle, getBreadcrumbs } from '../../utils/routeUtils';
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -18,6 +19,7 @@ const Layout = () => {
     };
 
     const { title, subtitle } = getPageTitle(location.pathname);
+    const breadcrumbs = getBreadcrumbs(location.pathname);
 
     return (
         <LayoutContext.Provider value={{ isSidebarOpen, toggleSidebar, closeSidebar }}>
@@ -32,6 +34,7 @@ const Layout = () => {
                 <div className="main-container">
                     <Header title={title} subtitle={subtitle} />
                     <main className="main-content">
+                        <Breadcrumbs items={breadcrumbs} />
                         <Outlet />
                     </main>
                 </div>

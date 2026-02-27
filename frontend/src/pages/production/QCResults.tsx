@@ -17,6 +17,7 @@ interface QCResult {
     whiteness_degree: number | null;
     grade: string | null;
     notes: string | null;
+    id_factory: number;
     Factory: { id: number; name: string };
     User: { id: number; fullname: string };
     Worksheet: { id: number; batch_code: string | null } | null;
@@ -34,6 +35,8 @@ const QCResults = () => {
     const [searchBatch, setSearchBatch] = useState('');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [currentId, setCurrentId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         id_factory: '',
@@ -96,7 +99,7 @@ const QCResults = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleCreateSubmit = async (e: React.FormEvent) => {
+    const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
@@ -109,26 +112,68 @@ const QCResults = () => {
                 whiteness_degree: formData.whiteness_degree ? parseFloat(formData.whiteness_degree) : undefined,
             };
 
-            await qcResultApi.create(payload);
-            showSuccess('Sukses', 'Hasil QC berhasil ditambahkan');
+            if (isEditMode && currentId) {
+                await qcResultApi.update(currentId, payload);
+                showSuccess('Sukses', 'Hasil QC berhasil diperbarui');
+            } else {
+                await qcResultApi.create(payload);
+                showSuccess('Sukses', 'Hasil QC berhasil ditambahkan');
+            }
+
             setIsModalOpen(false);
-            setFormData({
-                id_factory: selectedFactory || '',
-                qc_date: new Date().toISOString().split('T')[0],
-                batch_code: '',
-                id_worksheet: '',
-                moisture_content: '',
-                broken_percentage: '',
-                whiteness_degree: '',
-                grade: '',
-                notes: ''
-            });
+            resetForm();
             fetchResults();
         } catch (error: any) {
-            console.error('Error creating QC result:', error);
-            showError('Error', error.response?.data?.message || 'Gagal menambahkan hasil QC');
+            console.error('Error saving QC result:', error);
+            showError('Error', error.response?.data?.message || 'Gagal menyimpan hasil QC');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const resetForm = () => {
+        setIsEditMode(false);
+        setCurrentId(null);
+        setFormData({
+            id_factory: selectedFactory || '',
+            qc_date: new Date().toISOString().split('T')[0],
+            batch_code: '',
+            id_worksheet: '',
+            moisture_content: '',
+            broken_percentage: '',
+            whiteness_degree: '',
+            grade: '',
+            notes: ''
+        });
+    };
+
+    const handleEdit = (res: QCResult) => {
+        setIsEditMode(true);
+        setCurrentId(res.id);
+        setFormData({
+            id_factory: res.id_factory ? res.id_factory.toString() : res.Factory?.id?.toString() || '',
+            qc_date: new Date(res.qc_date).toISOString().split('T')[0],
+            batch_code: res.batch_code || '',
+            id_worksheet: res.Worksheet?.id?.toString() || '',
+            moisture_content: res.moisture_content?.toString() || '',
+            broken_percentage: res.broken_percentage?.toString() || '',
+            whiteness_degree: res.whiteness_degree?.toString() || '',
+            grade: res.grade || '',
+            notes: res.notes || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id: number) => {
+        if (window.confirm('Hapus hasil QC ini?')) {
+            try {
+                await qcResultApi.delete(id);
+                showSuccess('Sukses', 'Hasil QC berhasil dihapus');
+                fetchResults();
+            } catch (error: any) {
+                console.error('Error deleting QC result:', error);
+                showError('Error', 'Gagal menghapus hasil QC');
+            }
         }
     };
 
@@ -139,7 +184,7 @@ const QCResults = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 className="card-title">QC Produk Jadi (Beras)</h2>
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                    <button className="btn btn-primary" onClick={() => { resetForm(); setIsModalOpen(true); }}>
                         <span className="material-symbols-outlined icon-sm">add</span>
                         Input Hasil QC
                     </button>
@@ -201,7 +246,8 @@ const QCResults = () => {
                                             <th style={{ textAlign: 'center' }}>Broken (%)</th>
                                             <th style={{ textAlign: 'center' }}>Derajat Sosoh</th>
                                             <th style={{ textAlign: 'center' }}>Grade Akhir</th>
-                                            <th>Analis (User)</th>
+                                            <th>Analis</th>
+                                            <th style={{ textAlign: 'center' }}>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -229,6 +275,24 @@ const QCResults = () => {
                                                     ) : '-'}
                                                 </td>
                                                 <td>{res.User?.fullname || '-'}</td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                                        <button
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            onClick={() => handleEdit(res)}
+                                                            title="Edit"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: 18 }}>edit</span>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-ghost btn-icon btn-sm"
+                                                            onClick={() => handleDelete(res.id)}
+                                                            title="Hapus"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 18 }}>delete</span>
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -250,13 +314,13 @@ const QCResults = () => {
                 <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
                         <div className="modal-header">
-                            <h3 className="modal-title">Input Hasil QC Produk Jadi</h3>
+                            <h3 className="modal-title">{isEditMode ? 'Edit Hasil QC Produk Jadi' : 'Input Hasil QC Produk Jadi'}</h3>
                             <button className="modal-close" onClick={() => setIsModalOpen(false)}>
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
                         <div className="modal-body">
-                            <form onSubmit={handleCreateSubmit}>
+                            <form onSubmit={handleFormSubmit}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                     <div className="form-group">
                                         <label className="form-label">Tanggal QC</label>
@@ -373,7 +437,7 @@ const QCResults = () => {
                                         Batal
                                     </button>
                                     <button type="submit" className="btn btn-primary" disabled={submitting}>
-                                        {submitting ? 'Menyimpan...' : 'Simpan QC'}
+                                        {submitting ? 'Menyimpan...' : (isEditMode ? 'Perbarui QC' : 'Simpan QC')}
                                     </button>
                                 </div>
                             </form>

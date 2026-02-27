@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 
 import api, {
     rawMaterialCategoryApi,
@@ -32,6 +33,7 @@ type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'levels' | 'b
 
 const Settings = () => {
     const { showSuccess, showError } = useToast();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('categories');
 
@@ -317,6 +319,10 @@ const Settings = () => {
         { key: 'quality', label: 'Quality Config', icon: 'tune' },
     ];
 
+    if (user?.role === 'ADMIN') {
+        tabs.push({ key: 'data', label: 'Manajemen Data', icon: 'database' });
+    }
+
     return (
         <>
             <div className="page-content">
@@ -371,7 +377,7 @@ const Settings = () => {
                                     <div>
                                         <h4 style={{ fontWeight: 600, marginBottom: 4 }}>Informasi</h4>
                                         <p style={{ fontSize: '0.875rem' }}>
-                                            <strong>Generate Dummy:</strong> Membuat data sample produksi (PMD 1 &amp; PMD 2), stok, worksheet, invoice, dan purchase order.<br />
+                                            <strong>Generate Dummy:</strong> Membuat data sample produksi untuk pabrik aktif, stok, worksheet, invoice, dan purchase order.<br />
                                             <strong>Hapus Dummy:</strong> Menghapus HANYA data dummy yang di-generate. Data asli tetap aman.<br />
                                             <strong>Hard Reset:</strong> Menghapus SEMUA data transaksi dan master data (kecuali User &amp; Factory). HATI-HATI!
                                         </p>

@@ -323,6 +323,11 @@ class PurchaseOrderService {
             if (!poItem) {
                 throw new BusinessRuleError(`PO item ${item.id_purchase_order_item} not found`);
             }
+            if (poItem.ProductType?.category === 'RAW_MATERIAL') {
+                throw new BusinessRuleError(
+                    `Item "${poItem.ProductType.name}" adalah bahan baku. Gunakan form Penerimaan Bahan Baku untuk menerima bahan baku (mendukung QC dan Quarantine).`
+                );
+            }
             const remaining = Number(poItem.quantity) - Number(poItem.received_quantity);
             if (item.quantity_received > remaining) {
                 throw new BusinessRuleError(

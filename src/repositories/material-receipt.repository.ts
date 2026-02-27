@@ -18,7 +18,25 @@ export class MaterialReceiptRepository extends BaseRepository<MaterialReceipt> {
         User: { select: { id: true, fullname: true, email: true, role: true } },
         ProductType: true,
         Approver: { select: { id: true, fullname: true, email: true, role: true } },
-        PaidByUser: { select: { id: true, fullname: true, email: true, role: true } }
+        PaidByUser: { select: { id: true, fullname: true, email: true, role: true } },
+        PurchaseOrder: {
+            select: {
+                id: true,
+                po_number: true,
+                order_date: true,
+                status: true,
+                Supplier: { select: { id: true, name: true } }
+            }
+        },
+        PurchaseOrderItem: {
+            select: {
+                id: true,
+                quantity: true,
+                received_quantity: true,
+                unit_price: true,
+                ProductType: { select: { id: true, code: true, name: true } }
+            }
+        }
     };
 
     async findById(id: number) {
@@ -33,6 +51,7 @@ export class MaterialReceiptRepository extends BaseRepository<MaterialReceipt> {
         offset?: number;
         id_factory?: number;
         id_supplier?: number;
+        id_purchase_order?: number;
         status?: any;
         start_date?: string;
         end_date?: string;
@@ -40,6 +59,7 @@ export class MaterialReceiptRepository extends BaseRepository<MaterialReceipt> {
         const where: any = {};
         if (params.id_factory) where.id_factory = Number(params.id_factory);
         if (params.id_supplier) where.id_supplier = Number(params.id_supplier);
+        if (params.id_purchase_order) where.id_purchase_order = Number(params.id_purchase_order);
         if (params.status) where.status = params.status;
         if (params.start_date || params.end_date) {
             where.receipt_date = {};

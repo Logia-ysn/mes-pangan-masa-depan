@@ -36,8 +36,7 @@ const RendemenMonitor = () => {
     useEffect(() => {
         factoryApi.getAll().then(r => {
             const d = r.data?.data || r.data || [];
-            const pmd = d.filter((f: any) => f.code?.startsWith('PMD'));
-            setFactories(pmd);
+            setFactories(d);
         }).catch(() => { });
     }, []);
 

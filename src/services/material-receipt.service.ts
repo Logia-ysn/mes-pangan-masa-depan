@@ -27,6 +27,8 @@ export interface CreateMaterialReceiptDTO {
     rotten_percentage?: number;
     defect_percentage?: number;
     quality_grade?: string;
+    id_purchase_order?: number;
+    id_purchase_order_item?: number;
 }
 
 export interface MarkAsPaidDTO {
@@ -118,6 +120,8 @@ class MaterialReceiptService {
                     id_user: userId,
                     id_product_type: dto.id_product_type,
                     id_variety: dto.id_variety || null,
+                    id_purchase_order: dto.id_purchase_order || null,
+                    id_purchase_order_item: dto.id_purchase_order_item || null,
                     receipt_date: new Date(dto.receipt_date),
                     batch_code: dto.batch_code,
                     quantity: dto.quantity,
@@ -130,6 +134,68 @@ class MaterialReceiptService {
                     notes: dto.notes
                 }
             });
+
+            // === PO LINKAGE: Update received_quantity on PO Item ===
+            if (dto.id_purchase_order && dto.id_purchase_order_item) {
+                // Validasi: PO harus status APPROVED atau SENT atau PARTIAL_RECEIVED
+                const po = await tx.purchaseOrder.findUnique({
+                    where: { id: dto.id_purchase_order },
+                    include: { PurchaseOrderItem: true }
+                });
+                if (!po) throw new BusinessRuleError('Purchase Order tidak ditemukan');
+
+                const allowedStatuses = ['APPROVED', 'SENT', 'PARTIAL_RECEIVED'];
+                if (!allowedStatuses.includes(po.status)) {
+                    throw new BusinessRuleError(
+                        `PO status "${po.status}" tidak bisa menerima barang. Status harus: ${allowedStatuses.join(', ')}`
+                    );
+                }
+
+                // Validasi: Quantity tidak melebihi sisa PO item
+                const poItem = po.PurchaseOrderItem.find(i => i.id === dto.id_purchase_order_item);
+                if (!poItem) throw new BusinessRuleError('PO Item tidak ditemukan');
+
+                const remaining = Number(poItem.quantity) - Number(poItem.received_quantity);
+                if (dto.quantity > remaining) {
+                    throw new BusinessRuleError(
+                        `Quantity (${dto.quantity} kg) melebihi sisa PO (${remaining} kg). Total PO: ${poItem.quantity} kg, Sudah diterima: ${poItem.received_quantity} kg`
+                    );
+                }
+
+                // Update received_quantity di PO Item
+                await tx.purchaseOrderItem.update({
+                    where: { id: dto.id_purchase_order_item },
+                    data: {
+                        received_quantity: { increment: dto.quantity }
+                    }
+                });
+
+                // Update PO status berdasarkan total penerimaan
+                const updatedPOItems = await tx.purchaseOrderItem.findMany({
+                    where: { id_purchase_order: dto.id_purchase_order }
+                });
+
+                const allReceived = updatedPOItems.every(
+                    item => Number(item.received_quantity) >= Number(item.quantity)
+                );
+                const someReceived = updatedPOItems.some(
+                    item => Number(item.received_quantity) > 0
+                );
+
+                let newPOStatus = po.status;
+                if (allReceived) {
+                    newPOStatus = 'RECEIVED';
+                } else if (someReceived) {
+                    newPOStatus = 'PARTIAL_RECEIVED';
+                }
+
+                if (newPOStatus !== po.status) {
+                    await tx.purchaseOrder.update({
+                        where: { id: dto.id_purchase_order },
+                        data: { status: newPOStatus as any }
+                    });
+                }
+            }
 
             // 5.5 Create Quality Analysis Record if QC data provided
             if (dto.moisture_value !== undefined || dto.density_value !== undefined || dto.quality_grade) {
@@ -448,6 +514,30 @@ class MaterialReceiptService {
 
             // 4. Delete the StockMovement
             await tx.stockMovement.delete({ where: { id: receipt.id_stock_movement } });
+
+            // 5. Rollback PO received_quantity & status if linked
+            if (receipt.id_purchase_order_item && receipt.id_purchase_order) {
+                await tx.purchaseOrderItem.update({
+                    where: { id: receipt.id_purchase_order_item },
+                    data: {
+                        received_quantity: { decrement: Number(receipt.quantity) }
+                    }
+                });
+
+                // Recalculate PO status
+                const poItems = await tx.purchaseOrderItem.findMany({
+                    where: { id_purchase_order: receipt.id_purchase_order }
+                });
+                const someReceived = poItems.some(i => Number(i.received_quantity) > 0);
+                const allReceived = poItems.every(i => Number(i.received_quantity) >= Number(i.quantity));
+
+                await tx.purchaseOrder.update({
+                    where: { id: receipt.id_purchase_order },
+                    data: {
+                        status: allReceived ? 'RECEIVED' : someReceived ? 'PARTIAL_RECEIVED' : 'APPROVED'
+                    }
+                });
+            }
 
             // Audit Log: DELETE
             await auditService.log({

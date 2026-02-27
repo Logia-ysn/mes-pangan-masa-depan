@@ -38,6 +38,7 @@ const Employees = React.lazy(() => import('./pages/admin/Employees'));
 const Payments = React.lazy(() => import('./pages/sales/Payments'));
 const Expenses = React.lazy(() => import('./pages/finance/Expenses'));
 const Attendance = React.lazy(() => import('./pages/admin/Attendance'));
+const Factories = React.lazy(() => import('./pages/admin/Factories'));
 const RendemenMonitor = React.lazy(() => import('./pages/production/RendemenMonitor'));
 const StockTransfers = React.lazy(() => import('./pages/inventory/StockTransfers'));
 const StockOpname = React.lazy(() => import('./pages/inventory/StockOpname'));
@@ -46,6 +47,7 @@ const DeliveryOrderForm = React.lazy(() => import('./pages/sales/DeliveryOrderFo
 const DryingLogs = React.lazy(() => import('./pages/production/DryingLogs'));
 const QCResults = React.lazy(() => import('./pages/production/QCResults'));
 const Suppliers = React.lazy(() => import('./pages/purchasing/Suppliers'));
+const InvoiceForm = React.lazy(() => import('./pages/sales/InvoiceForm'));
 
 import RoleGuard from './components/RoleGuard';
 import LogoLoader from './components/UI/LogoLoader';
@@ -152,6 +154,9 @@ const AppRoutes = () => {
             <Route path="invoices" element={
               <RoleGuard requiredRole="SUPERVISOR"><Invoices /></RoleGuard>
             } />
+            <Route path="invoices/new" element={
+              <RoleGuard requiredRole="SUPERVISOR"><InvoiceForm /></RoleGuard>
+            } />
             <Route path="invoices/:id" element={
               <RoleGuard requiredRole="SUPERVISOR"><InvoiceDetail /></RoleGuard>
             } />
@@ -209,6 +214,9 @@ const AppRoutes = () => {
             } />
             <Route path="employees" element={
               <RoleGuard requiredRole="ADMIN"><Employees /></RoleGuard>
+            } />
+            <Route path="factories" element={
+              <RoleGuard requiredRole="ADMIN"><Factories /></RoleGuard>
             } />
             <Route path="attendance" element={
               <RoleGuard requiredRole="ADMIN"><Attendance /></RoleGuard>

@@ -13,6 +13,7 @@ interface Factory {
     id: number;
     code: string;
     name: string;
+    batch_code_prefix?: string;
 }
 
 interface Machine {
@@ -163,16 +164,14 @@ const WorksheetForm = () => {
                 ]);
 
                 const allFactories = factRes.data?.data || factRes.data || [];
-                const pmdFactories = allFactories.filter((f: Factory) => f.code.startsWith('PMD'));
-                setFactories(pmdFactories);
+                setFactories(allFactories);
                 setMachines(machRes.data?.data || []);
                 setEmployees(empRes.data?.data || []);
                 setProcessCategories(procRes.data?.data || []);
 
                 // Set default factory
-                if (!isEditMode && pmdFactories.length > 0) {
-                    const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
-                    setSelectedFactory(pmd1?.id || pmdFactories[0].id);
+                if (!isEditMode && allFactories.length > 0) {
+                    setSelectedFactory(allFactories[0].id);
                 }
             } catch (error) {
                 logger.error('Error loading reference data:', error);
@@ -624,7 +623,7 @@ const WorksheetForm = () => {
                                         {machines.length === 0 ? (
                                             <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No machines available for this factory</div>
                                         ) : (
-                                            machines.filter(m => !selectedFactory || m.id_factory === selectedFactory || true).map(m => (
+                                            machines.map(m => (
                                                 <button
                                                     key={m.id}
                                                     type="button"

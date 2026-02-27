@@ -28,6 +28,9 @@ export class T_updateFactory_body {
   @IsString({ message: 'phone must be a string' })
   phone?: string
   @IsOptional()
+  @IsString({ message: 'batch_code_prefix must be a string' })
+  batch_code_prefix?: string
+  @IsOptional()
   @Transform((param?: any): boolean | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : (param?.value === 'true' || ((typeof param?.value === 'boolean') && param?.value)))
   @IsBoolean({ message: 'is_active must be a boolean' })
   is_active?: boolean

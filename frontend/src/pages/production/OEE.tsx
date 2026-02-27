@@ -44,11 +44,8 @@ const OEE = () => {
             try {
                 const res = await factoryApi.getAll();
                 const data = res.data?.data || res.data || [];
-                const pmdFactories = data.filter((f: Factory) => f.code.startsWith('PMD'));
-                setFactories(pmdFactories);
-                const pmd1 = pmdFactories.find((f: Factory) => f.code === 'PMD-1');
-                if (pmd1) setSelectedFactory(pmd1.id);
-                else if (pmdFactories.length > 0) setSelectedFactory(pmdFactories[0].id);
+                setFactories(data);
+                if (data.length > 0) setSelectedFactory(data[0].id);
             } catch (error) {
                 logger.error('Error fetching factories:', error);
             }

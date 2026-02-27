@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { worksheetApi, machineApi, employeeApi } from '../../services/api';
 import ProductionProgress from '../../components/Production/ProductionProgress';
 import type { ProductionStep } from '../../components/Production/ProductionProgress';
-import { printPage } from '../../utils/printUtils';
 import { logger } from '../../utils/logger';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -106,14 +105,31 @@ const WorksheetDetail = () => {
                 machineApi.getAll().catch(() => ({ data: { data: [] } })),
                 employeeApi.getAll().catch(() => ({ data: { data: [] } }))
             ]);
-            setWorksheet(wsRes.data.data || wsRes.data);
-            setMachines(machRes.data?.data || machRes.data || []);
-            setEmployees(empRes.data?.data || empRes.data || []);
+            setWorksheet((wsRes as any).data?.data || (wsRes as any).data || wsRes);
+            setMachines((machRes as any).data?.data || (machRes as any).data || machRes || []);
+            setEmployees((empRes as any).data?.data || (empRes as any).data || empRes || []);
         } catch (err) {
             logger.error('Error:', err);
             setError('Gagal memuat data worksheet');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDownloadPdf = async () => {
+        if (!worksheet) return;
+        try {
+            const res = await worksheetApi.downloadPdf(worksheet.id);
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `worksheet_${worksheet.batch_code || worksheet.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showSuccess('Berhasil', 'PDF sedang didownload');
+        } catch (err: any) {
+            showError('Gagal', 'Gagal mendownload PDF');
         }
     };
 
@@ -327,9 +343,9 @@ const WorksheetDetail = () => {
                                 Hapus
                             </button>
                         )}
-                        <button className="btn btn-secondary" onClick={printPage}>
-                            <span className="material-symbols-outlined icon-sm">print</span>
-                            Print
+                        <button className="btn btn-secondary" onClick={handleDownloadPdf}>
+                            <span className="material-symbols-outlined icon-sm" style={{ color: '#ef4444' }}>picture_as_pdf</span>
+                            Download PDF
                         </button>
                     </div>
                 </div>

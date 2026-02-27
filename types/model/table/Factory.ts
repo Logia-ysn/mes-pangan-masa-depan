@@ -32,6 +32,12 @@ export class Factory extends BaseEntity {
   })
   phone?: string;
   @Column({
+    type: 'varchar',
+    nullable: true,
+    length: 10,
+  })
+  batch_code_prefix?: string;
+  @Column({
     type: 'boolean',
     nullable: false,
     default: () => "true",

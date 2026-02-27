@@ -67,6 +67,9 @@ const Worksheets = () => {
     const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [pendingCount, setPendingCount] = useState(0);
 
     // Pagination & Factory hook
     const [page, setPage] = useState(1);
@@ -84,7 +87,7 @@ const Worksheets = () => {
         if (!factoryLoading) {
             fetchWorksheets();
         }
-    }, [selectedFactory, page, statusFilter, factoryLoading]);
+    }, [selectedFactory, page, statusFilter, startDate, endDate, factoryLoading]);
 
     const fetchWorksheets = async () => {
         try {
@@ -93,19 +96,40 @@ const Worksheets = () => {
                 limit: ITEMS_PER_PAGE,
                 offset: (page - 1) * ITEMS_PER_PAGE,
                 id_factory: selectedFactory || undefined,
-                status: statusFilter || undefined
+                status: statusFilter || undefined,
+                start_date: startDate || undefined,
+                end_date: endDate || undefined
             });
-
-            const data = res.data?.data || res.data || [];
-            const total = res.data?.total || data.length;
+            const data = (res as any).data?.data || (res as any).data?.worksheets || (res as any).data || (res as any).worksheets || [];
+            const total = (res as any).data?.total || (res as any).total || data.length || 0;
 
             setWorksheets(data);
             setTotalItems(total);
-        } catch (error) {
-            logger.error('Error fetching worksheets:', error);
-            showError('Gagal', 'Gagal memuat data worksheet');
+
+            if (!statusFilter) {
+                const pending = data.filter((w: Worksheet) => w.status === 'SUBMITTED').length;
+                setPendingCount(pending);
+            }
+        } catch (err: any) {
+            showError('Gagal', err.message || 'Gagal mengambil data worksheet');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDownloadPdf = async (e: React.MouseEvent, id: number, batchCode?: string) => {
+        e.stopPropagation();
+        try {
+            const res = await worksheetApi.downloadPdf(id);
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `worksheet_${batchCode || id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err: any) {
+            showError('Gagal', 'Gagal mendownload PDF');
         }
     };
 
@@ -129,7 +153,7 @@ const Worksheets = () => {
     const totalInput = useMemo(() => worksheets.reduce((sum, w) => sum + Number(w.gabah_input || 0), 0), [worksheets]);
     const totalOutput = useMemo(() => worksheets.reduce((sum, w) => sum + Number(w.beras_output || 0), 0), [worksheets]);
     const totalHPP = useMemo(() => worksheets.reduce((sum, w) => sum + Number(w.hpp || 0), 0), [worksheets]);
-    const pendingCount = useMemo(() => worksheets.filter(w => w.status === 'SUBMITTED').length, [worksheets]);
+    // const pendingCount = useMemo(() => worksheets.filter(w => w.status === 'SUBMITTED').length, [worksheets]); // This is now a state variable
 
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
@@ -189,6 +213,34 @@ const Worksheets = () => {
                             <option key={f.value} value={f.value}>{f.label}</option>
                         ))}
                     </select>
+
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: '#f9fafb', padding: '2px 8px', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                        <span className="material-symbols-outlined icon-xs text-muted">calendar_month</span>
+                        <input
+                            type="date"
+                            className="form-input-clean"
+                            value={startDate}
+                            onChange={e => { setStartDate(e.target.value); setPage(1); }}
+                            style={{ width: 115, border: 'none', background: 'transparent', fontSize: '0.75rem' }}
+                        />
+                        <span className="text-muted" style={{ fontSize: '0.7rem' }}>ke</span>
+                        <input
+                            type="date"
+                            className="form-input-clean"
+                            value={endDate}
+                            onChange={e => { setEndDate(e.target.value); setPage(1); }}
+                            style={{ width: 115, border: 'none', background: 'transparent', fontSize: '0.75rem', paddingRight: 0 }}
+                        />
+                        {(startDate || endDate) && (
+                            <button
+                                className="btn btn-ghost btn-icon btn-xs"
+                                onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
+                                title="Reset Filter Tanggal"
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                            </button>
+                        )}
+                    </div>
 
                     {selectedFactory && (
                         <button className="btn btn-primary" onClick={() => navigate('/production/worksheets/new')}>
@@ -341,6 +393,13 @@ const Worksheets = () => {
                                                     <span className="material-symbols-outlined" style={{ color: 'var(--warning)' }}>edit</span>
                                                 </button>
                                             )}
+                                            <button
+                                                className="btn btn-ghost btn-icon btn-sm"
+                                                onClick={(e) => handleDownloadPdf(e, w.id, w.batch_code)}
+                                                title="Download PDF"
+                                            >
+                                                <span className="material-symbols-outlined" style={{ color: '#ef4444' }}>picture_as_pdf</span>
+                                            </button>
                                             {['DRAFT', 'REJECTED', 'CANCELLED'].includes(w.status) && (
                                                 <button
                                                     id={`delete-ws-${w.id}`}

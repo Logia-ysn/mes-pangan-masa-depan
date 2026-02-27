@@ -322,13 +322,14 @@ class PDFService {
             }
 
             // ===== FOOTER =====
-            const footerY = doc.page.height - 60;
+            const footerY = doc.page.height - 40;
             doc.fontSize(7).font('Helvetica').fillColor('#aaaaaa')
                 .text(
-                    `Dicetak pada ${formatDate(new Date())} | ERP Pangan Masa Depan`,
+                    `Dokumen tercetak pada ${formatDate(new Date())} | Otomatis oleh Sistem ERP PMD`,
                     leftX, footerY, { width: pageWidth, align: 'center' }
                 );
 
+            doc.end();
         });
     }
 
@@ -563,6 +564,209 @@ class PDFService {
                     `Dokumen tercetak pada ${formatDate(new Date())} | Otomatis oleh Sistem ERP PMD`,
                     leftX, footerY, { width: pageWidth, align: 'center' }
                 );
+
+            doc.end();
+        });
+    }
+
+    async generateWorksheetPDF(worksheetId: number): Promise<Buffer> {
+        const worksheet = await prisma.worksheet.findUnique({
+            where: { id: worksheetId },
+            include: {
+                Factory: true,
+                User: true,
+                Machine: true,
+                ProductType: true,
+                SubmittedByUser: { select: { fullname: true } },
+                ApprovedByUser: { select: { fullname: true } },
+                WorksheetInputBatch: {
+                    include: { Stock: { include: { ProductType: true } } }
+                },
+                WorksheetSideProduct: {
+                    include: { ProductType: true }
+                }
+            }
+        });
+
+        if (!worksheet) {
+            throw new NotFoundError('Worksheet', worksheetId);
+        }
+
+        return new Promise((resolve, reject) => {
+            const doc = new PDFDocument({
+                size: 'A4',
+                margin: 50,
+                info: {
+                    Title: `Worksheet ${worksheet.batch_code || '#' + worksheetId}`,
+                    Author: 'ERP Pangan Masa Depan',
+                },
+            });
+
+            const chunks: any[] = [];
+            doc.on('data', chunk => chunks.push(chunk));
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', reject);
+
+            const pageWidth = doc.page.width - 100;
+            const leftX = 50;
+            const rightX = doc.page.width - 50;
+
+            // ===== WATERMARK & STATUS =====
+            const statusConfig: Record<string, { color: string, text: string }> = {
+                'DRAFT': { color: '#94a3b8', text: 'DRAFT' },
+                'SUBMITTED': { color: '#fbbf24', text: 'PENDING' },
+                'COMPLETED': { color: '#22c55e', text: 'COMPLETED' },
+                'REJECTED': { color: '#ef4444', text: 'REJECTED' },
+                'CANCELLED': { color: '#64748b', text: 'CANCELLED' }
+            };
+
+            const meta = statusConfig[worksheet.status] || { color: '#94a3b8', text: worksheet.status };
+
+            doc.save();
+            doc.opacity(0.1);
+            doc.fontSize(80).font('Helvetica-Bold').fillColor(meta.color);
+            doc.translate(doc.page.width / 2, doc.page.height / 2).rotate(-45, { origin: [0, 0] });
+            doc.text(meta.text, -200, -40, { width: 400, align: 'center' });
+            doc.restore();
+
+            // Status Badge top right
+            doc.save();
+            doc.roundedRect(420, 30, 130, 40, 5).lineWidth(2).strokeColor(meta.color).stroke();
+            doc.fontSize(16).font('Helvetica-Bold').fillColor(meta.color).text(meta.text, 420, 42, { width: 130, align: 'center' });
+            doc.restore();
+
+            // ===== HEADER =====
+            doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('WORKSHEET PRODUKSI', leftX, 50);
+            doc.fontSize(9).font('Helvetica').fillColor('#666666')
+                .text('ERP Pangan Masa Depan', leftX, 70);
+
+            // Divider
+            doc.moveTo(leftX, 110).lineTo(rightX, 110).strokeColor('#cccccc').lineWidth(1).stroke();
+
+            // ===== INFO SECTION =====
+            let y = 125;
+            const rightColX = 320;
+            let ry = 125;
+
+            const addInfoRow = (label: string, value: string, x: number, lineY: number) => {
+                doc.fontSize(8).font('Helvetica').fillColor('#999999').text(label, x, lineY, { width: 90 });
+                doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000').text(value, x + 90, lineY, { width: 140 });
+                return lineY + 16;
+            };
+
+            y = addInfoRow('NO. BATCH', worksheet.batch_code || '-', leftX, y);
+            y = addInfoRow('TANGGAL', formatDate(worksheet.worksheet_date), leftX, y);
+            y = addInfoRow('SHIFT', worksheet.shift, leftX, y);
+            y = addInfoRow('MESIN', worksheet.Machine?.name || '-', leftX, y);
+
+            ry = addInfoRow('PABRIK', worksheet.Factory?.name || '-', rightColX, ry);
+            ry = addInfoRow('OPERATOR', worksheet.User?.fullname || '-', rightColX, ry);
+            ry = addInfoRow('STATUS', meta.text, rightColX, ry);
+            if (worksheet.status === 'COMPLETED' && (worksheet as any).ApprovedByUser) {
+                ry = addInfoRow('APPROVED BY', (worksheet as any).ApprovedByUser?.fullname || '-', rightColX, ry);
+            }
+
+            // ===== PRODUCTION STATS =====
+            y = Math.max(y, ry) + 25;
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('Ringkasan Produksi', leftX, y);
+            y += 18;
+
+            const statsX = [leftX, leftX + 130, leftX + 260, leftX + 390];
+            const renderStat = (x: number, label: string, value: string) => {
+                doc.fontSize(8).font('Helvetica').fillColor('#666666').text(label, x, y);
+                doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text(value, x, y + 12);
+            };
+
+            renderStat(statsX[0], 'TOTAL INPUT', `${Number(worksheet.gabah_input).toLocaleString('id-ID')} kg`);
+            renderStat(statsX[1], 'HASIL BERAS', `${Number(worksheet.beras_output).toLocaleString('id-ID')} kg`);
+            renderStat(statsX[2], 'RENDEMEN', `${Number(worksheet.rendemen || 0).toFixed(2)} %`);
+            renderStat(statsX[3], 'HPP / KG', formatCurrency(Number(worksheet.beras_output) > 0 ? Number(worksheet.hpp || 0) / Number(worksheet.beras_output) : 0));
+
+            y += 35;
+
+            // ===== INPUT BATCHES TABLE =====
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('Bahan Baku (Input Batches)', leftX, y);
+            y += 15;
+
+            const inputColX = {
+                no: leftX,
+                batch: leftX + 30,
+                product: leftX + 180,
+                qty: rightX - 80
+            };
+
+            doc.rect(leftX, y, pageWidth, 20).fill('#f9fafb');
+            y += 6;
+            doc.fontSize(8).font('Helvetica-Bold').fillColor('#374151');
+            doc.text('No', inputColX.no + 4, y);
+            doc.text('Batch Code', inputColX.batch, y);
+            doc.text('Produk', inputColX.product, y);
+            doc.text('Kuantitas', inputColX.qty, y, { width: 75, align: 'right' });
+            y += 18;
+
+            worksheet.WorksheetInputBatch.forEach((batch, idx) => {
+                if (y > 750) { doc.addPage(); y = 50; }
+                doc.fontSize(9).font('Helvetica').fillColor('#000000');
+                doc.text(String(idx + 1), inputColX.no + 4, y);
+                doc.text(batch.batch_code || '-', inputColX.batch, y);
+                doc.text(batch.Stock?.ProductType?.name || '-', inputColX.product, y);
+                doc.text(`${Number(batch.quantity).toLocaleString('id-ID')} kg`, inputColX.qty, y, { width: 75, align: 'right' });
+                y += 16;
+            });
+            y += 10;
+
+            // ===== SIDE PRODUCTS TABLE =====
+            if (worksheet.WorksheetSideProduct.length > 0) {
+                if (y > 700) { doc.addPage(); y = 50; }
+                doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('Hasil Samping (Side Products)', leftX, y);
+                y += 15;
+
+                doc.rect(leftX, y, pageWidth, 20).fill('#f9fafb');
+                y += 6;
+                doc.fontSize(8).font('Helvetica-Bold').fillColor('#374151');
+                doc.text('Produk', leftX + 4, y);
+                doc.text('Kuantitas', rightX - 80, y, { width: 75, align: 'right' });
+                y += 18;
+
+                worksheet.WorksheetSideProduct.forEach((sp) => {
+                    if (y > 750) { doc.addPage(); y = 50; }
+                    doc.fontSize(9).font('Helvetica').fillColor('#000000');
+                    doc.text(sp.product_name || sp.ProductType?.name || '-', leftX + 4, y);
+                    doc.text(`${Number(sp.quantity).toLocaleString('id-ID')} kg`, rightX - 80, y, { width: 75, align: 'right' });
+                    y += 16;
+                });
+                y += 10;
+            }
+
+            // ===== NOTES =====
+            if (worksheet.notes) {
+                if (y > 700) { doc.addPage(); y = 50; }
+                y += 10;
+                doc.fontSize(8).font('Helvetica').fillColor('#999999').text('CATATAN:', leftX, y);
+                y += 12;
+                doc.fontSize(9).font('Helvetica').fillColor('#333333').text(worksheet.notes, leftX, y, { width: pageWidth });
+                y += 20;
+            }
+
+            // ===== SIGNATURES =====
+            if (y > 650) { doc.addPage(); y = 50; }
+            y += 40;
+            const sigWidth = 150;
+            const sigY = y;
+
+            const renderSig = (label: string, user: string, x: number) => {
+                doc.fontSize(8).font('Helvetica').fillColor('#666666').text(label, x, sigY, { width: sigWidth, align: 'center' });
+                doc.moveTo(x + 20, sigY + 60).lineTo(x + sigWidth - 20, sigY + 60).strokeColor('#000000').lineWidth(0.5).stroke();
+                doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000').text(user, x, sigY + 65, { width: sigWidth, align: 'center' });
+            };
+
+            renderSig('Operator Produksi', worksheet.User?.fullname || '-', leftX + 50);
+            renderSig('Supervisor / Manager', (worksheet as any).ApprovedByUser?.fullname || '( ........................ )', rightX - sigWidth - 50);
+
+            // ===== FOOTER =====
+            const footerY = doc.page.height - 40;
+            doc.fontSize(7).font('Helvetica').fillColor('#aaaaaa')
+                .text(`Dicetak pada ${formatDate(new Date())} | ERP Pangan Masa Depan`, leftX, footerY, { width: pageWidth, align: 'center' });
 
             doc.end();
         });

@@ -13,14 +13,15 @@ export const t_updateFactory: T_updateFactory = apiWrapper(async (req, res) => {
     throw new Error('Factory not found');
   }
 
-  const { code, name, address, phone, is_active } = req.body;
+  const { code, name, address, phone, is_active, batch_code_prefix } = req.body;
 
   const updatedFactory = await factoryRepository.update(factoryId, {
     code,
     name,
     address,
     phone,
-    is_active
+    is_active,
+    batch_code_prefix
   });
 
   return updatedFactory as any;

@@ -15,8 +15,8 @@
  */
 
 export const INITIAL_FACTORIES = [
-    { code: 'PMD-1', name: 'PMD 1 - Penggilingan', address: 'Jl. Raya Padi No.1, Karawang' },
-    { code: 'PMD-2', name: 'PMD 2 - Finishing', address: 'Jl. Raya Beras No.2, Karawang' },
+    { code: 'PMD-1', name: 'PMD 1', address: 'Jl. Raya Padi No.1, Karawang', batch_code_prefix: 'P1' },
+    { code: 'PMD-2', name: 'PMD 2', address: 'Jl. Raya Beras No.2, Karawang', batch_code_prefix: 'P2' },
 ];
 
 export const INITIAL_USERS = [

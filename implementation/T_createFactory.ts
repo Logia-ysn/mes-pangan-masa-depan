@@ -6,7 +6,7 @@ import { requireAuth } from "../utility/auth";
 export const t_createFactory: T_createFactory = apiWrapper(async (req, res) => {
   await requireAuth(req, 'ADMIN');
 
-  const { code, name, address, phone } = req.body;
+  const { code, name, address, phone, batch_code_prefix } = req.body;
 
   // Check if code already exists
   const exists = await factoryRepository.codeExists(code);
@@ -19,6 +19,7 @@ export const t_createFactory: T_createFactory = apiWrapper(async (req, res) => {
     name,
     address,
     phone,
+    batch_code_prefix,
     is_active: true
   });
 

@@ -20,6 +20,9 @@ export class T_getFactories_query {
   @IsOptional()
   @IsString({ message: 'search must be a string' })
   search?: string
+  @IsOptional()
+  @IsString({ message: 'is_active must be a string' })
+  is_active?: string
 }
 class ReturnType_0 {
   @IsNotEmpty({ message: 'total cannot be empty' })

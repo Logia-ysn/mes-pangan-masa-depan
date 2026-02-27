@@ -17,6 +17,14 @@ import {
   t_rejectWorksheet,
   t_cancelWorksheet
 } from './implementation/T_worksheetWorkflow';
+import { t_getWorksheetPdf } from './implementation/T_getWorksheetPdf';
+import { t_getQCResults } from './implementation/T_getQCResults';
+import { t_updateQCResult } from './implementation/T_updateQCResult';
+import { t_deleteQCResult } from './implementation/T_deleteQCResult';
+import { t_getDryingLogs } from './implementation/T_getDryingLogs';
+import { t_updateDryingLog } from './implementation/T_updateDryingLog';
+import { t_deleteDryingLog } from './implementation/T_deleteDryingLog';
+import { handler as t_getPOReceivableItems } from './implementation/T_getPOReceivableItems';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
@@ -443,6 +451,18 @@ server.express.post('/worksheets/:id/submit', express.json(), (req, res) => t_su
 server.express.post('/worksheets/:id/approve', express.json(), (req, res) => t_approveWorksheet(req as any, res as any));
 server.express.post('/worksheets/:id/reject', express.json(), (req, res) => t_rejectWorksheet(req as any, res as any));
 server.express.post('/worksheets/:id/cancel', express.json(), (req, res) => t_cancelWorksheet(req as any, res as any));
+
+// --- Production Audit Fixes (Manual Mount to avoid 404) ---
+server.express.get('/worksheets/:id/pdf', (req, res) => t_getWorksheetPdf(req as any, res as any));
+server.express.get('/qc-results', (req, res) => t_getQCResults(req as any, res as any));
+server.express.put('/qc-results', express.json(), (req, res) => t_updateQCResult(req as any, res as any));
+server.express.delete('/qc-results', (req, res) => t_deleteQCResult(req as any, res as any));
+server.express.get('/drying-logs', (req, res) => t_getDryingLogs(req as any, res as any));
+server.express.put('/drying-logs/:id', express.json(), (req, res) => t_updateDryingLog(req as any, res as any));
+server.express.delete('/drying-logs/:id', (req, res) => t_deleteDryingLog(req as any, res as any));
+
+// PO Receivable Items
+server.express.get('/purchase-orders/:id/receivable-items', (req, res) => t_getPOReceivableItems(req as any, res as any));
 
 // --- Logout (clears httpOnly cookie) ---
 server.express.post('/auth/logout', (_req, res) => {

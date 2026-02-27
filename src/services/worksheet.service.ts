@@ -98,7 +98,8 @@ class WorksheetService {
         return await prisma.$transaction(async (tx) => {
             // 0. Get Factory for batch code generation
             const factory = await tx.factory.findUnique({ where: { id: dto.id_factory } });
-            const factoryCode = factory?.code || 'PMD-1';
+            if (!factory) throw new Error(`Factory with id ${dto.id_factory} not found`);
+            const factoryCode = factory.code;
             const wsDate = new Date(dto.worksheet_date);
 
             // 1. Auto-generate batch code for output if not provided
@@ -281,6 +282,21 @@ class WorksheetService {
             }
 
             // 1. Process Input Batches → Stock OUT
+            // SAFETY: Check stock availability FIRST before any deduction
+            for (const batch of worksheet.WorksheetInputBatch) {
+                if (batch.Stock) {
+                    const currentQty = Number(batch.Stock.quantity);
+                    const neededQty = Number(batch.quantity);
+                    if (currentQty < neededQty) {
+                        const productName = batch.Stock.ProductType?.name || 'Produk';
+                        throw new BusinessRuleError(
+                            `Stok ${productName} (${batch.batch_code}) tidak cukup untuk approval. ` +
+                            `Tersedia: ${currentQty.toLocaleString()}, Dibutuhkan: ${neededQty.toLocaleString()}`
+                        );
+                    }
+                }
+            }
+
             for (const batch of worksheet.WorksheetInputBatch) {
                 if (batch.Stock?.ProductType) {
                     await this.createStockMovementTransactional(

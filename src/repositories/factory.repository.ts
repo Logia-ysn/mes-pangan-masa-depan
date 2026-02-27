@@ -10,6 +10,7 @@ export interface FactoryListParams {
     limit?: number;
     offset?: number;
     search?: string;
+    is_active?: boolean;
 }
 
 export class FactoryRepository extends BaseRepository<Factory> {
@@ -35,6 +36,10 @@ export class FactoryRepository extends BaseRepository<Factory> {
                 { name: { contains: params.search, mode: 'insensitive' } },
                 { code: { contains: params.search, mode: 'insensitive' } }
             ];
+        }
+
+        if (params.is_active !== undefined) {
+            where.is_active = params.is_active;
         }
 
         const [factories, total] = await Promise.all([

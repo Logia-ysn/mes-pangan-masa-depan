@@ -61,5 +61,63 @@ export const getPageTitle = (pathname: string): { title: string; subtitle?: stri
     if (path === '/production/oee') return { title: 'Analisis OEE', subtitle: 'Equipment Effectiveness' };
     if (path === '/production/qc-gabah') return { title: 'QC Bahan Baku', subtitle: 'Analisis kualitas gabah' };
 
+
     return { title: 'ERP Pangan' };
+};
+
+export const getBreadcrumbs = (pathname: string): { label: string; to?: string }[] => {
+    const path = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+    const items: { label: string; to?: string }[] = [];
+
+    // Root / Dashboard
+    if (path === '/') return [{ label: 'Dashboard' }];
+
+    // Penjualan (Sales) -> mapped to Payables per user image
+    if (path.startsWith('/sales')) {
+        items.push({ label: 'Payables', to: '/sales/invoices' });
+
+        if (path.startsWith('/sales/invoices')) {
+            items.push({ label: 'Sales Invoice', to: '/sales/invoices' });
+            if (path === '/sales/invoices/new') {
+                items.push({ label: 'New Sales Invoice' });
+            } else if (path.match(/\/sales\/invoices\/\d+$/)) {
+                items.push({ label: 'Detail Invoice' });
+            }
+        } else if (path === '/sales/customers') {
+            items.push({ label: 'Pelanggan' });
+        } else if (path === '/sales/payments') {
+            items.push({ label: 'Pembayaran' });
+        }
+    }
+
+    // Produksi
+    if (path.startsWith('/production')) {
+        items.push({ label: 'Produksi', to: '/production/worksheets' });
+        if (path.startsWith('/production/worksheets')) {
+            items.push({ label: 'Worksheet', to: '/production/worksheets' });
+            if (path === '/production/worksheets/new') {
+                items.push({ label: 'New Entry' });
+            } else if (path.match(/\/production\/worksheets\/\d+$/)) {
+                items.push({ label: 'Detail' });
+            }
+        }
+    }
+
+    // Purchasing
+    if (path.startsWith('/purchasing')) {
+        items.push({ label: 'Purchasing', to: '/purchasing/purchase-orders' });
+        if (path === '/purchasing/purchase-orders') items.push({ label: 'Purchase Order' });
+        if (path === '/purchasing/goods-receipts') items.push({ label: 'Penerimaan' });
+        if (path === '/purchasing/suppliers') items.push({ label: 'Supplier' });
+    }
+
+    // Generic fallback if items is empty
+    if (items.length === 0) {
+        const segments = path.split('/').filter(Boolean);
+        return segments.map(s => ({
+            label: s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ')
+        }));
+    }
+
+    return items;
 };

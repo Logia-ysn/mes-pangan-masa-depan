@@ -16,20 +16,14 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
     const navItems: NavItemConfig[] = [
         { label: 'Dashboard', icon: 'dashboard', to: '/' },
         {
-            label: 'Pembelian',
+            label: 'Pengadaan',
             icon: 'shopping_cart',
             children: [
                 { label: 'Purchase Order', to: '/purchasing/purchase-orders' },
-                { label: 'Penerimaan Barang', to: '/purchasing/goods-receipts' },
-                { label: 'Supplier', to: '/purchasing/suppliers' },
-            ]
-        },
-        {
-            label: 'Penerimaan Bahan',
-            icon: 'inventory_2',
-            children: [
-                { label: 'Daftar Penerimaan', to: '/receiving/raw-materials' },
+                { label: 'Penerimaan Barang Jadi', to: '/purchasing/goods-receipts' },
+                { label: 'Penerimaan Bahan Baku', to: '/receiving/raw-materials' },
                 { label: 'QC Bahan Baku', to: '/receiving/qc-gabah' },
+                { label: 'Supplier', to: '/purchasing/suppliers' },
             ]
         },
         {
@@ -39,6 +33,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
                 { label: 'Worksheet', to: '/production/worksheets' },
                 { label: 'Drying Log', to: '/production/drying-logs' },
                 { label: 'QC Beras', to: '/production/qc-results' },
+                { label: 'Monitor Rendemen', to: '/production/rendemen' },
             ]
         },
         {
@@ -92,6 +87,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             label: 'Admin Panel',
             icon: 'admin_panel_settings',
             children: [
+                { label: 'Manajemen Pabrik', to: '/admin/factories' },
                 { label: 'Manajemen User', to: '/admin/users' },
                 { label: 'Data Karyawan', to: '/admin/employees' },
                 { label: 'Absensi Karyawan', to: '/admin/attendance' },
