@@ -1152,7 +1152,7 @@ const RawMaterialReceipt = () => {
                         </div>
                         <Pagination
                             currentPage={page}
-                            totalPages={totalPages}
+                            totalPages={Math.ceil(totalItems / ITEMS_PER_PAGE)}
                             onPageChange={setPage}
                             totalItems={totalItems}
                             itemsPerPage={ITEMS_PER_PAGE}
