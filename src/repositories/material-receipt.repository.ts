@@ -56,7 +56,9 @@ export class MaterialReceiptRepository extends BaseRepository<MaterialReceipt> {
         start_date?: string;
         end_date?: string;
     }) {
-        const where: any = {};
+        const where: any = {
+            Factory: { is_active: true }
+        };
         if (params.id_factory) where.id_factory = Number(params.id_factory);
         if (params.id_supplier) where.id_supplier = Number(params.id_supplier);
         if (params.id_purchase_order) where.id_purchase_order = Number(params.id_purchase_order);
