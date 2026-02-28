@@ -21,5 +21,4 @@ jobs:
           port: 22
           command_timeout: 30m
           script: |
-            cd /home/yayang/erp-pangan-masa-depan
-            bash deploy.sh
+            bash /home/yayang/erp-pangan-masa-depan/deploy.sh

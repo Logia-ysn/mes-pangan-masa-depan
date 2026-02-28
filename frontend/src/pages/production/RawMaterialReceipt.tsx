@@ -680,8 +680,6 @@ const RawMaterialReceipt = () => {
         }, 500);
     };
 
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
     return (
         <div className="page-content">
             {/* Factory Toggle */}
