@@ -19,7 +19,7 @@ interface PurchaseOrder {
     status: 'DRAFT' | 'APPROVED' | 'SENT' | 'PARTIAL_RECEIVED' | 'RECEIVED' | 'CANCELLED';
     notes?: string;
     id_factory: number;
-    id_supplier: number;
+    id_supplier: number | null;
     Supplier?: { id: number; name: string; code: string };
     Factory?: { id: number; name: string };
 }
@@ -143,7 +143,7 @@ const PurchaseOrders = () => {
         try {
             const payload = {
                 id_factory: formData.id_factory,
-                id_supplier: formData.id_supplier,
+                id_supplier: formData.id_supplier > 0 ? formData.id_supplier : null,
                 order_date: formData.order_date,
                 expected_date: formData.expected_date,
                 tax: formData.tax ? parseFloat(formData.tax) : 0,
@@ -325,7 +325,7 @@ const PurchaseOrders = () => {
                                                     </span>
                                                 </td>
                                                 <td className="hide-mobile">{formatDate(po.order_date)}</td>
-                                                <td>{po.Supplier?.name || '-'}</td>
+                                                <td>{po.Supplier?.name || 'General (Umum)'}</td>
                                                 <td>
                                                     <span className="font-mono">{formatCurrency(po.total)}</span>
                                                 </td>
@@ -362,167 +362,169 @@ const PurchaseOrders = () => {
             </div>
 
             {/* Create PO Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
-                        <div className="modal-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>
-                                    shopping_cart
-                                </span>
-                                <h3 className="modal-title">Buat Purchase Order Baru</h3>
-                            </div>
-                            <button className="modal-close" onClick={closeModal}>
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                                {/* Section 1: Info */}
-                                <div style={{ marginBottom: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-                                        <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>1</span>
-                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>INFORMASI PO</span>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                        <div className="form-group">
-                                            <label className="form-label">Pabrik <span style={{ color: 'var(--error)' }}>*</span></label>
-                                            <select className="form-input form-select" value={formData.id_factory} onChange={(e) => setFormData({ ...formData, id_factory: parseInt(e.target.value) })} required>
-                                                <option value={0}>Pilih Pabrik</option>
-                                                {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Supplier <span style={{ color: 'var(--error)' }}>*</span></label>
-                                            <select className="form-input form-select" value={formData.id_supplier} onChange={(e) => setFormData({ ...formData, id_supplier: parseInt(e.target.value) })} required>
-                                                <option value={0}>Pilih Supplier</option>
-                                                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                        <div className="form-group">
-                                            <label className="form-label">Tanggal Order <span style={{ color: 'var(--error)' }}>*</span></label>
-                                            <input type="date" className="form-input" value={formData.order_date} onChange={(e) => setFormData({ ...formData, order_date: e.target.value })} required />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Tanggal Diharapkan <span style={{ color: 'var(--error)' }}>*</span></label>
-                                            <input type="date" className="form-input" value={formData.expected_date} onChange={(e) => setFormData({ ...formData, expected_date: e.target.value })} required />
-                                        </div>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Catatan</label>
-                                        <textarea className="form-input" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Catatan tambahan..." />
-                                    </div>
+            {
+                showModal && (
+                    <div className="modal-overlay" onClick={closeModal}>
+                        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
+                            <div className="modal-header">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>
+                                        shopping_cart
+                                    </span>
+                                    <h3 className="modal-title">Buat Purchase Order Baru</h3>
                                 </div>
-
-                                {/* Section 2: Items */}
-                                <div style={{ marginBottom: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-                                        <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>2</span>
-                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>ITEM PRODUK</span>
-                                    </div>
-
-                                    <div className="table-container" style={{ marginBottom: 12 }}>
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>Produk</th>
-                                                    <th>Qty</th>
-                                                    <th>Harga Satuan</th>
-                                                    <th>Subtotal</th>
-                                                    <th></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {items.map((item, idx) => (
-                                                    <tr key={idx}>
-                                                        <td>
-                                                            <select className="form-input form-select" value={item.id_product_type} onChange={(e) => updateItem(idx, 'id_product_type', parseInt(e.target.value))} style={{ minWidth: 160 }}>
-                                                                <option value={0}>Pilih Produk</option>
-                                                                {productTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name} ({pt.code})</option>)}
-                                                            </select>
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" className="form-input" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} placeholder="0" min="0" step="0.01" style={{ width: 100 }} />
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" className="form-input" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} placeholder="0" min="0" style={{ width: 140 }} />
-                                                        </td>
-                                                        <td>
-                                                            <span className="font-mono">{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</span>
-                                                        </td>
-                                                        <td>
-                                                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
-                                                                <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <button type="button" className="btn btn-secondary btn-sm" onClick={addItemRow}>
-                                        <span className="material-symbols-outlined icon-sm">add</span>
-                                        Tambah Item
-                                    </button>
-                                </div>
-
-                                {/* Section 3: Summary */}
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-                                        <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>3</span>
-                                        <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>RINGKASAN</span>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                        <div className="form-group">
-                                            <label className="form-label">Pajak (Rp)</label>
-                                            <input type="number" className="form-input" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Diskon (Rp)</label>
-                                            <input type="number" className="form-input" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" />
-                                        </div>
-                                    </div>
-
-                                    <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 16, marginTop: 8 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
-                                            <span className="font-mono">{formatCurrency(calcSubtotal())}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Pajak</span>
-                                            <span className="font-mono">+ {formatCurrency(parseFloat(formData.tax) || 0)}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Diskon</span>
-                                            <span className="font-mono">- {formatCurrency(parseFloat(formData.discount) || 0)}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '2px solid var(--border)', fontWeight: 700, fontSize: '1.1rem' }}>
-                                            <span>Total</span>
-                                            <span className="font-mono" style={{ color: 'var(--primary)' }}>{formatCurrency(calcTotal())}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={closeModal}>Batal</button>
-                                <button type="submit" className="btn btn-primary">
-                                    <span className="material-symbols-outlined icon-sm">save</span>
-                                    Buat Purchase Order
+                                <button className="modal-close" onClick={closeModal}>
+                                    <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleSubmit}>
+                                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    {/* Section 1: Info */}
+                                    <div style={{ marginBottom: 24 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                            <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>1</span>
+                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>INFORMASI PO</span>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Pabrik <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <select className="form-input form-select" value={formData.id_factory} onChange={(e) => setFormData({ ...formData, id_factory: parseInt(e.target.value) })} required>
+                                                    <option value={0}>Pilih Pabrik</option>
+                                                    {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Supplier</label>
+                                                <select className="form-input form-select" value={formData.id_supplier} onChange={(e) => setFormData({ ...formData, id_supplier: parseInt(e.target.value) })}>
+                                                    <option value={0}>General (Umum)</option>
+                                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Tanggal Order <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <input type="date" className="form-input" value={formData.order_date} onChange={(e) => setFormData({ ...formData, order_date: e.target.value })} required />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Tanggal Diharapkan <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <input type="date" className="form-input" value={formData.expected_date} onChange={(e) => setFormData({ ...formData, expected_date: e.target.value })} required />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Catatan</label>
+                                            <textarea className="form-input" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Catatan tambahan..." />
+                                        </div>
+                                    </div>
+
+                                    {/* Section 2: Items */}
+                                    <div style={{ marginBottom: 24 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                            <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>2</span>
+                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>ITEM PRODUK</span>
+                                        </div>
+
+                                        <div className="table-container" style={{ marginBottom: 12 }}>
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Produk</th>
+                                                        <th>Qty</th>
+                                                        <th>Harga Satuan</th>
+                                                        <th>Subtotal</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {items.map((item, idx) => (
+                                                        <tr key={idx}>
+                                                            <td>
+                                                                <select className="form-input form-select" value={item.id_product_type} onChange={(e) => updateItem(idx, 'id_product_type', parseInt(e.target.value))} style={{ minWidth: 160 }}>
+                                                                    <option value={0}>Pilih Produk</option>
+                                                                    {productTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name} ({pt.code})</option>)}
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" className="form-input" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} placeholder="0" min="0" step="0.01" style={{ width: 100 }} />
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" className="form-input" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} placeholder="0" min="0" style={{ width: 140 }} />
+                                                            </td>
+                                                            <td>
+                                                                <span className="font-mono">{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</span>
+                                                            </td>
+                                                            <td>
+                                                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
+                                                                    <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <button type="button" className="btn btn-secondary btn-sm" onClick={addItemRow}>
+                                            <span className="material-symbols-outlined icon-sm">add</span>
+                                            Tambah Item
+                                        </button>
+                                    </div>
+
+                                    {/* Section 3: Summary */}
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                            <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>3</span>
+                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>RINGKASAN</span>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Pajak (Rp)</label>
+                                                <input type="number" className="form-input" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Diskon (Rp)</label>
+                                                <input type="number" className="form-input" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 16, marginTop: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
+                                                <span className="font-mono">{formatCurrency(calcSubtotal())}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                <span style={{ color: 'var(--text-secondary)' }}>Pajak</span>
+                                                <span className="font-mono">+ {formatCurrency(parseFloat(formData.tax) || 0)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                <span style={{ color: 'var(--text-secondary)' }}>Diskon</span>
+                                                <span className="font-mono">- {formatCurrency(parseFloat(formData.discount) || 0)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '2px solid var(--border)', fontWeight: 700, fontSize: '1.1rem' }}>
+                                                <span>Total</span>
+                                                <span className="font-mono" style={{ color: 'var(--primary)' }}>{formatCurrency(calcTotal())}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Batal</button>
+                                    <button type="submit" className="btn btn-primary">
+                                        <span className="material-symbols-outlined icon-sm">save</span>
+                                        Buat Purchase Order
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

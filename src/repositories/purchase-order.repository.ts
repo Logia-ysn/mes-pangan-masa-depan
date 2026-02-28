@@ -44,15 +44,19 @@ export class PurchaseOrderRepository extends BaseRepository<PurchaseOrder> {
             where.id_supplier = params.id_supplier;
         }
         if (params.status) {
-            where.status = params.status;
+            if (params.status.includes(',')) {
+                where.status = { in: params.status.split(',') };
+            } else {
+                where.status = params.status;
+            }
         }
         if (params.start_date || params.end_date) {
             where.order_date = {};
             if (params.start_date) {
-                where.order_date.gte = params.start_date;
+                where.order_date.gte = new Date(params.start_date);
             }
             if (params.end_date) {
-                where.order_date.lte = params.end_date;
+                where.order_date.lte = new Date(params.end_date);
             }
         }
 

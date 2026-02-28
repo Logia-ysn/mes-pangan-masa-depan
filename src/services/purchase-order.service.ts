@@ -18,7 +18,7 @@ class PurchaseOrderService {
     async createPO(
         data: {
             id_factory: number;
-            id_supplier: number;
+            id_supplier?: number | null;
             order_date: string | Date;
             expected_date?: string | Date;
             tax?: number;
@@ -28,9 +28,13 @@ class PurchaseOrderService {
         },
         userId: number
     ) {
-        const supplier = await prisma.supplier.findUnique({ where: { id: data.id_supplier } });
-        if (!supplier) {
-            throw new NotFoundError('Supplier', data.id_supplier);
+        let validSupplierId: number | null = null;
+        if (data.id_supplier && data.id_supplier > 0) {
+            const supplier = await prisma.supplier.findUnique({ where: { id: data.id_supplier } });
+            if (!supplier) {
+                throw new NotFoundError('Supplier', data.id_supplier);
+            }
+            validSupplierId = data.id_supplier;
         }
 
         const factory = await prisma.factory.findUnique({ where: { id: data.id_factory } });
@@ -71,7 +75,7 @@ class PurchaseOrderService {
             const createdPO = await tx.purchaseOrder.create({
                 data: {
                     id_factory: data.id_factory,
-                    id_supplier: data.id_supplier,
+                    id_supplier: (validSupplierId ?? null) as any,
                     id_user: userId,
                     po_number,
                     order_date: data.order_date,
@@ -111,6 +115,7 @@ class PurchaseOrderService {
     async updatePO(
         id: number,
         data: {
+            id_supplier?: number | null;
             order_date?: string | Date;
             expected_date?: string | Date;
             tax?: number;
@@ -130,6 +135,15 @@ class PurchaseOrderService {
         }
 
         const updateData: any = {};
+        if (data.id_supplier !== undefined) {
+            if (data.id_supplier && data.id_supplier > 0) {
+                const supplier = await prisma.supplier.findUnique({ where: { id: data.id_supplier } });
+                if (!supplier) throw new NotFoundError('Supplier', data.id_supplier);
+                updateData.id_supplier = data.id_supplier;
+            } else {
+                updateData.id_supplier = null;
+            }
+        }
         if (data.order_date !== undefined) updateData.order_date = data.order_date;
         if (data.expected_date !== undefined) updateData.expected_date = data.expected_date;
         if (data.notes !== undefined) updateData.notes = data.notes;

@@ -16,6 +16,10 @@ export class T_updatePurchaseOrder_path {
 }
 export class T_updatePurchaseOrder_body {
     @IsOptional()
+    @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+    @IsNumber({}, { message: 'id_supplier must be a number (decimal)' })
+    id_supplier?: number
+    @IsOptional()
     @IsString({ message: 'order_date must be a string' })
     order_date?: string
     @IsOptional()

@@ -49,7 +49,11 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
         }
 
         if (params.movement_type) {
-            where.movement_type = params.movement_type as StockMovement_movement_type_enum;
+            if (params.movement_type.includes(',')) {
+                where.movement_type = { in: params.movement_type.split(',') as StockMovement_movement_type_enum[] };
+            } else {
+                where.movement_type = params.movement_type as StockMovement_movement_type_enum;
+            }
         }
 
         if (params.reference_type) {

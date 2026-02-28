@@ -290,7 +290,7 @@ const PurchaseOrderDetail = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
                             <div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 4 }}>Supplier</div>
-                                <div style={{ fontWeight: 600 }}>{po.Supplier?.name || '-'}</div>
+                                <div style={{ fontWeight: 600 }}>{po.Supplier?.name || 'General (Umum)'}</div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{po.Supplier?.code}</div>
                                 {po.Supplier?.phone && (
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{po.Supplier.phone}</div>

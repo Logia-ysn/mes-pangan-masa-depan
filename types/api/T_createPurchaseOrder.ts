@@ -29,10 +29,10 @@ export class T_createPurchaseOrder_body {
     @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
     @IsNumber({}, { message: 'id_factory must be a number (decimal)' })
     id_factory!: number
-    @IsNotEmpty({ message: 'id_supplier cannot be empty' })
+    @IsOptional()
     @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
     @IsNumber({}, { message: 'id_supplier must be a number (decimal)' })
-    id_supplier!: number
+    id_supplier?: number
     @IsNotEmpty({ message: 'order_date cannot be empty' })
     @IsString({ message: 'order_date must be a string' })
     order_date!: string

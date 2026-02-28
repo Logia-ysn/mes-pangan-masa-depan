@@ -595,7 +595,7 @@ model migrations {
 model PurchaseOrder {
   id                Int                       @id @default(autoincrement())
   id_factory        Int
-  id_supplier       Int
+  id_supplier       Int?
   id_user           Int
   po_number         String                    @unique @db.VarChar(50)
   order_date        DateTime                  @db.Date
@@ -610,7 +610,7 @@ model PurchaseOrder {
   updated_at        DateTime                  @updatedAt @db.Timestamp(6)
   GoodsReceipt      GoodsReceipt[]
   Factory           Factory                   @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Supplier          Supplier                  @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Supplier          Supplier?                 @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User              User                      @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
   PurchaseOrderItem PurchaseOrderItem[]
   MaterialReceipt   MaterialReceipt[]

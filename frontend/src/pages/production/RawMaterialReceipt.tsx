@@ -141,22 +141,35 @@ const RawMaterialReceipt = () => {
     const [fetchingPO, setFetchingPO] = useState(false);
     const [selectedPoItemId, setSelectedPoItemId] = useState<number | null>(null);
 
-    const handleFetchPO = async () => {
-        if (!formData.poNumber) return;
+    const handlePoChange = async (poNumStr: string) => {
+        setFormData(f => ({ ...f, poNumber: poNumStr, supplierId: '' }));
+        setSelectedPoItemId(null);
+
+        if (!poNumStr) {
+            setLinkedPO(null);
+            setPoItems([]);
+            return;
+        }
+
         setFetchingPO(true);
         try {
-            // First search PO by number in get all
-            const pRes = await purchaseOrderApi.getAll({ search: formData.poNumber });
-            const pos = pRes.data?.data || pRes.data || [];
-            const foundPO = pos.find((p: any) => p.po_number === formData.poNumber);
+            const foundPO = activePOs.find((p: any) => p.po_number === poNumStr);
+            let targetPoId = foundPO?.id;
 
-            if (!foundPO) {
-                showWarning("Tidak Ditemukan", "PO dengan nomor tersebut tidak ditemukan");
-                return;
+            if (!targetPoId) {
+                // Fallback for manual or unseen POs
+                const pRes = await purchaseOrderApi.getAll({ search: poNumStr });
+                const pos = pRes.data?.data || pRes.data || [];
+                const fallbackPO = pos.find((p: any) => p.po_number === poNumStr);
+                if (!fallbackPO) {
+                    showWarning("Tidak Ditemukan", "PO dengan nomor tersebut tidak ditemukan");
+                    return;
+                }
+                targetPoId = fallbackPO.id;
             }
 
             // Fetch receivable items
-            const itemsRes = await purchaseOrderApi.getReceivableItems(foundPO.id);
+            const itemsRes = await purchaseOrderApi.getReceivableItems(targetPoId);
             const { po, receivableItems } = itemsRes.data?.data || itemsRes.data;
 
             if (receivableItems.length === 0) {
@@ -169,9 +182,9 @@ const RawMaterialReceipt = () => {
 
             // Auto-fill form if PO has supplier
             if (po.Supplier) {
-                setFormData(f => ({ ...f, supplierId: String(po.Supplier.id) }));
+                setFormData(f => ({ ...f, poNumber: poNumStr, supplierId: String(po.Supplier.id) }));
             }
-            showSuccess("PO Ditemukan", `${receivableItems.length} item siap diterima.`);
+            showSuccess("PO Ditemukan", `${receivableItems.length} item PO siap diterima.`);
 
         } catch (error: any) {
             logger.error("Error fetching PO limits:", error);
@@ -204,6 +217,11 @@ const RawMaterialReceipt = () => {
     useEffect(() => {
         if (!factoryLoading) {
             fetchData();
+            if (selectedFactory) {
+                fetchActivePOs(selectedFactory);
+            } else {
+                setActivePOs([]);
+            }
         }
     }, [selectedFactory, page, factoryLoading, statusFilter]);
 
@@ -212,6 +230,22 @@ const RawMaterialReceipt = () => {
         fetchCategories();
         fetchVarieties();
     }, []);
+
+    const [activePOs, setActivePOs] = useState<any[]>([]);
+
+    const fetchActivePOs = async (factoryId: number) => {
+        try {
+            const res = await purchaseOrderApi.getAll({
+                id_factory: factoryId,
+                status: 'APPROVED,SENT,PARTIAL_RECEIVED', // We might need to ensure backend handles this status string or we fetch and filter
+                limit: 100
+            });
+            const pos = res.data?.data || res.data || [];
+            setActivePOs(pos.filter((po: any) => ['APPROVED', 'SENT', 'PARTIAL_RECEIVED'].includes(po.status)));
+        } catch (error) {
+            logger.error("Failed to fetch active POs", error);
+        }
+    };
 
     const fetchSuppliers = async () => {
         try {
@@ -268,7 +302,7 @@ const RawMaterialReceipt = () => {
                     return {
                         id: m.id,
                         batchId: m.batch_code,
-                        poNumber: '-',
+                        poNumber: (m as any).PurchaseOrder?.po_number || '-',
                         dateReceived: m.receipt_date || m.created_at,
                         supplier: m.Supplier?.name || 'Unknown',
                         supplierId: String(m.id_supplier),
@@ -737,26 +771,23 @@ const RawMaterialReceipt = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">PO Number</label>
-                                <div className="input-group">
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="PO-88421"
-                                        value={formData.poNumber}
-                                        onChange={e => setFormData({ ...formData, poNumber: e.target.value })}
-                                        onKeyDown={e => e.key === 'Enter' && handleFetchPO()}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-                                        onClick={handleFetchPO}
-                                        disabled={fetchingPO || !formData.poNumber}
-                                    >
-                                        {fetchingPO ? '...' : <span className="material-symbols-outlined icon-sm">search</span>}
-                                    </button>
-                                </div>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    PO Number
+                                    {fetchingPO && <span className="material-symbols-outlined icon-sm" style={{ animation: 'spin 1s linear infinite' }}>sync</span>}
+                                </label>
+                                <select
+                                    className="form-input form-select"
+                                    value={formData.poNumber}
+                                    onChange={e => handlePoChange(e.target.value)}
+                                    disabled={fetchingPO}
+                                >
+                                    <option value="">-- Pilih PO (Opsional) --</option>
+                                    {activePOs.map((po: any) => (
+                                        <option key={po.id} value={po.po_number}>
+                                            {po.po_number} - {po.Supplier?.name || 'General (Umum)'} ({new Date(po.order_date).toLocaleDateString('id-ID')})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
