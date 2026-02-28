@@ -1,35 +1,27 @@
 #!/bin/bash
+set -e
 
-# ERP Pangan Masa Depan - Deployment Script
-# v2.23.0
+APP_DIR="/home/yayang/erp-pangan-masa-depan"
+LOG="[DEPLOY $(date '+%Y-%m-%d %H:%M:%S')]"
 
-echo "🚀 Starting Deployment Process..."
+echo "$LOG Starting deployment..."
+cd "$APP_DIR"
 
-# 1. Frontend Build Verification
-echo "📦 Verifying Frontend Build..."
-cd frontend
-npm run build
-if [ $? -ne 0 ]; then
-    echo "❌ Frontend Build Failed. Deployment Aborted."
-    exit 1
-fi
-cd ..
+# 1. Pull latest code
+echo "$LOG Pulling from GitHub..."
+git pull origin main
 
-# 2. Git Automation
-echo "git adding changes..."
-git add .
+# 2. Rebuild & restart containers
+echo "$LOG Rebuilding containers..."
+docker compose up -d --build --remove-orphans
 
-echo "💾 Committing changes..."
-# Get current branch
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-git commit -m "chore: deployment v2.23.0 - worksheet workflow & production refactor"
+# 3. Jalankan migrasi database jika ada yang baru
+echo "$LOG Running database migrations..."
+docker compose exec -T naiv npx prisma migrate deploy 2>&1 || true
 
-echo "📤 Pushing to GitHub ($BRANCH)..."
-git push origin $BRANCH
+# 4. Hapus image lama
+echo "$LOG Cleaning up..."
+docker image prune -f
 
-if [ $? -eq 0 ]; then
-    echo "✅ Deployment Successful! Changes are being processed by Railway & Vercel."
-else
-    echo "❌ Push Failed. Please check your connection or git configuration."
-    exit 1
-fi
+echo "$LOG Deployment complete!"
+docker compose ps
