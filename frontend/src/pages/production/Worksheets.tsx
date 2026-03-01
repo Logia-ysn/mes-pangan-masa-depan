@@ -7,59 +7,9 @@ import { logger } from '../../utils/logger';
 import { useFactory } from '../../hooks/useFactory';
 import Pagination from '../../components/UI/Pagination';
 import { formatDate, formatNumber, formatCurrency } from '../../utils/formatUtils';
+import type { Worksheet } from '../../features/production/worksheet/types/worksheet.types';
+import { shiftConfig, statusConfig, STATUS_FILTERS } from '../../features/production/worksheet/config/worksheet.config';
 
-interface Worksheet {
-    id: number;
-    id_factory: number;
-    worksheet_date: string;
-    shift: string;
-    status: string;
-    gabah_input: number;
-    beras_output: number;
-    menir_output: number;
-    dedak_output: number;
-    sekam_output: number;
-    rendemen: number;
-    machine_hours: number;
-    downtime_hours: number;
-    process_steps?: string;
-    batch_code?: string;
-    production_cost?: number;
-    raw_material_cost?: number;
-    side_product_revenue?: number;
-    hpp?: number;
-    rejection_reason?: string;
-    otm_id_factory?: { id: number; name: string; code: string };
-    otm_id_output_product?: { id: number; code: string; name: string };
-    otm_id_machine?: { id: number; name: string };
-    otm_id_user?: { id: number; fullname: string };
-    side_products?: any[];
-    notes?: string;
-}
-
-const shiftConfig: { [key: string]: { label: string; class: string } } = {
-    SHIFT_1: { label: 'Shift 1', class: 'badge-info' },
-    SHIFT_2: { label: 'Shift 2', class: 'badge-warning' },
-    SHIFT_3: { label: 'Shift 3', class: 'badge-muted' },
-    SHIFT_4: { label: 'Shift 4', class: 'badge-success' }
-};
-
-const statusConfig: { [key: string]: { label: string; color: string; bg: string } } = {
-    DRAFT: { label: 'Draft', color: '#6b7280', bg: '#f3f4f6' },
-    SUBMITTED: { label: 'Menunggu', color: '#1d4ed8', bg: '#dbeafe' },
-    COMPLETED: { label: 'Selesai', color: '#15803d', bg: '#dcfce7' },
-    REJECTED: { label: 'Ditolak', color: '#b91c1c', bg: '#fee2e2' },
-    CANCELLED: { label: 'Batal', color: '#374151', bg: '#e5e7eb' },
-};
-
-const STATUS_FILTERS = [
-    { value: '', label: 'Semua Status' },
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'SUBMITTED', label: 'Menunggu Approval' },
-    { value: 'COMPLETED', label: 'Selesai' },
-    { value: 'REJECTED', label: 'Ditolak' },
-    { value: 'CANCELLED', label: 'Dibatalkan' },
-];
 
 const Worksheets = () => {
     const navigate = useNavigate();

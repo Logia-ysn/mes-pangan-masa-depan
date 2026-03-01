@@ -6,74 +6,10 @@ import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, proce
 import { formatNumber, formatCurrency } from '../../utils/formatUtils';
 import { logger } from '../../utils/logger';
 import SKUSelector from '../../components/Production/SKUSelector';
-
-// --- Interfaces ---
-
-interface Factory {
-    id: number;
-    code: string;
-    name: string;
-    batch_code_prefix?: string;
-}
-
-interface Machine {
-    id: number;
-    name: string;
-    id_factory: number;
-    id_process_category?: number;
-}
-
-interface Employee {
-    id: number;
-    fullname: string;
-    position: string;
-}
-
-interface Stock {
-    id: number;
-    id_factory: number;
-    id_product_type: number;
-    quantity: number;
-    unit: string;
-    ProductType?: { id: number; code: string; name: string };
-    Factory?: { id: number; code: string; name: string };
-}
-
-interface ProcessCategory {
-    id: number;
-    code: string;
-    name: string;
-    is_main_process: boolean;
-}
-
-
-interface InputBatch {
-    id_stock: number;
-    stock_name: string;  // "BTC-2026-001 - Gabah Kering Panen"
-    quantity: number;
-    unit_price: number;
-    batch_code?: string; // e.g. "P1-PD-IR-160226-001"
-}
-
-interface SideProduct {
-    id_product_type?: number;
-    product_code: string;
-    product_name: string;
-    quantity: number;
-    is_auto: boolean;
-    unit_price: number;
-}
+import type { Factory, Machine, Employee, Stock, ProcessCategory, InputBatch, SideProduct, ReceiptBatch } from '../../features/production/worksheet/types/worksheet.types';
+import { shiftConfig } from '../../features/production/worksheet/config/worksheet.config';
 
 // --- Main Component ---
-
-// --- Configs ---
-
-const shiftConfig: { [key: string]: { label: string; class: string } } = {
-    SHIFT_1: { label: 'Shift 1', class: 'badge-info' },
-    SHIFT_2: { label: 'Shift 2', class: 'badge-warning' },
-    SHIFT_3: { label: 'Shift 3', class: 'badge-muted' },
-    SHIFT_4: { label: 'Shift 4', class: 'badge-success' }
-};
 
 const WorksheetForm = () => {
     const navigate = useNavigate();
@@ -1140,21 +1076,7 @@ const WorksheetForm = () => {
 
 // --- Batch Selection Modal ---
 
-interface ReceiptBatch {
-    id: number;              // StockMovement ID
-    id_stock: number;        // Stock ID (untuk link ke WorksheetInputBatch)
-    batchId: string;         // e.g. "BTC-2026-001"
-    supplier: string;        // e.g. "UD Padi Jaya"
-    category: string;        // e.g. "Padi/Gabah"
-    productName: string;     // e.g. "Gabah Kering Panen"
-    productCode: string;     // e.g. "GKP"
-    qualityGrade: string;    // e.g. "KW 1"
-    quantity: number;         // qty diterima (dari movement)
-    pricePerKg: number;      // harga per kg
-    otherCosts: number;      // biaya lain (bongkar dll)
-    dateReceived: string;    // tanggal penerimaan
-    stockQuantity: number;   // current stock available (aggregate)
-}
+// ReceiptBatch type imported from shared types
 
 const BatchSelectionModal = ({ stocks, selectedFactory, onSelect, onClose }: {
     stocks: Stock[];
