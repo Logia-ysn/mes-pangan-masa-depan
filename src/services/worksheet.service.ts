@@ -25,6 +25,9 @@ import { stockRepository } from '../repositories/stock.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
 import { BatchNumberingService } from './batch-numbering.service';
 import { auditService } from './audit.service';
+// Phase 2: Extracted services
+import { worksheetWorkflowService } from '../modules/production/worksheet/workflow/worksheet-workflow.service';
+import { hppCalculator } from '../modules/production/worksheet/hpp/hpp-calculator.service';
 export interface InputBatchDTO {
     id_stock: number;
     quantity: number;
@@ -204,282 +207,34 @@ class WorksheetService {
 
     /**
      * Submit worksheet for approval: DRAFT/REJECTED → SUBMITTED
+     * Delegates to WorksheetWorkflowService
      */
     async submitWorksheet(id: number, userId: number): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
-            const worksheet = await tx.worksheet.findUnique({
-                where: { id },
-                include: { WorksheetInputBatch: true, WorksheetSideProduct: true }
-            });
-
-            if (!worksheet) throw new NotFoundError('Worksheet', id);
-
-            if (worksheet.status !== Worksheet_status_enum.DRAFT && worksheet.status !== Worksheet_status_enum.REJECTED) {
-                throw new BusinessRuleError(
-                    `Worksheet hanya bisa di-submit dari status DRAFT atau REJECTED. Status saat ini: ${worksheet.status}`
-                );
-            }
-            if (worksheet.id_user !== userId) {
-                throw new BusinessRuleError('Hanya pembuat worksheet yang bisa men-submit');
-            }
-            if (!worksheet.WorksheetInputBatch || worksheet.WorksheetInputBatch.length === 0) {
-                throw new BusinessRuleError('Input batches wajib diisi sebelum submit');
-            }
-            if (!worksheet.id_output_product) {
-                throw new BusinessRuleError('Output product (SKU) wajib dipilih sebelum submit');
-            }
-            if (Number(worksheet.beras_output) <= 0) {
-                throw new BusinessRuleError('Output quantity harus lebih dari 0');
-            }
-
-            const updatedWorksheet = await tx.worksheet.update({
-                where: { id },
-                data: {
-                    status: Worksheet_status_enum.SUBMITTED,
-                    submitted_at: new Date(),
-                    submitted_by: userId,
-                    rejected_at: null,
-                    rejected_by: null,
-                    rejection_reason: null
-                }
-            });
-
-            // Audit Log: UPDATE (SUBMIT)
-            await auditService.log({
-                userId,
-                action: 'UPDATE',
-                tableName: 'Worksheet',
-                recordId: id,
-                oldValue: { status: worksheet.status },
-                newValue: { status: Worksheet_status_enum.SUBMITTED }
-            }, tx);
-
-            return updatedWorksheet;
-        });
+        return worksheetWorkflowService.submit(id, userId);
     }
 
     /**
      * Approve worksheet — THIS IS WHERE STOCK MOVES
-     * SUBMITTED → COMPLETED (stok IN untuk output, OUT untuk input)
+     * Delegates to WorksheetWorkflowService
      */
     async approveWorksheet(id: number, approverId: number): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
-            const worksheet = await tx.worksheet.findUnique({
-                where: { id },
-                include: {
-                    WorksheetInputBatch: {
-                        include: { Stock: { include: { ProductType: true } } }
-                    },
-                    WorksheetSideProduct: true
-                }
-            });
-
-            if (!worksheet) throw new NotFoundError('Worksheet', id);
-            if (worksheet.status !== Worksheet_status_enum.SUBMITTED) {
-                throw new BusinessRuleError(
-                    `Worksheet hanya bisa di-approve dari status SUBMITTED. Status saat ini: ${worksheet.status}`
-                );
-            }
-
-            // 1. Process Input Batches → Stock OUT
-            // SAFETY: Check stock availability FIRST before any deduction
-            for (const batch of worksheet.WorksheetInputBatch) {
-                if (batch.Stock) {
-                    const currentQty = Number(batch.Stock.quantity);
-                    const neededQty = Number(batch.quantity);
-                    if (currentQty < neededQty) {
-                        const productName = batch.Stock.ProductType?.name || 'Produk';
-                        throw new BusinessRuleError(
-                            `Stok ${productName} (${batch.batch_code}) tidak cukup untuk approval. ` +
-                            `Tersedia: ${currentQty.toLocaleString()}, Dibutuhkan: ${neededQty.toLocaleString()}`
-                        );
-                    }
-                }
-            }
-
-            for (const batch of worksheet.WorksheetInputBatch) {
-                if (batch.Stock?.ProductType) {
-                    await this.createStockMovementTransactional(
-                        tx,
-                        batch.id_stock,
-                        approverId,
-                        StockMovement_movement_type_enum.OUT,
-                        Number(batch.quantity),
-                        'WORKSHEET',
-                        worksheet.id,
-                        JSON.stringify({
-                            type: 'PRODUCTION_INPUT_BATCH',
-                            productCode: (batch.Stock.ProductType as any).code,
-                            batch_id: batch.id,
-                            output_batch_code: worksheet.batch_code,
-                            input_batch_code: batch.batch_code
-                        }),
-                        batch.batch_code || null
-                    );
-                }
-            }
-
-            // 2. Process Main Output + Side Products → Stock IN
-            await this.addOutputStocksTransactional(tx, worksheet as any, approverId, worksheet.WorksheetSideProduct);
-
-            // 3. Calculate HPP server-side
-            const rawMaterialCost = worksheet.WorksheetInputBatch.reduce(
-                (sum, b) => sum + Number(b.quantity) * Number(b.unit_price || 0), 0
-            );
-            const sideProductRevenue = worksheet.WorksheetSideProduct.reduce(
-                (sum, sp) => sum + Number(sp.quantity) * Number(sp.unit_price || 0), 0
-            );
-            const productionCost = Number(worksheet.production_cost || 0);
-            const hpp = rawMaterialCost + productionCost - sideProductRevenue;
-            const berasOutput = Number(worksheet.beras_output);
-            const hppPerKg = berasOutput > 0 ? hpp / berasOutput : 0;
-
-            // 4. Update worksheet to COMPLETED
-            const completedWorksheet = await tx.worksheet.update({
-                where: { id },
-                data: {
-                    status: Worksheet_status_enum.COMPLETED,
-                    approved_at: new Date(),
-                    approved_by: approverId,
-                    completed_at: new Date(),
-                    raw_material_cost: rawMaterialCost,
-                    side_product_revenue: sideProductRevenue,
-                    hpp,
-                    hpp_per_kg: hppPerKg
-                }
-            });
-
-            // Audit Log: UPDATE (APPROVE)
-            await auditService.log({
-                userId: approverId,
-                action: 'UPDATE',
-                tableName: 'Worksheet',
-                recordId: id,
-                oldValue: { status: worksheet.status },
-                newValue: {
-                    status: Worksheet_status_enum.COMPLETED,
-                    hpp,
-                    hpp_per_kg: hppPerKg
-                }
-            }, tx);
-
-            return completedWorksheet;
-        });
+        return worksheetWorkflowService.approve(id, approverId);
     }
 
     /**
      * Reject worksheet: SUBMITTED → REJECTED
+     * Delegates to WorksheetWorkflowService
      */
     async rejectWorksheet(id: number, rejectorId: number, reason: string): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
-            const worksheet = await tx.worksheet.findUnique({ where: { id } });
-            if (!worksheet) throw new NotFoundError('Worksheet', id);
-            if (worksheet.status !== Worksheet_status_enum.SUBMITTED) {
-                throw new BusinessRuleError(
-                    `Worksheet hanya bisa di-reject dari status SUBMITTED. Status saat ini: ${worksheet.status}`
-                );
-            }
-            if (!reason || reason.trim().length === 0) {
-                throw new BusinessRuleError('Alasan penolakan wajib diisi');
-            }
-
-            const rejectedWorksheet = await tx.worksheet.update({
-                where: { id },
-                data: {
-                    status: Worksheet_status_enum.REJECTED,
-                    rejected_at: new Date(),
-                    rejected_by: rejectorId,
-                    rejection_reason: reason.trim()
-                }
-            });
-
-            // Audit Log: UPDATE (REJECT)
-            await auditService.log({
-                userId: rejectorId,
-                action: 'UPDATE',
-                tableName: 'Worksheet',
-                recordId: id,
-                oldValue: { status: worksheet.status },
-                newValue: {
-                    status: Worksheet_status_enum.REJECTED,
-                    rejection_reason: reason.trim()
-                }
-            }, tx);
-
-            return rejectedWorksheet;
-        });
+        return worksheetWorkflowService.reject(id, rejectorId, reason);
     }
 
     /**
      * Cancel worksheet:
-     * - DRAFT/SUBMITTED → CANCELLED (no stock effect)
-     * - COMPLETED → CANCELLED (with stock reversal)
+     * Delegates to WorksheetWorkflowService
      */
     async cancelWorksheet(id: number, userId: number, reason?: string): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
-            const worksheet = await tx.worksheet.findUnique({
-                where: { id },
-                include: {
-                    WorksheetInputBatch: { include: { Stock: { include: { ProductType: true } } } },
-                    WorksheetSideProduct: true
-                }
-            });
-
-            if (!worksheet) throw new NotFoundError('Worksheet', id);
-
-            const allowedStatuses: Worksheet_status_enum[] = [
-                Worksheet_status_enum.DRAFT,
-                Worksheet_status_enum.SUBMITTED,
-                Worksheet_status_enum.COMPLETED
-            ];
-            if (!allowedStatuses.includes(worksheet.status as Worksheet_status_enum)) {
-                throw new BusinessRuleError(
-                    `Worksheet tidak bisa di-cancel dari status ${worksheet.status}`
-                );
-            }
-
-            // If COMPLETED → reverse stock movements
-            if (worksheet.status === Worksheet_status_enum.COMPLETED) {
-                // Reverse input batches (add back to stock)
-                for (const batch of worksheet.WorksheetInputBatch) {
-                    if (batch.Stock?.ProductType) {
-                        await this.createStockMovementTransactional(
-                            tx,
-                            batch.id_stock,
-                            userId,
-                            StockMovement_movement_type_enum.IN,
-                            Number(batch.quantity),
-                            'WORKSHEET_REVERSAL',
-                            worksheet.id,
-                            `Reversal: cancel approved worksheet #${worksheet.id}`
-                        );
-                    }
-                }
-                // Reverse output stocks
-                await this.revertOutputStocksTransactional(tx, worksheet.id);
-            }
-
-            const newNotes = reason
-                ? `${worksheet.notes || ''}\n[CANCELLED] ${reason}`.trim()
-                : worksheet.notes;
-
-            const cancelledWorksheet = await tx.worksheet.update({
-                where: { id },
-                data: { status: Worksheet_status_enum.CANCELLED, notes: newNotes }
-            });
-
-            // Audit Log: UPDATE (CANCEL)
-            await auditService.log({
-                userId,
-                action: 'UPDATE',
-                tableName: 'Worksheet',
-                recordId: id,
-                oldValue: { status: worksheet.status },
-                newValue: { status: Worksheet_status_enum.CANCELLED, cancel_reason: reason }
-            }, tx);
-
-            return cancelledWorksheet;
-        });
+        return worksheetWorkflowService.cancel(id, userId, reason);
     }
 
     private mapDtoToWorksheetData(dto: CreateWorksheetDTO): any {
@@ -736,8 +491,7 @@ class WorksheetService {
     }
 
     calculateRendemen(input: number, output: number): number {
-        if (input <= 0) return 0;
-        return (output / input) * 100;
+        return hppCalculator.calculateRendemen(input, output);
     }
 
     /**
