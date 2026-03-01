@@ -15,6 +15,7 @@ import {
     StockMovement,
     Stock,
     ProductType,
+    Prisma,
     Worksheet_shift_enum,
     Worksheet_status_enum,
     StockMovement_movement_type_enum
@@ -117,7 +118,7 @@ class WorksheetService {
             }
 
             // 2. Create Worksheet as DRAFT — NO stock movement
-            const worksheetData: any = this.mapDtoToWorksheetData(dto);
+            const worksheetData = this.mapDtoToWorksheetData(dto);
             worksheetData.rendemen = this.calculateRendemen(dto.gabah_input, dto.beras_output);
             worksheetData.batch_code = batchCode || worksheetData.batch_code;
             worksheetData.status = Worksheet_status_enum.DRAFT;
@@ -237,7 +238,7 @@ class WorksheetService {
         return worksheetWorkflowService.cancel(id, userId, reason);
     }
 
-    private mapDtoToWorksheetData(dto: CreateWorksheetDTO): any {
+    private mapDtoToWorksheetData(dto: CreateWorksheetDTO): Prisma.WorksheetUncheckedCreateInput {
         return {
             id_factory: dto.id_factory,
             id_user: dto.id_user,
@@ -261,8 +262,8 @@ class WorksheetService {
             hpp: 0,
             hpp_per_kg: 0,
             process_steps: dto.process_steps,
-            id_machines: dto.id_machines || null,
-            id_operators: dto.id_operators || null,
+            id_machines: dto.id_machines ? dto.id_machines : Prisma.JsonNull,
+            id_operators: dto.id_operators ? dto.id_operators : Prisma.JsonNull,
         };
     }
 
@@ -512,7 +513,7 @@ class WorksheetService {
                 );
             }
 
-            const updateData: any = {};
+            const updateData: Prisma.WorksheetUncheckedUpdateInput = {};
             if (dto.worksheet_date) updateData.worksheet_date = new Date(dto.worksheet_date);
             if (dto.shift) updateData.shift = dto.shift;
             if (dto.gabah_input !== undefined) updateData.gabah_input = dto.gabah_input;
@@ -528,8 +529,8 @@ class WorksheetService {
             if (dto.id_output_product !== undefined) updateData.id_output_product = dto.id_output_product;
             if (dto.batch_code !== undefined) updateData.batch_code = dto.batch_code;
             if (dto.process_steps !== undefined) updateData.process_steps = dto.process_steps;
-            if (dto.id_machines !== undefined) updateData.id_machines = dto.id_machines ? JSON.stringify(dto.id_machines) : null;
-            if (dto.id_operators !== undefined) updateData.id_operators = dto.id_operators ? JSON.stringify(dto.id_operators) : null;
+            if (dto.id_machines !== undefined) updateData.id_machines = dto.id_machines ? dto.id_machines : Prisma.JsonNull;
+            if (dto.id_operators !== undefined) updateData.id_operators = dto.id_operators ? dto.id_operators : Prisma.JsonNull;
 
             if (dto.gabah_input !== undefined || dto.beras_output !== undefined) {
                 updateData.rendemen = this.calculateRendemen(
