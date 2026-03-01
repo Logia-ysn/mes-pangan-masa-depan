@@ -511,6 +511,7 @@ class WorksheetService {
         };
     }
 
+    /** @deprecated Superseded by inline logic in createWorksheet. Scheduled for removal in Phase 5. */
     private async handleInputBatches(
         tx: any,
         worksheet: Worksheet,
@@ -591,6 +592,7 @@ class WorksheetService {
         });
     }
 
+    /** @deprecated Fallback for non-batch production — may never execute. Scheduled for removal in Phase 5. */
     private async updateStockFromProductionTransactional(tx: any, worksheet: Worksheet, userId: number) {
         // Fallback for non-batch production
         const inputProductCode = (worksheet as any).input_category_code || 'GKP';

@@ -1,3 +1,9 @@
+/**
+ * @deprecated This TypeORM model is DEAD CODE. The project uses Prisma as its ORM.
+ * Use Prisma-generated types from '@prisma/client' instead.
+ * Scheduled for deletion in Phase 5 of the worksheet refactoring.
+ * See: REFACTOR-WORKSHEET-PLAN.md
+ */
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn, BaseEntity } from "typeorm";
 import { Factory } from '../../model/table/Factory'
 import { User } from '../../model/table/User'
@@ -5,6 +11,7 @@ import { WorkshiftType } from '../../model/enum/WorkshiftType'
 import { Machine } from '../../model/table/Machine'
 import { ProductType } from '../../model/table/ProductType'
 
+/** @deprecated Use Prisma Worksheet type instead */
 @Entity('Worksheet')
 export class Worksheet extends BaseEntity {
   @Column({
