@@ -11,10 +11,6 @@ import {
     Worksheet,
     WorksheetInputBatch,
     WorksheetSideProduct,
-    OutputProduct,
-    StockMovement,
-    Stock,
-    ProductType,
     Prisma,
     Worksheet_shift_enum,
     Worksheet_status_enum,
@@ -29,69 +25,12 @@ import { auditService } from './audit.service';
 // Phase 2: Extracted services
 import { worksheetWorkflowService } from '../modules/production/worksheet/workflow/worksheet-workflow.service';
 import { hppCalculator } from '../modules/production/worksheet/hpp/hpp-calculator.service';
-export interface InputBatchDTO {
-    id_stock: number;
-    quantity: number;
-    unit_price?: number;
-    batch_code?: string;
-}
+// DTOs re-exported from shared types for backward compatibility
+import type { InputBatchDTO, SideProductDTO, CreateWorksheetDTO, UpdateWorksheetDTO } from '../modules/production/worksheet/worksheet.types';
+export type { InputBatchDTO, SideProductDTO, CreateWorksheetDTO, UpdateWorksheetDTO };
 
-export interface SideProductDTO {
-    id_product_type?: number;
-    product_code: string;
-    product_name: string;
-    quantity: number;
-    unit_price: number;
-    total_value: number;
-    is_auto_calculated: boolean;
-    auto_percentage?: number;
-}
-
-export interface CreateWorksheetDTO {
-    id_factory: number;
-    id_user: number;
-    worksheet_date: string;
-    shift: Worksheet_shift_enum;
-    gabah_input: number;
-    beras_output: number;
-    menir_output?: number;
-    dedak_output?: number;
-    sekam_output?: number;
-    machine_hours?: number;
-    downtime_hours?: number;
-    downtime_reason?: string;
-    notes?: string;
-    // New PMD 1 fields
-    input_batch_id?: number;
-    id_machine?: number;
-    input_category_code?: string;
-    process_step?: string;
-    production_cost?: number;
-    // Enhancement fields (HPP Calculation)
-    id_output_product?: number;
-    process_steps?: string;
-    batch_code?: string;
-    raw_material_cost?: number;
-    side_product_revenue?: number;
-    hpp?: number;
-    hpp_per_kg?: number;
-    input_batches?: InputBatchDTO[];
-    side_products?: SideProductDTO[];
-    id_machines?: number[];
-    id_operators?: number[];
-    id_input_product_type?: number;
-}
-
-export interface UpdateWorksheetDTO extends Partial<CreateWorksheetDTO> {
-    id: number;
-}
-
-// Process step constants for PMD 1
-export const PROCESS_STEPS = {
-    DRYING: 'DRYING',           // Pengeringan: GKP -> GKG
-    HUSKING: 'HUSKING',         // Penggilingan: GKG -> PK + Sekam
-    STONE_POLISHING: 'STONE_POLISHING'  // Poles: PK -> Glosor + Bekatul
-} as const;
+// PROCESS_STEPS re-exported from shared constants for backward compatibility
+export { PROCESS_STEPS } from '../modules/production/worksheet/worksheet.constants';
 
 class WorksheetService {
     /**
@@ -267,233 +206,6 @@ class WorksheetService {
         };
     }
 
-    /** @deprecated Superseded by inline logic in createWorksheet. Scheduled for removal in Phase 5. */
-    private async handleInputBatches(
-        tx: any,
-        worksheet: Worksheet,
-        batches: InputBatchDTO[],
-        userId: number
-    ) {
-        for (const batchDto of batches) {
-            const batch = await tx.worksheetInputBatch.create({
-                data: {
-                    id_worksheet: worksheet.id,
-                    id_stock: batchDto.id_stock,
-                    quantity: batchDto.quantity,
-                    unit_price: batchDto.unit_price || 0,
-                    total_cost: batchDto.quantity * (batchDto.unit_price || 0),
-                    batch_code: batchDto.batch_code
-                }
-            });
-
-            const stock = await tx.stock.findUnique({
-                where: { id: batchDto.id_stock },
-                include: { ProductType: true }
-            });
-
-            if (stock && stock.ProductType) {
-                await this.createStockMovementTransactional(
-                    tx,
-                    stock.id,
-                    userId,
-                    StockMovement_movement_type_enum.OUT,
-                    batchDto.quantity,
-                    'WORKSHEET',
-                    worksheet.id,
-                    JSON.stringify({
-                        type: 'PRODUCTION_INPUT_BATCH',
-                        productCode: stock.ProductType.code,
-                        batch_id: batch.id,
-                        output_batch_code: worksheet.batch_code,
-                        input_batch_code: batchDto.batch_code
-                    }),
-                    batchDto.batch_code || null
-                );
-            }
-        }
-    }
-
-    private async createStockMovementTransactional(
-        tx: any,
-        stockId: number,
-        userId: number,
-        type: StockMovement_movement_type_enum,
-        qty: number,
-        refType: string,
-        refId: number | bigint,
-        notes: string,
-        batchCode?: string | null
-    ) {
-        await tx.stockMovement.create({
-            data: {
-                id_stock: stockId,
-                id_user: userId,
-                movement_type: type,
-                quantity: qty,
-                reference_type: refType,
-                reference_id: refId,
-                batch_code: batchCode || null,
-                notes: notes
-            }
-        });
-
-        // Update Stock Quantity
-        await tx.stock.update({
-            where: { id: stockId },
-            data: {
-                quantity: type === StockMovement_movement_type_enum.IN
-                    ? { increment: qty }
-                    : { decrement: qty }
-            }
-        });
-    }
-
-    /** @deprecated Fallback for non-batch production — may never execute. Scheduled for removal in Phase 5. */
-    private async updateStockFromProductionTransactional(tx: any, worksheet: Worksheet, userId: number) {
-        // Fallback for non-batch production
-        const inputProductCode = (worksheet as any).input_category_code || 'GKP';
-
-        const productType = await tx.productType.findFirst({ where: { code: inputProductCode } });
-        if (!productType) {
-            console.error(`Production Fallback Error: ProductType ${inputProductCode} not found for Worksheet ${worksheet.id}`);
-            return;
-        }
-
-        const stock = await tx.stock.findFirst({
-            where: {
-                id_factory: worksheet.id_factory,
-                id_product_type: productType.id
-            }
-        });
-
-        if (stock) {
-            await this.createStockMovementTransactional(
-                tx,
-                stock.id,
-                userId,
-                StockMovement_movement_type_enum.OUT,
-                Number(worksheet.gabah_input),
-                'WORKSHEET',
-                worksheet.id,
-                JSON.stringify({
-                    type: 'PRODUCTION_INPUT',
-                    productCode: inputProductCode,
-                    process_step: (worksheet as any).process_step
-                })
-            );
-        }
-    }
-
-    private async addOutputStocksTransactional(
-        tx: any,
-        worksheet: Worksheet,
-        userId: number,
-        sideProducts: WorksheetSideProduct[]
-    ) {
-        // 1. Main Output
-        let outputCode = '';
-        if (worksheet.id_output_product && Number(worksheet.beras_output) > 0) {
-            const op = await tx.productType.findUnique({ where: { id: worksheet.id_output_product } });
-            if (op) outputCode = op.code;
-        } else if (Number(worksheet.beras_output) > 0) {
-            outputCode = worksheet.process_step === PROCESS_STEPS.DRYING ? 'GKG' :
-                worksheet.process_step === PROCESS_STEPS.HUSKING ? 'PK' :
-                    worksheet.process_step === PROCESS_STEPS.STONE_POLISHING ? 'GLOSOR' : 'BRS-P';
-        }
-
-        if (outputCode) {
-            const pt = await tx.productType.findFirst({ where: { code: outputCode } });
-            if (pt) {
-                let stock = await tx.stock.findFirst({
-                    where: {
-                        id_factory: worksheet.id_factory,
-                        id_product_type: pt.id
-                    }
-                });
-
-                if (!stock) {
-                    stock = await tx.stock.create({
-                        data: {
-                            id_factory: worksheet.id_factory,
-                            id_product_type: pt.id,
-                            quantity: 0,
-                            unit: pt.unit
-                        }
-                    });
-                }
-
-                await this.createStockMovementTransactional(
-                    tx,
-                    stock.id,
-                    userId,
-                    StockMovement_movement_type_enum.IN,
-                    Number(worksheet.beras_output),
-                    'WORKSHEET',
-                    worksheet.id,
-                    JSON.stringify({
-                        type: 'PRODUCTION_OUTPUT',
-                        productCode: outputCode,
-                        output_type: 'main',
-                        batch_code: worksheet.batch_code
-                    }),
-                    worksheet.batch_code
-                );
-            }
-        }
-
-        // 2. Side Products
-        for (const sp of sideProducts) {
-            if (Number(sp.quantity) > 0) {
-                let pt = null;
-                if (sp.id_product_type) {
-                    pt = await tx.productType.findUnique({ where: { id: sp.id_product_type } });
-                } else {
-                    pt = await tx.productType.findFirst({ where: { code: sp.product_code } });
-                }
-
-                if (pt) {
-                    let stock = await tx.stock.findFirst({
-                        where: {
-                            id_factory: worksheet.id_factory,
-                            id_product_type: pt.id
-                        }
-                    });
-
-                    if (!stock) {
-                        stock = await tx.stock.create({
-                            data: {
-                                id_factory: worksheet.id_factory,
-                                id_product_type: pt.id,
-                                quantity: 0,
-                                unit: pt.unit
-                            }
-                        });
-                    }
-
-                    await this.createStockMovementTransactional(
-                        tx,
-                        stock.id,
-                        userId,
-                        StockMovement_movement_type_enum.IN,
-                        Number(sp.quantity),
-                        'WORKSHEET',
-                        worksheet.id,
-                        JSON.stringify({
-                            type: 'PRODUCTION_OUTPUT',
-                            productCode: sp.product_code,
-                            output_type: 'side_product',
-                            batch_code: (sp as any).batch_code || worksheet.batch_code
-                        }),
-                        (sp as any).batch_code || worksheet.batch_code
-                    );
-                }
-            }
-        }
-    }
-
-    calculateRendemen(input: number, output: number): number {
-        return hppCalculator.calculateRendemen(input, output);
-    }
 
     /**
      * Update worksheet — only allowed for DRAFT or REJECTED status
@@ -595,25 +307,10 @@ class WorksheetService {
         });
     }
 
-    private async revertOutputStocksTransactional(tx: any, worksheetId: number): Promise<void> {
-        const movements = await tx.stockMovement.findMany({
-            where: {
-                reference_type: 'WORKSHEET',
-                reference_id: worksheetId,
-                movement_type: StockMovement_movement_type_enum.IN
-            }
-        });
-
-        for (const move of movements) {
-            await tx.stock.update({
-                where: { id: move.id_stock },
-                data: {
-                    quantity: { decrement: move.quantity },
-                }
-            });
-            await tx.stockMovement.delete({ where: { id: move.id } });
-        }
+    calculateRendemen(input: number, output: number): number {
+        return hppCalculator.calculateRendemen(input, output);
     }
+
 
     /**
      * Delete worksheet
