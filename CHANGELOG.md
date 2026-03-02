@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.27.0] - 2026-03-02
+
+### Refactored
+- **Refaktorisasi Worksheet Service (5 Fase)** — Dekomposisi *God Service* 952 baris menjadi arsitektur modular terstruktur:
+  - **Phase 1 — Foundation**: Shared constants (`worksheet.constants.ts`), centralized backend types (`worksheet.types.ts`), frontend types (`worksheet.types.ts`), dan UI config (`worksheet.config.ts`).
+  - **Phase 2 — Backend Decomposition**: Ekstraksi 3 service fokus dari `worksheet.service.ts`:
+    - `hpp-calculator.service.ts` (45 baris) — Kalkulasi HPP & rendemen
+    - `worksheet-stock.service.ts` (241 baris) — Stock IN/OUT movements & reversals
+    - `worksheet-workflow.service.ts` (253 baris) — State machine Submit/Approve/Reject/Cancel
+  - **Phase 3 — Backend Quality**: Penggantian `any` types → `Prisma.WorksheetUncheckedCreateInput` / `UncheckedUpdateInput`, nullable JSON → `Prisma.JsonNull`.
+  - **Phase 4 — Frontend Decomposition**: Ekstraksi custom hooks (`useHPPCalculation`, `useInputBatches`, `useSideProducts`) dan eliminasi 132 baris interface/config duplikat dari `Worksheets.tsx` dan `WorksheetForm.tsx`.
+  - **Phase 5 — Cleanup**: Penghapusan 311 baris deprecated methods, konsolidasi DTOs/constants ke shared modules dengan re-export backward-compatible.
+
+### Diubah
+- **worksheet.service.ts**: 952 → 403 baris (reduksi 57.7%)
+- **WorksheetForm.tsx**: 1,420 → 1,341 baris (-79 baris inline types/config)
+- **Worksheets.tsx**: 436 → 383 baris (-53 baris inline types/config)
+- **Zero Breaking Changes** — Semua public API tetap identik, hanya internal restructuring.
+
 ## [2.26.0] - 2026-02-26
 
 ### Ditambahkan

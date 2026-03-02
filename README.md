@@ -90,6 +90,13 @@ erp-pangan-masa-depan/
 │   └── schema/                  # Shared schemas (Auth, Pagination, etc.)
 ├── implementation/              # 151 API handler implementations
 ├── src/
+│   ├── modules/                 # Modular service architecture (v2.27.0)
+│   │   └── production/worksheet/
+│   │       ├── worksheet.constants.ts    # Shared constants
+│   │       ├── worksheet.types.ts        # Centralized DTOs & types
+│   │       ├── hpp/                      # HPP Calculator service
+│   │       ├── stock/                    # Stock Movement service
+│   │       └── workflow/                 # Workflow State Machine service
 │   ├── repositories/            # 29 data access repositories
 │   ├── services/                # 18 business logic services
 │   ├── dto/                     # Data Transfer Objects
@@ -101,10 +108,18 @@ erp-pangan-masa-depan/
 │       ├── pages/
 │       │   ├── auth/            # Login
 │       │   ├── dashboard/       # Dashboard
-│       │   ├── production/      # Worksheets, Stocks, Machines, Maintenance, OEE, QC, Raw Material
-│       │   ├── sales/           # Customers, Invoices, InvoiceDetail
-│       │   ├── purchasing/      # PurchaseOrders, PurchaseOrderDetail
-│       │   └── Settings.tsx
+│       │   ├── production/      # Worksheets, Stocks, Machines, Maintenance, OEE, QC
+│       │   ├── sales/           # Customers, Invoices, Payments, Delivery Orders
+│       │   ├── purchasing/      # PurchaseOrders, Suppliers, GoodsReceipts
+│       │   ├── inventory/       # Stocks, Transfers, StockOpname
+│       │   ├── finance/         # Expenses
+│       │   ├── reports/         # Production, Sales, COGM, Stock, Quality
+│       │   └── admin/           # Users, AuditLogs, Employees, Factories
+│       ├── features/            # Feature modules (v2.27.0)
+│       │   └── production/worksheet/
+│       │       ├── types/       # Shared type definitions
+│       │       ├── config/      # Shared UI config
+│       │       └── hooks/       # Extracted custom hooks
 │       ├── components/          # Layout, Dashboard, Production, UI components
 │       ├── contexts/            # Auth, Theme, Toast, Layout contexts
 │       ├── services/            # API client (axios)
@@ -352,6 +367,7 @@ curl -X POST http://localhost:3000/seed-superuser \
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) - Riwayat perubahan versi
+- [DEVLOG.md](DEVLOG.md) - Catatan teknis pengembangan
 - [INSTRUCTION.md](INSTRUCTION.md) - Panduan pengembangan dengan NAIV framework
 - [LOCAL_SETUP.md](LOCAL_SETUP.md) - Setup lokal
 - [DEPLOY_ONLINE.md](DEPLOY_ONLINE.md) - Deployment guide
