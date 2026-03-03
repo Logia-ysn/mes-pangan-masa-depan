@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useCallback } from 'react';
-import type { InputBatch, Stock } from '../types/worksheet.types';
+import type { InputBatch, Stock, WorksheetFormData } from '../types/worksheet.types';
 
 interface UseInputBatchesReturn {
     totalInputWeight: number;
@@ -14,7 +14,7 @@ interface UseInputBatchesReturn {
 
 export function useInputBatches(
     inputBatches: InputBatch[],
-    setFormData: React.Dispatch<React.SetStateAction<any>>
+    setFormData: React.Dispatch<React.SetStateAction<WorksheetFormData>>
 ): UseInputBatchesReturn {
     const totalInputWeight = useMemo(() =>
         inputBatches.reduce((sum, b) => sum + b.quantity, 0),
@@ -35,16 +35,16 @@ export function useInputBatches(
             quantity,
             unit_price: unitPrice,
         };
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
             ...prev,
             input_batches: [...prev.input_batches, batch]
         }));
     }, [setFormData]);
 
     const removeBatch = useCallback((index: number) => {
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
             ...prev,
-            input_batches: prev.input_batches.filter((_: any, i: number) => i !== index)
+            input_batches: prev.input_batches.filter((_, i) => i !== index)
         }));
     }, [setFormData]);
 

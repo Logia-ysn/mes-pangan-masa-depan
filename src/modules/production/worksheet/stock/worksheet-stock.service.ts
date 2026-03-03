@@ -13,10 +13,25 @@ import {
     Worksheet,
     WorksheetInputBatch,
     WorksheetSideProduct,
-    StockMovement_movement_type_enum
+    StockMovement_movement_type_enum,
+    Prisma
 } from '@prisma/client';
 import { PROCESS_STEPS } from '../worksheet.constants';
 import type { StockMovementParams } from '../worksheet.types';
+
+/** Input batch with Stock relation populated */
+interface InputBatchWithStock extends WorksheetInputBatch {
+    Stock?: {
+        id: number;
+        quantity: number | Prisma.Decimal;
+        ProductType?: { id: number; code: string; name: string };
+    };
+}
+
+/** Side product with batch_code from JSON data */
+type SideProductWithBatch = WorksheetSideProduct & {
+    batch_code: string | null;
+};
 
 export class WorksheetStockService {
     /**
@@ -24,9 +39,9 @@ export class WorksheetStockService {
      * Validates stock availability before deducting
      */
     async processInputStockOut(
-        tx: any,
+        tx: Prisma.TransactionClient,
         worksheet: Worksheet,
-        inputBatches: (WorksheetInputBatch & { Stock?: any })[],
+        inputBatches: InputBatchWithStock[],
         userId: number
     ): Promise<void> {
         // Safety: Validate ALL stock availability FIRST
@@ -72,7 +87,7 @@ export class WorksheetStockService {
      * Handles both main output and side products
      */
     async processOutputStockIn(
-        tx: any,
+        tx: Prisma.TransactionClient,
         worksheet: Worksheet,
         userId: number,
         sideProducts: WorksheetSideProduct[]
@@ -133,9 +148,9 @@ export class WorksheetStockService {
                             type: 'PRODUCTION_OUTPUT',
                             productCode: sp.product_code,
                             output_type: 'side_product',
-                            batch_code: (sp as any).batch_code || worksheet.batch_code
+                            batch_code: (sp as SideProductWithBatch).batch_code || worksheet.batch_code
                         }),
-                        batchCode: (sp as any).batch_code || worksheet.batch_code
+                        batchCode: (sp as SideProductWithBatch).batch_code || worksheet.batch_code
                     });
                 }
             }
@@ -145,7 +160,7 @@ export class WorksheetStockService {
     /**
      * Reverse all stock movements for a worksheet (used when cancelling approved worksheet)
      */
-    async reverseAllMovements(tx: any, worksheetId: number, userId: number): Promise<void> {
+    async reverseAllMovements(tx: Prisma.TransactionClient, worksheetId: number, userId: number): Promise<void> {
         // Reverse IN movements (output stocks)
         const inMovements = await tx.stockMovement.findMany({
             where: {
@@ -186,7 +201,7 @@ export class WorksheetStockService {
     /**
      * Create a stock movement and update stock quantity atomically
      */
-    private async createMovement(tx: any, params: StockMovementParams): Promise<void> {
+    private async createMovement(tx: Prisma.TransactionClient, params: StockMovementParams): Promise<void> {
         await tx.stockMovement.create({
             data: {
                 id_stock: params.stockId,
@@ -214,7 +229,7 @@ export class WorksheetStockService {
      * Find existing stock or create new one for a factory + product type
      */
     private async findOrCreateStock(
-        tx: any,
+        tx: Prisma.TransactionClient,
         factoryId: number,
         productTypeId: number,
         unit: string

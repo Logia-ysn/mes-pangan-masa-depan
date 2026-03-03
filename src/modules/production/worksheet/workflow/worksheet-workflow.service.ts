@@ -16,6 +16,7 @@ import { NotFoundError, BusinessRuleError } from '../../../../utils/errors';
 import { auditService } from '../../../../services/audit.service';
 import { worksheetStockService } from '../stock/worksheet-stock.service';
 import { hppCalculator } from '../hpp/hpp-calculator.service';
+import type { WorksheetWithRelations } from '../worksheet.types';
 
 export class WorksheetWorkflowService {
     /**
@@ -103,7 +104,7 @@ export class WorksheetWorkflowService {
 
             // 2. Process Main Output + Side Products → Stock IN
             await worksheetStockService.processOutputStockIn(
-                tx, worksheet as any, approverId, worksheet.WorksheetSideProduct
+                tx, worksheet, approverId, worksheet.WorksheetSideProduct
             );
 
             // 3. Calculate HPP server-side

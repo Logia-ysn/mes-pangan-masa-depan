@@ -7,8 +7,9 @@ import type { ProductionStep } from '../../components/Production/ProductionProgr
 import { logger } from '../../utils/logger';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import type { Worksheet as BaseWorksheet, WorksheetInputBatchRelation } from '../../features/production/worksheet/types/worksheet.types';
 
-// Status config
+// Status config with icon (extends shared statusConfig)
 const statusConfig: { [key: string]: { label: string; color: string; bg: string; icon: string } } = {
     DRAFT: { label: 'Draft', color: '#6b7280', bg: '#f3f4f6', icon: 'draft' },
     SUBMITTED: { label: 'Menunggu Approval', color: '#1d4ed8', bg: '#dbeafe', icon: 'pending_actions' },
@@ -20,41 +21,19 @@ const statusConfig: { [key: string]: { label: string; color: string; bg: string;
 const SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER', 'ADMIN', 'SUPERUSER', 'DIRECTOR', 'BOD'];
 const MANAGER_ROLES = ['MANAGER', 'ADMIN', 'SUPERUSER', 'DIRECTOR', 'BOD'];
 
-interface Worksheet {
-    id: number;
-    worksheet_date: string;
-    shift: string;
-    status: string;
-    gabah_input: number;
-    beras_output: number;
-    menir_output: number;
-    dedak_output: number;
-    sekam_output: number;
-    machine_hours: number;
-    downtime_hours: number;
+/** WorksheetDetail-specific type with extra relation fields */
+interface WorksheetDetailData extends BaseWorksheet {
     downtime_reason: string;
-    notes: string;
-    process_steps?: string;
-    batch_code?: string;
-    raw_material_cost?: number;
-    side_product_revenue?: number;
-    hpp?: number;
-    hpp_per_kg?: number;
-    rejection_reason?: string;
-    submitted_at?: string;
-    approved_at?: string;
-    rejected_at?: string;
-    completed_at?: string;
     id_user?: number;
-    // Relations
+    // Extra relations only available in detail view
     otm_id_machine?: { id: number; name: string };
     otm_id_user?: { id: number; fullname: string; email: string };
     SubmittedByUser?: { id: number; fullname: string };
     ApprovedByUser?: { id: number; fullname: string };
     RejectedByUser?: { id: number; fullname: string };
-    input_batches?: any[];
-    WorksheetInputBatch?: any[];
-    WorksheetSideProduct?: any[];
+    WorksheetInputBatch?: WorksheetInputBatchRelation[];
+    input_batches?: WorksheetInputBatchRelation[];
+    WorksheetSideProduct?: Array<{ product_code: string; product_name: string; quantity: number; unit_price: number }>;
     id_machines?: string;
     id_operators?: string;
 }
@@ -64,7 +43,7 @@ const WorksheetDetail = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { showSuccess, showError } = useToast();
-    const [worksheet, setWorksheet] = useState<Worksheet | null>(null);
+    const [worksheet, setWorksheet] = useState<WorksheetDetailData | null>(null);
     const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
     const [employees, setEmployees] = useState<{ id: number; fullname: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,9 +84,11 @@ const WorksheetDetail = () => {
                 machineApi.getAll().catch(() => ({ data: { data: [] } })),
                 employeeApi.getAll().catch(() => ({ data: { data: [] } }))
             ]);
-            setWorksheet((wsRes as any).data?.data || (wsRes as any).data || wsRes);
-            setMachines((machRes as any).data?.data || (machRes as any).data || machRes || []);
-            setEmployees((empRes as any).data?.data || (empRes as any).data || empRes || []);
+            const wsData = (wsRes as { data?: { data?: WorksheetDetailData } })?.data?.data
+                || (wsRes as { data?: WorksheetDetailData })?.data as WorksheetDetailData;
+            setWorksheet(wsData);
+            setMachines((machRes as { data?: { data?: { id: number; name: string }[] } })?.data?.data || []);
+            setEmployees((empRes as { data?: { data?: { id: number; fullname: string }[] } })?.data?.data || []);
         } catch (err) {
             logger.error('Error:', err);
             setError('Gagal memuat data worksheet');
@@ -519,10 +500,10 @@ const WorksheetDetail = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {inputBatches.map((batch: any, idx: number) => (
+                                        {inputBatches.map((batch, idx: number) => (
                                             <tr key={idx}>
                                                 <td>{batch.Stock?.ProductType?.name || batch.otm_id_stock?.otm_id_product_type?.name || '-'}</td>
-                                                <td className="font-mono">{batch.batch_code || batch.otm_id_stock?.batch_code || '-'}</td>
+                                                <td className="font-mono">{batch.batch_code || '-'}</td>
                                                 <td className="text-right">{formatNumber(batch.quantity)}</td>
                                                 <td className="hide-mobile text-right">{formatCurrency(batch.unit_price || 0)}</td>
                                                 <td className="hide-mobile text-right">{formatCurrency(batch.total_cost || 0)}</td>

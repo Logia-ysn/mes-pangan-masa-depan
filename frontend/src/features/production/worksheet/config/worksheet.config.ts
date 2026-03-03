@@ -6,8 +6,9 @@
  * - WorksheetForm.tsx (shiftConfig at line 71-76)
  * - Worksheets.tsx (shiftConfig at line 40-45, statusConfig at line 47-53, STATUS_FILTERS at line 55-62)
  * 
- * NOTE: These values MUST stay in sync with the backend constants in
- * src/modules/production/worksheet/worksheet.constants.ts
+ * @sync-with src/modules/production/worksheet/worksheet.constants.ts
+ *
+ * NOTE: These values MUST stay in sync with the backend constants.
  */
 
 // ─── Shift Configuration ────────────────────────────────────────

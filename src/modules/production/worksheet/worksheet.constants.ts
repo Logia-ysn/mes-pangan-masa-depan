@@ -2,6 +2,7 @@
  * Worksheet Constants
  * Single source of truth for all worksheet-related constants
  * 
+ * @sync-with frontend/src/features/production/worksheet/config/worksheet.config.ts
  * @module worksheet.constants
  */
 
