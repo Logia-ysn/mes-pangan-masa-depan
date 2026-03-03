@@ -29,7 +29,7 @@ interface ItemBase {
     sort_order?: number;
 }
 
-type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'levels' | 'brands' | 'factory_materials' | 'quality';
+type TabType = 'data' | 'suppliers' | 'categories' | 'varieties' | 'levels' | 'brands' | 'factory_materials' | 'quality' | 'backup';
 
 const Settings = () => {
     const { showSuccess, showError } = useToast();
@@ -59,11 +59,27 @@ const Settings = () => {
         showCancel?: boolean;
     } | null>(null);
 
+    // Backup state
+    interface BackupItem {
+        fileName: string;
+        sizeFormatted: string;
+        sizeBytes: number;
+        createdAt: string;
+    }
+    const [backups, setBackups] = useState<BackupItem[]>([]);
+    const [backupLoading, setBackupLoading] = useState(false);
+    const [restoreConfirmText, setRestoreConfirmText] = useState('');
+    const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+    const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+    const [showUploadRestore, setShowUploadRestore] = useState(false);
+    const [uploadRestoreConfirm, setUploadRestoreConfirm] = useState('');
+
     useEffect(() => {
         if (activeTab === 'categories') fetchCategories();
         if (activeTab === 'varieties') fetchVarieties();
         if (activeTab === 'levels') fetchLevels();
         if (activeTab === 'brands') fetchBrands();
+        if (activeTab === 'backup') fetchBackups();
     }, [activeTab]);
 
     const fetchCategories = async () => {
@@ -95,6 +111,94 @@ const Settings = () => {
     };
 
     const closeModal = () => setModalConfig(null);
+
+    // === BACKUP HANDLERS ===
+    const fetchBackups = async () => {
+        try {
+            const res = await api.get('/admin/backups');
+            setBackups(res.data?.data || []);
+        } catch (e) { logger.error(e); }
+    };
+
+    const handleCreateBackup = async () => {
+        setBackupLoading(true);
+        try {
+            const res = await api.post('/admin/backup');
+            showSuccess('Backup Berhasil', `File: ${res.data.data.fileName} (${res.data.data.sizeFormatted})`);
+            fetchBackups();
+        } catch (error: any) {
+            showError('Gagal', error.response?.data?.error?.message || 'Gagal membuat backup');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
+
+    const handleDownloadBackup = async (fileName: string) => {
+        try {
+            const res = await api.get(`/admin/backups/${fileName}/download`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            showError('Gagal', 'Gagal mendownload backup');
+        }
+    };
+
+    const handleDeleteBackup = async (fileName: string) => {
+        if (!confirm(`Hapus backup ${fileName}?`)) return;
+        try {
+            await api.delete(`/admin/backups/${fileName}`);
+            showSuccess('Berhasil', 'Backup berhasil dihapus');
+            fetchBackups();
+        } catch (error: any) {
+            showError('Gagal', error.response?.data?.error?.message || 'Gagal menghapus backup');
+        }
+    };
+
+    const handleRestoreFromServer = async () => {
+        if (!restoreTarget) return;
+        setBackupLoading(true);
+        setShowRestoreDialog(false);
+        setRestoreConfirmText('');
+        try {
+            const res = await api.post('/admin/restore', { fileName: restoreTarget });
+            showSuccess('Restore Berhasil', res.data.message || 'Database berhasil di-restore');
+            setRestoreTarget(null);
+        } catch (error: any) {
+            showError('Gagal', error.response?.data?.error?.message || 'Gagal restore database');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
+
+    const handleRestoreFromUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const file = formData.get('backup') as File;
+        if (!file || !file.name.endsWith('.dump')) {
+            showError('Validasi', 'Pilih file backup (.dump)');
+            return;
+        }
+        setBackupLoading(true);
+        setShowUploadRestore(false);
+        setUploadRestoreConfirm('');
+        try {
+            const res = await api.post('/admin/restore', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 300000, // 5 min
+            });
+            showSuccess('Restore Berhasil', res.data.message || 'Database berhasil di-restore dari file upload');
+        } catch (error: any) {
+            showError('Gagal', error.response?.data?.error?.message || 'Gagal restore database');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
 
     // === DATA MANAGEMENT ===
     const handleSeedClick = () => {
@@ -320,7 +424,10 @@ const Settings = () => {
     ];
 
     if (user?.role === 'ADMIN') {
-        tabs.push({ key: 'data', label: 'Manajemen Data', icon: 'database' });
+        tabs.push(
+            { key: 'backup', label: 'Backup & Restore', icon: 'backup' },
+            { key: 'data', label: 'Manajemen Data', icon: 'database' },
+        );
     }
 
     return (
@@ -616,6 +723,108 @@ const Settings = () => {
                 )}
 
                 {activeTab === 'factory_materials' && <FactoryMaterialConfig />}
+
+                {activeTab === 'backup' && (
+                    <div>
+                        {/* Create Backup Card */}
+                        <div className="card" style={{ marginBottom: 20 }}>
+                            <div className="card-header">
+                                <h3 className="card-title">Backup Database</h3>
+                                <button className="btn btn-primary" onClick={handleCreateBackup} disabled={backupLoading}>
+                                    {backupLoading ? (
+                                        <><span className="material-symbols-outlined icon-sm animate-spin">sync</span> Memproses...</>
+                                    ) : (
+                                        <><span className="material-symbols-outlined icon-sm">backup</span> Buat Backup Baru</>
+                                    )}
+                                </button>
+                            </div>
+                            <div style={{ padding: '0 24px 16px' }}>
+                                <div style={{ background: 'rgba(19, 127, 236, 0.08)', padding: 14, borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: 20, marginTop: 2 }}>info</span>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        Backup menggunakan <strong>pg_dump</strong> untuk menyimpan seluruh database PostgreSQL.
+                                        File backup disimpan dalam format terkompresi (.dump) di server.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Backup List */}
+                        <div className="card" style={{ marginBottom: 20 }}>
+                            <div className="card-header">
+                                <h3 className="card-title">Daftar Backup</h3>
+                                <span className="badge badge-primary">{backups.length} backup</span>
+                            </div>
+                            <div className="table-container" style={{ padding: 0 }}>
+                                <table style={{ width: '100%' }}>
+                                    <thead>
+                                        <tr>
+                                            <th className="text-left">Nama File</th>
+                                            <th className="text-right">Ukuran</th>
+                                            <th className="text-left hide-mobile">Tanggal</th>
+                                            <th style={{ width: 180 }}>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {backups.map(b => (
+                                            <tr key={b.fileName}>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: 18 }}>description</span>
+                                                        <code style={{ fontSize: '0.82rem' }}>{b.fileName}</code>
+                                                    </div>
+                                                </td>
+                                                <td className="text-right font-mono">{b.sizeFormatted}</td>
+                                                <td className="hide-mobile" style={{ fontSize: '0.85rem' }}>
+                                                    {new Date(b.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => handleDownloadBackup(b.fileName)} title="Download">
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--primary)' }}>download</span>
+                                                        </button>
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => { setRestoreTarget(b.fileName); setShowRestoreDialog(true); setRestoreConfirmText(''); }} title="Restore">
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--warning)' }}>restore</span>
+                                                        </button>
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteBackup(b.fileName)} title="Hapus">
+                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>delete</span>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {backups.length === 0 && (
+                                            <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 40, display: 'block', marginBottom: 8, opacity: 0.4 }}>cloud_off</span>
+                                                Belum ada backup. Klik "Buat Backup Baru" untuk memulai.
+                                            </td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Upload & Restore Card */}
+                        <div className="card">
+                            <div className="card-header">
+                                <h3 className="card-title">Restore dari File</h3>
+                                <button className="btn btn-secondary" onClick={() => { setShowUploadRestore(true); setUploadRestoreConfirm(''); }}>
+                                    <span className="material-symbols-outlined icon-sm">upload_file</span>
+                                    Upload & Restore
+                                </button>
+                            </div>
+                            <div style={{ padding: '0 24px 16px' }}>
+                                <div style={{ background: 'rgba(220, 38, 38, 0.08)', padding: 14, borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 20, marginTop: 2 }}>warning</span>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        <strong style={{ color: 'var(--error)' }}>Perhatian:</strong> Restore akan <strong>menimpa semua data</strong> yang ada di database dengan data dari file backup.
+                                        Pastikan Anda sudah membuat backup terbaru sebelum melakukan restore.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modal */}
@@ -662,6 +871,95 @@ const Settings = () => {
                                 {modalConfig.type === 'success' ? 'OK' : 'Konfirmasi'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Restore from Server Backup Dialog */}
+            {showRestoreDialog && (
+                <div className="modal-overlay" onClick={() => setShowRestoreDialog(false)} style={{ zIndex: 1000 }}>
+                    <div className="modal modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title" style={{ color: 'var(--warning)' }}>
+                                <span className="material-symbols-outlined" style={{ marginRight: 8 }}>restore</span>
+                                Restore Database
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: '0.85rem', color: '#b91c1c' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 6 }}>warning</span>
+                                Ini akan <strong>menimpa seluruh data</strong> di database dengan backup:
+                                <br /><code style={{ fontSize: '0.82rem' }}>{restoreTarget}</code>
+                            </div>
+                            <div style={{ marginTop: 12 }}>
+                                <label className="form-label">Ketik <strong>RESTORE</strong> untuk konfirmasi:</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="RESTORE"
+                                    value={restoreConfirmText}
+                                    onChange={e => setRestoreConfirmText(e.target.value)}
+                                    style={{ marginTop: 8 }}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowRestoreDialog(false)}>Batal</button>
+                            <button
+                                className="btn" style={{ background: '#d97706', color: '#fff' }}
+                                onClick={handleRestoreFromServer}
+                                disabled={restoreConfirmText !== 'RESTORE'}
+                            >
+                                Ya, Restore Sekarang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Upload & Restore Dialog */}
+            {showUploadRestore && (
+                <div className="modal-overlay" onClick={() => setShowUploadRestore(false)} style={{ zIndex: 1000 }}>
+                    <div className="modal modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+                        <form onSubmit={handleRestoreFromUpload}>
+                            <div className="modal-header">
+                                <h3 className="modal-title" style={{ color: 'var(--warning)' }}>
+                                    <span className="material-symbols-outlined" style={{ marginRight: 8 }}>upload_file</span>
+                                    Upload & Restore
+                                </h3>
+                            </div>
+                            <div className="modal-body">
+                                <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: '0.85rem', color: '#b91c1c' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 6 }}>warning</span>
+                                    Upload file backup (.dump) untuk menimpa seluruh database.
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">File Backup (.dump)</label>
+                                    <input type="file" name="backup" accept=".dump" className="form-input" required />
+                                </div>
+                                <div style={{ marginTop: 12 }}>
+                                    <label className="form-label">Ketik <strong>RESTORE</strong> untuk konfirmasi:</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="RESTORE"
+                                        value={uploadRestoreConfirm}
+                                        onChange={e => setUploadRestoreConfirm(e.target.value)}
+                                        style={{ marginTop: 8 }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowUploadRestore(false)}>Batal</button>
+                                <button
+                                    type="submit"
+                                    className="btn" style={{ background: '#d97706', color: '#fff' }}
+                                    disabled={uploadRestoreConfirm !== 'RESTORE'}
+                                >
+                                    Upload & Restore
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

@@ -10,6 +10,7 @@ import { getUserFromToken } from './utility/auth';
 import { pdfService } from './src/services/pdf.service';
 import { createWorkbook } from './src/services/excel.service';
 import { worksheetRepository } from './src/repositories/worksheet.repository';
+import { BackupService } from './src/services/backup.service';
 import fileUpload from 'express-fileupload';
 import {
   t_submitWorksheet,
@@ -463,6 +464,102 @@ server.express.delete('/drying-logs/:id', (req, res) => t_deleteDryingLog(req as
 
 // PO Receivable Items
 server.express.get('/purchase-orders/:id/receivable-items', (req, res) => t_getPOReceivableItems(req as any, res as any));
+
+// --- Backup & Restore API (Admin Only) ---
+
+const ADMIN_ROLES = ['ADMIN', 'SUPERUSER'];
+
+server.express.post('/admin/backup', express.json(), async (req, res) => {
+  try {
+    const user = await getUserFromToken(req);
+    if (!ADMIN_ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, error: { message: 'Admin access required' } });
+    }
+    console.log(`[BACKUP] Creating backup requested by ${user.fullname}`);
+    const backup = await BackupService.createBackup();
+    console.log(`[BACKUP] Created: ${backup.fileName} (${backup.sizeFormatted})`);
+    res.json({ success: true, data: backup });
+  } catch (error: any) {
+    console.error('[BACKUP] Create failed:', error.message);
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to create backup' } });
+  }
+});
+
+server.express.get('/admin/backups', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req);
+    if (!ADMIN_ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, error: { message: 'Admin access required' } });
+    }
+    const backups = BackupService.listBackups();
+    res.json({ success: true, data: backups });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to list backups' } });
+  }
+});
+
+server.express.get('/admin/backups/:fileName/download', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req);
+    if (!ADMIN_ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, error: { message: 'Admin access required' } });
+    }
+    const filePath = BackupService.getBackupPath(req.params.fileName);
+    res.download(filePath, req.params.fileName);
+  } catch (error: any) {
+    res.status(404).json({ success: false, error: { message: error.message || 'Backup not found' } });
+  }
+});
+
+server.express.delete('/admin/backups/:fileName', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req);
+    if (!ADMIN_ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, error: { message: 'Admin access required' } });
+    }
+    BackupService.deleteBackup(req.params.fileName);
+    console.log(`[BACKUP] Deleted: ${req.params.fileName} by ${user.fullname}`);
+    res.json({ success: true, message: 'Backup deleted' });
+  } catch (error: any) {
+    res.status(404).json({ success: false, error: { message: error.message || 'Failed to delete backup' } });
+  }
+});
+
+server.express.post('/admin/restore', async (req: any, res) => {
+  try {
+    const user = await getUserFromToken(req);
+    if (!ADMIN_ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, error: { message: 'Admin access required' } });
+    }
+
+    let restoreResult: { success: boolean; message: string };
+
+    // Accept either uploaded file or fileName reference
+    if (req.files && req.files.backup) {
+      // Uploaded file
+      const file = req.files.backup as any;
+      const tempPath = `/tmp/restore_${Date.now()}.dump`;
+      await file.mv(tempPath);
+      console.log(`[RESTORE] Restoring from uploaded file by ${user.fullname}`);
+      restoreResult = await BackupService.restoreBackup(tempPath);
+      // Cleanup temp file
+      const fs = require('fs');
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    } else if (req.body && req.body.fileName) {
+      // Restore from existing backup on server
+      const filePath = BackupService.getBackupPath(req.body.fileName);
+      console.log(`[RESTORE] Restoring from ${req.body.fileName} by ${user.fullname}`);
+      restoreResult = await BackupService.restoreBackup(filePath);
+    } else {
+      return res.status(400).json({ success: false, error: { message: 'Provide a backup file or fileName' } });
+    }
+
+    res.json({ success: restoreResult.success, message: restoreResult.message });
+  } catch (error: any) {
+    console.error('[RESTORE] Failed:', error.message);
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to restore backup' } });
+  }
+});
 
 // --- Logout (clears httpOnly cookie) ---
 server.express.post('/auth/logout', (_req, res) => {
