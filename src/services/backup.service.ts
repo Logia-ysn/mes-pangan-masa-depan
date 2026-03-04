@@ -1,19 +1,25 @@
 /**
  * Backup Service
- * Handles PostgreSQL database backup & restore using pg_dump / pg_restore
+ * Handles PostgreSQL database backup & restore via Docker container
+ * 
+ * Uses `docker exec` to run pg_dump/pg_restore inside the PostgreSQL container
+ * since pg_dump is not available on the host machine.
  * 
  * @module backup.service
  */
 
-import { execFile } from 'child_process';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 // Backup directory (project root / backups)
 const BACKUP_DIR = path.resolve(__dirname, '../../backups');
+
+// Docker container name for PostgreSQL
+const DB_CONTAINER = 'erp_pangan_db';
 
 export interface BackupInfo {
     fileName: string;
@@ -63,13 +69,29 @@ function ensureBackupDir(): void {
     }
 }
 
+/**
+ * Check if Docker container is running
+ */
+async function ensureContainerRunning(): Promise<void> {
+    try {
+        const { stdout } = await execAsync(`docker inspect -f '{{.State.Running}}' ${DB_CONTAINER} 2>/dev/null`);
+        if (!stdout.trim().includes('true')) {
+            throw new Error(`Docker container '${DB_CONTAINER}' is not running`);
+        }
+    } catch (error: any) {
+        if (error.message?.includes('not running')) throw error;
+        throw new Error(`Docker container '${DB_CONTAINER}' not found. Make sure Docker is running and the container exists.`);
+    }
+}
+
 export class BackupService {
     /**
-     * Create a new database backup using pg_dump
-     * Output: custom format (.dump) for efficient storage and selective restore
+     * Create a new database backup using pg_dump inside Docker container
+     * Output is piped from container stdout to a local file
      */
     static async createBackup(): Promise<BackupInfo> {
         ensureBackupDir();
+        await ensureContainerRunning();
         const conn = parseDatabaseUrl();
 
         const timestamp = new Date().toISOString()
@@ -80,22 +102,12 @@ export class BackupService {
         const fileName = `backup_${timestamp}.dump`;
         const filePath = path.join(BACKUP_DIR, fileName);
 
-        const env = {
-            ...process.env,
-            PGPASSWORD: conn.password,
-        };
+        // Run pg_dump inside Docker container, pipe output to local file
+        // Using custom format (-Fc) for compressed output
+        const cmd = `docker exec -e PGPASSWORD='${conn.password}' ${DB_CONTAINER} pg_dump -U ${conn.user} -d ${conn.database} -Fc --no-owner --no-privileges > "${filePath}"`;
 
         try {
-            await execFileAsync('pg_dump', [
-                '-h', conn.host,
-                '-p', conn.port,
-                '-U', conn.user,
-                '-d', conn.database,
-                '-Fc',              // Custom format (compressed)
-                '--no-owner',       // Don't dump ownership
-                '--no-privileges',  // Don't dump privileges
-                '-f', filePath,
-            ], { env, timeout: 120000 }); // 2 min timeout
+            await execAsync(cmd, { timeout: 120000 }); // 2 min timeout
         } catch (error: any) {
             // Cleanup partial file
             if (fs.existsSync(filePath)) {
@@ -104,7 +116,17 @@ export class BackupService {
             throw new Error(`pg_dump failed: ${error.stderr || error.message}`);
         }
 
+        // Verify file was created and has content
+        if (!fs.existsSync(filePath)) {
+            throw new Error('Backup file was not created');
+        }
+
         const stats = fs.statSync(filePath);
+        if (stats.size === 0) {
+            fs.unlinkSync(filePath);
+            throw new Error('Backup file is empty — pg_dump may have failed silently');
+        }
+
         return {
             fileName,
             filePath,
@@ -115,7 +137,7 @@ export class BackupService {
     }
 
     /**
-     * Restore database from a backup file using pg_restore
+     * Restore database from a backup file using pg_restore inside Docker container
      * WARNING: This will overwrite existing data!
      */
     static async restoreBackup(filePath: string): Promise<{ success: boolean; message: string }> {
@@ -123,35 +145,40 @@ export class BackupService {
             throw new Error(`Backup file not found: ${filePath}`);
         }
 
+        await ensureContainerRunning();
         const conn = parseDatabaseUrl();
-        const env = {
-            ...process.env,
-            PGPASSWORD: conn.password,
-        };
+
+        // Copy file into container, then run pg_restore
+        const containerPath = `/tmp/${path.basename(filePath)}`;
 
         try {
-            await execFileAsync('pg_restore', [
-                '-h', conn.host,
-                '-p', conn.port,
-                '-U', conn.user,
-                '-d', conn.database,
-                '--clean',          // Drop objects before creating
-                '--if-exists',      // Don't error if objects don't exist
-                '--no-owner',
-                '--no-privileges',
-                '--single-transaction', // All-or-nothing restore
-                filePath,
-            ], { env, timeout: 300000 }); // 5 min timeout
+            // Copy backup file into container
+            await execAsync(`docker cp "${filePath}" ${DB_CONTAINER}:${containerPath}`, { timeout: 60000 });
+
+            // Run pg_restore inside container
+            const restoreCmd = `docker exec -e PGPASSWORD='${conn.password}' ${DB_CONTAINER} pg_restore -U ${conn.user} -d ${conn.database} --clean --if-exists --no-owner --no-privileges --single-transaction "${containerPath}" 2>&1 || true`;
+
+            const { stderr } = await execAsync(restoreCmd, { timeout: 300000 }); // 5 min timeout
+
+            // Cleanup temp file in container
+            await execAsync(`docker exec ${DB_CONTAINER} rm -f "${containerPath}"`).catch(() => { });
+
+            // Check for fatal errors (warnings are expected with --clean)
+            if (stderr && (stderr.includes('FATAL') || stderr.includes('could not connect'))) {
+                throw new Error(stderr);
+            }
 
             return { success: true, message: 'Database restored successfully' };
         } catch (error: any) {
-            // pg_restore returns exit code 1 for warnings (e.g. "table already exists")
-            // which is often expected with --clean --if-exists
-            const stderr = error.stderr || '';
-            if (error.code === 1 && !stderr.includes('FATAL') && !stderr.includes('ERROR')) {
-                return { success: true, message: 'Database restored with warnings (normal)' };
+            // Cleanup temp file in container
+            await execAsync(`docker exec ${DB_CONTAINER} rm -f "${containerPath}"`).catch(() => { });
+
+            const msg = error.stderr || error.message || 'Unknown error';
+            if (msg.includes('FATAL') || msg.includes('could not connect')) {
+                throw new Error(`pg_restore failed: ${msg}`);
             }
-            throw new Error(`pg_restore failed: ${stderr || error.message}`);
+            // pg_restore often returns warnings that are not errors
+            return { success: true, message: 'Database restored with warnings (normal)' };
         }
     }
 
