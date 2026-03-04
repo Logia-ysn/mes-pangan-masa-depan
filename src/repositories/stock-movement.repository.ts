@@ -6,6 +6,9 @@
 import { BaseRepository } from './base.repository';
 import { StockMovement, StockMovement_movement_type_enum } from '@prisma/client';
 
+// Valid enum values for runtime validation
+const VALID_MOVEMENT_TYPES = Object.values(StockMovement_movement_type_enum);
+
 export interface StockMovementListParams {
     limit?: number;
     offset?: number;
@@ -50,10 +53,15 @@ export class StockMovementRepository extends BaseRepository<StockMovement> {
 
         if (params.movement_type) {
             if (params.movement_type.includes(',')) {
-                where.movement_type = { in: params.movement_type.split(',') as StockMovement_movement_type_enum[] };
-            } else {
+                const validTypes = params.movement_type.split(',')
+                    .filter(t => VALID_MOVEMENT_TYPES.includes(t as StockMovement_movement_type_enum)) as StockMovement_movement_type_enum[];
+                if (validTypes.length > 0) {
+                    where.movement_type = { in: validTypes };
+                }
+            } else if (VALID_MOVEMENT_TYPES.includes(params.movement_type as StockMovement_movement_type_enum)) {
                 where.movement_type = params.movement_type as StockMovement_movement_type_enum;
             }
+            // Invalid values are silently ignored (no filter applied)
         }
 
         if (params.reference_type) {

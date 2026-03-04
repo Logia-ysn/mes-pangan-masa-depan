@@ -1,5 +1,8 @@
 import { BaseRepository } from './base.repository';
-import { PurchaseOrder } from '@prisma/client';
+import { PurchaseOrder, PurchaseOrder_status_enum } from '@prisma/client';
+
+// Valid enum values for runtime validation
+const VALID_PO_STATUSES = Object.values(PurchaseOrder_status_enum);
 
 export class PurchaseOrderRepository extends BaseRepository<PurchaseOrder> {
     protected modelName = 'PurchaseOrder';
@@ -45,9 +48,13 @@ export class PurchaseOrderRepository extends BaseRepository<PurchaseOrder> {
         }
         if (params.status) {
             if (params.status.includes(',')) {
-                where.status = { in: params.status.split(',') };
-            } else {
-                where.status = params.status;
+                const validStatuses = params.status.split(',')
+                    .filter(s => VALID_PO_STATUSES.includes(s as PurchaseOrder_status_enum)) as PurchaseOrder_status_enum[];
+                if (validStatuses.length > 0) {
+                    where.status = { in: validStatuses };
+                }
+            } else if (VALID_PO_STATUSES.includes(params.status as PurchaseOrder_status_enum)) {
+                where.status = params.status as PurchaseOrder_status_enum;
             }
         }
         if (params.start_date || params.end_date) {

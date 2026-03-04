@@ -17,10 +17,47 @@ const api = axios.create({
     },
 });
 
+// --- Request deduplication for GET requests ---
+// Prevents duplicate concurrent requests (e.g. multiple /auth/me on page load)
+const pendingRequests = new Map<string, Promise<any>>();
+
+api.interceptors.request.use((config) => {
+    if (config.method === 'get') {
+        const key = `${config.url}${JSON.stringify(config.params || {})}`;
+        const pending = pendingRequests.get(key);
+        if (pending) {
+            // Cancel this request — the first one will handle it
+            const controller = new AbortController();
+            config.signal = controller.signal;
+            // Return the pending promise's result via adapter
+            pending.then(() => controller.abort()).catch(() => controller.abort());
+        }
+    }
+    return config;
+});
+
 // Response interceptor: global error handling + auto-logout on 401
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Clear dedup cache on success
+        if (response.config.method === 'get') {
+            const key = `${response.config.url}${JSON.stringify(response.config.params || {})}`;
+            pendingRequests.delete(key);
+        }
+        return response;
+    },
     (error) => {
+        // Clear dedup cache on error
+        if (error.config?.method === 'get') {
+            const key = `${error.config.url}${JSON.stringify(error.config.params || {})}`;
+            pendingRequests.delete(key);
+        }
+
+        // Ignore cancelled/aborted requests (deduplication)
+        if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
+            return Promise.reject(error);
+        }
+
         const status = error.response?.status;
         const message = error.response?.data?.error?.message
             || error.response?.data?.message
@@ -37,7 +74,8 @@ api.interceptors.response.use(
         } else if (status === 422) {
             toast.error(message);
         } else if (status && status >= 500) {
-            toast.error('Terjadi kesalahan server. Coba lagi nanti.');
+            // Show actual error message if available, otherwise generic
+            toast.error(message !== 'An unexpected error occurred' ? message : 'Terjadi kesalahan server. Coba lagi nanti.');
         } else if (status && status >= 400) {
             toast.error(message);
         } else if (error.code === 'ECONNABORTED') {

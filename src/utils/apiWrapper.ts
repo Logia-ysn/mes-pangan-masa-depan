@@ -54,13 +54,40 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
                     details: (error as any).errors || undefined
                 }
             });
+        } else if (error.constructor?.name === 'PrismaClientValidationError') {
+            // Prisma validation error (bad enum value, missing field, etc.)
+            // Extract useful message from Prisma error
+            const match = error.message?.match(/Invalid value.*?Expected\s+(\S+)/);
+            const hint = match ? `Invalid value. Expected: ${match[1]}` : 'Invalid request data';
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: hint
+                }
+            });
+        } else if (error.constructor?.name === 'PrismaClientKnownRequestError') {
+            // Prisma known errors (unique constraint, foreign key, etc.)
+            const code = error.code === 'P2002' ? 'DUPLICATE_ENTRY'
+                : error.code === 'P2003' ? 'FOREIGN_KEY_ERROR'
+                    : error.code === 'P2025' ? 'NOT_FOUND'
+                        : 'DATABASE_ERROR';
+            const status = error.code === 'P2025' ? 404 : 409;
+            res.status(status).json({
+                success: false,
+                error: {
+                    code,
+                    message: error.meta?.cause || error.message || 'Database operation failed'
+                }
+            });
         } else {
-            // Unhandled Error
+            // Unhandled Error — show details in development
+            const isDev = process.env.NODE_ENV !== 'production';
             res.status(500).json({
                 success: false,
                 error: {
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: 'An unexpected error occurred'
+                    message: isDev ? (error.message || 'An unexpected error occurred') : 'An unexpected error occurred'
                 }
             });
         }
