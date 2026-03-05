@@ -21,7 +21,7 @@ export const t_getWorksheetPdf: T_getWorksheetPdf = apiWrapper(async (req, res) 
     const filename = `worksheet_${worksheet.batch_code || worksheet.id}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
 
     return { __skip_response: true } as any;

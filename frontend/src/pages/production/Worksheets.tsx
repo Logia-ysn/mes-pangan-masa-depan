@@ -71,13 +71,14 @@ const Worksheets = () => {
         e.stopPropagation();
         try {
             const res = await worksheetApi.downloadPdf(id);
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `worksheet_${batchCode || id}.pdf`);
+            link.setAttribute('download', `${batchCode || `worksheet-${id}`}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (err: any) {
             showError('Gagal', 'Gagal mendownload PDF');
         }

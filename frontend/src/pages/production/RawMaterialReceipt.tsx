@@ -675,10 +675,10 @@ const RawMaterialReceipt = () => {
     const handleDownloadPdf = async (batch: RawMaterialBatch) => {
         try {
             const response = await materialReceiptApi.downloadPdf(batch.id);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `receipt_${batch.receiptNumber || batch.batchId}.pdf`);
+            link.setAttribute('download', `${batch.batchId || batch.receiptNumber || `receipt-${batch.id}`}.pdf`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

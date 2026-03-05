@@ -101,13 +101,14 @@ const WorksheetDetail = () => {
         if (!worksheet) return;
         try {
             const res = await worksheetApi.downloadPdf(worksheet.id);
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `worksheet_${worksheet.batch_code || worksheet.id}.pdf`);
+            link.setAttribute('download', `${worksheet.batch_code || `worksheet-${worksheet.id}`}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
             showSuccess('Berhasil', 'PDF sedang didownload');
         } catch (err: any) {
             showError('Gagal', 'Gagal mendownload PDF');

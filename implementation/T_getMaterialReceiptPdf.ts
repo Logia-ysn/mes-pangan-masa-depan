@@ -7,16 +7,20 @@ import { materialReceiptService } from "../src/services/material-receipt.service
 export const t_getMaterialReceiptPdf: T_getMaterialReceiptPdf = apiWrapper(async (req, res) => {
     await requireAuth(req, 'OPERATOR');
 
-    const receiptId = Number(req.path.id);
-    const receipt = await materialReceiptService.getById(receiptId);
+    const receiptId = Number(req.path?.id || req.params?.id);
+    if (!receiptId || isNaN(receiptId)) {
+        res.status(400).json({ success: false, error: { message: 'Invalid receipt ID' } });
+        return;
+    }
 
+    const receipt = await materialReceiptService.getById(receiptId);
     const pdfBuffer = await pdfService.generateReceiptPDF(receiptId);
 
-    // Convert to regular Response properties for sending binary data
+    const filename = `${receipt.batch_code || receipt.receipt_number || `receipt-${receiptId}`}.pdf`;
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="receipt_${receipt.receipt_number}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
 
-    // Special return indicating response is already handled by apiWrapper
     return { __skip_response: true } as any;
 });

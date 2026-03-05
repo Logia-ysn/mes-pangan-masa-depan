@@ -199,9 +199,13 @@ server.express.get('/invoices/:id/pdf', async (req, res) => {
       return res.status(400).json({ success: false, error: { message: 'Invalid invoice ID' } });
     }
 
+    // Get invoice number for filename
+    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { invoice_number: true } });
+    const filename = `${invoice?.invoice_number || `invoice-${invoiceId}`}.pdf`;
+
     const buffer = await pdfService.generateInvoicePDF(invoiceId);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="invoice-${invoiceId}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
