@@ -7,7 +7,13 @@ import { worksheetService } from "../src/services/worksheet.service";
 export const t_getWorksheetPdf: T_getWorksheetPdf = apiWrapper(async (req, res) => {
     await requireAuth(req, 'OPERATOR');
 
-    const worksheetId = Number(req.path.id);
+    // Support both NAIV (req.path.id) and Express (req.params.id) route params
+    const worksheetId = Number(req.path?.id || req.params?.id);
+    if (!worksheetId || isNaN(worksheetId)) {
+        res.status(400).json({ success: false, error: { message: 'Invalid worksheet ID' } });
+        return;
+    }
+
     const worksheet = await worksheetService.getWorksheetById(worksheetId);
 
     const pdfBuffer = await pdfService.generateWorksheetPDF(worksheetId);

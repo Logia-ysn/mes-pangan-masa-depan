@@ -21,6 +21,12 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
             // Some Express props (query, params) are read-only getters — safely try to set
             try { req.query = res.req.query || req.query; } catch (_) { }
             try { req.params = res.req.params || req.params; } catch (_) { }
+            // NAIV sets req.path as an object with route params (e.g. req.path.id)
+            // When handlers are manually mounted via server.express, req.path is a string (URL).
+            // Populate req.path from Express params so all handlers work universally.
+            if (typeof req.path === 'string' || !req.path) {
+                req.path = res.req.params || {};
+            }
         }
 
         const data = await handler(req, res);
