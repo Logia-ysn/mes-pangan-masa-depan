@@ -3,7 +3,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install openssl (required for Prisma on Alpine)
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl docker-cli
 
 # Copy package files
 COPY package*.json ./
