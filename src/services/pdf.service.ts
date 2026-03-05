@@ -326,7 +326,7 @@ class PDFService {
             doc.fontSize(7).font('Helvetica').fillColor('#aaaaaa')
                 .text(
                     `Dokumen tercetak pada ${formatDate(new Date())} | Otomatis oleh Sistem ERP PMD`,
-                    leftX, footerY, { width: pageWidth, align: 'center' }
+                    leftX, footerY, { width: pageWidth, align: 'center', lineBreak: false }
                 );
 
             doc.end();
@@ -562,7 +562,7 @@ class PDFService {
             doc.fontSize(7).font('Helvetica').fillColor('#aaaaaa')
                 .text(
                     `Dokumen tercetak pada ${formatDate(new Date())} | Otomatis oleh Sistem ERP PMD`,
-                    leftX, footerY, { width: pageWidth, align: 'center' }
+                    leftX, footerY, { width: pageWidth, align: 'center', lineBreak: false }
                 );
 
             doc.end();
@@ -766,7 +766,7 @@ class PDFService {
             // ===== FOOTER =====
             const footerY = doc.page.height - 40;
             doc.fontSize(7).font('Helvetica').fillColor('#aaaaaa')
-                .text(`Dicetak pada ${formatDate(new Date())} | ERP Pangan Masa Depan`, leftX, footerY, { width: pageWidth, align: 'center' });
+                .text(`Dicetak pada ${formatDate(new Date())} | ERP Pangan Masa Depan`, leftX, footerY, { width: pageWidth, align: 'center', lineBreak: false });
 
             doc.end();
         });
