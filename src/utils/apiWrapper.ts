@@ -25,7 +25,13 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
             // When handlers are manually mounted via server.express, req.path is a string (URL).
             // Populate req.path from Express params so all handlers work universally.
             if (typeof req.path === 'string' || !req.path) {
-                req.path = res.req.params || {};
+                try {
+                    Object.defineProperty(req, 'path', {
+                        value: res.req.params || {},
+                        writable: true,
+                        configurable: true
+                    });
+                } catch (_) { /* req.path may be locked — handler must use req.params */ }
             }
         }
 
