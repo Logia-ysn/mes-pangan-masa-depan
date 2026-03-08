@@ -14,8 +14,6 @@ export type T_deleteWorkOrder = (request: {
     message: string
 }>
 
-export const T_deleteWorkOrder_meta = {
-    method: 'DELETE' as const,
-    url: '/work-orders/:id',
-    requireAuth: true
-}
+export const method = 'DELETE';
+export const url_path = '/work-orders/:id';
+export const alias = 't_deleteWorkOrder';

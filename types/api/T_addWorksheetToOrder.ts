@@ -18,16 +18,6 @@ export class T_addWorksheetToOrder_body {
     step_number?: number
 }
 
-export class T_removeWorksheetFromOrder_params {
-    @Transform((param?: any): number => parseFloat(param.value))
-    @IsNumber()
-    id!: number
-
-    @Transform((param?: any): number => parseFloat(param.value))
-    @IsNumber()
-    worksheetId!: number
-}
-
 export type T_addWorksheetToOrder = (request: {
     params: T_workOrderWorksheet_params,
     body: T_addWorksheetToOrder_body,
@@ -36,21 +26,6 @@ export type T_addWorksheetToOrder = (request: {
     message: string
 }>
 
-export type T_removeWorksheetFromOrder = (request: {
-    params: T_removeWorksheetFromOrder_params,
-    headers: { authorization: string }
-}) => Promise<{
-    message: string
-}>
-
-export const T_addWorksheetToOrder_meta = {
-    method: 'POST' as const,
-    url: '/work-orders/:id/worksheets',
-    requireAuth: true
-}
-
-export const T_removeWorksheetFromOrder_meta = {
-    method: 'DELETE' as const,
-    url: '/work-orders/:id/worksheets/:worksheetId',
-    requireAuth: true
-}
+export const method = 'POST';
+export const url_path = '/work-orders/:id/worksheets';
+export const alias = 't_addWorksheetToOrder';

@@ -160,15 +160,6 @@ export const productTypeApi = {
     create: (data: Record<string, any>) => api.post('/product-types', data),
 };
 
-// Suppliers
-export const supplierApi = {
-    getAll: (params?: Record<string, any>) => api.get('/suppliers', { params }),
-    getById: (id: number) => api.get(`/suppliers/${id}`),
-    create: (data: Record<string, any>) => api.post('/suppliers', data),
-    update: (id: number, data: Record<string, any>) => api.put(`/suppliers/${id}`, data),
-    delete: (id: number) => api.delete(`/suppliers/${id}`),
-};
-
 // Raw Material Categories
 export const rawMaterialCategoryApi = {
     getAll: (params?: Record<string, any>) => api.get('/raw-material-categories', { params }),
@@ -302,27 +293,6 @@ export const dryingLogApi = {
     delete: (id: number) => api.delete(`/drying-logs/${id}`),
 };
 
-// Customers
-export const customerApi = {
-    getAll: (params?: Record<string, any>) => api.get('/customers', { params }),
-    getById: (id: number) => api.get(`/customers/${id}`),
-    create: (data: Record<string, any>) => api.post('/customers', data),
-    update: (id: number, data: Record<string, any>) => api.put(`/customers/${id}`, data),
-    delete: (id: number) => api.delete(`/customers/${id}`),
-};
-
-// Invoices
-export const invoiceApi = {
-    getAll: (params?: Record<string, any>) => api.get('/invoices', { params }),
-    getById: (id: number) => api.get(`/invoices/${id}`),
-    create: (data: Record<string, any>) => api.post('/invoices', data),
-    update: (id: number, data: Record<string, any>) => api.put(`/invoices/${id}`, data),
-    delete: (id: number) => api.delete(`/invoices/${id}`),
-    addItem: (invoiceId: number, data: Record<string, any>) => api.post(`/invoices/${invoiceId}/items`, data),
-    deleteItem: (itemId: number) => api.delete(`/invoice-items/${itemId}`),
-    downloadPDF: (id: number) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
-};
-
 // Delivery Orders (Surat Jalan)
 export const deliveryOrderApi = {
     getAll: (params?: Record<string, any>) => api.get('/delivery-orders', { params }),
@@ -330,45 +300,10 @@ export const deliveryOrderApi = {
     create: (data: Record<string, any>) => api.post('/delivery-orders', data),
 };
 
-// Payments
-export const paymentApi = {
-    getAll: (params?: Record<string, any>) => api.get('/payments', { params }),
-    create: (data: Record<string, any>) => api.post('/payments', data),
-    delete: (id: number) => api.delete(`/payments/${id}`),
-};
-
-// Attendance
-export const attendanceApi = {
-    getAll: (params?: Record<string, any>) => api.get('/attendances', { params }),
-    create: (data: Record<string, any>) => api.post('/attendances', data),
-};
-
 // Stock Opname
 export const stockOpnameApi = {
     getAll: (params?: Record<string, any>) => api.get('/stock-opnames', { params }),
     create: (data: Record<string, any>) => api.post('/stock-opnames', data),
-};
-
-// Employees
-export const employeeApi = {
-    getAll: (params?: Record<string, any>) => api.get('/employees', { params }),
-    getById: (id: number) => api.get(`/employees/${id}`),
-    create: (data: Record<string, any>) => api.post('/employees', data),
-    update: (id: number, data: Record<string, any>) => api.put(`/employees/${id}`, data),
-    delete: (id: number) => api.delete(`/employees/${id}`),
-};
-
-// Purchase Orders
-export const purchaseOrderApi = {
-    getAll: (params?: Record<string, any>) => api.get('/purchase-orders', { params }),
-    getById: (id: number) => api.get(`/purchase-orders/${id}`),
-    create: (data: Record<string, any>) => api.post('/purchase-orders', data),
-    update: (id: number, data: Record<string, any>) => api.put(`/purchase-orders/${id}`, data),
-    delete: (id: number) => api.delete(`/purchase-orders/${id}`),
-    approve: (id: number) => api.post(`/purchase-orders/${id}/approve`),
-    cancel: (id: number) => api.post(`/purchase-orders/${id}/cancel`),
-    getStats: (params?: Record<string, any>) => api.get('/purchase-orders/stats', { params }),
-    getReceivableItems: (id: number) => api.get(`/purchase-orders/${id}/receivable-items`),
 };
 
 // Goods Receipts
@@ -383,16 +318,12 @@ export const goodsReceiptApi = {
 export const reportApi = {
     getProductionSummary: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/production-summary', { params }),
-    getSalesSummary: (params: { id_factory?: number; start_date: string; end_date: string }) =>
-        api.get('/reports/sales-summary', { params }),
     getCOGMReport: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/cogm', { params }),
     getStockReport: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/stock-report', { params }),
     downloadProductionExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/production-summary/excel', { params, responseType: 'blob' }),
-    downloadSalesExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
-        api.get('/reports/sales-summary/excel', { params, responseType: 'blob' }),
     downloadStockExcel: (params: { id_factory?: number; start_date: string; end_date: string }) =>
         api.get('/reports/stock-report/excel', { params, responseType: 'blob' }),
     getQualityTrends: (params: { id_factory?: number; start_date: string; end_date: string }) =>

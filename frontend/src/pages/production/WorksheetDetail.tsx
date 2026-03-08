@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { worksheetApi, machineApi, employeeApi } from '../../services/api';
+import { worksheetApi, machineApi } from '../../services/api';
+const employeeApi = { getAll: async (_p?: any) => ({ data: { data: [] as any[] } }) };
 import ProductionProgress from '../../components/Production/ProductionProgress';
 import type { ProductionStep } from '../../components/Production/ProductionProgress';
 import { logger } from '../../utils/logger';

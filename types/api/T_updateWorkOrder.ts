@@ -52,8 +52,6 @@ export type T_updateWorkOrder = (request: {
     data: any
 }>
 
-export const T_updateWorkOrder_meta = {
-    method: 'PUT' as const,
-    url: '/work-orders/:id',
-    requireAuth: true
-}
+export const method = 'PUT';
+export const url_path = '/work-orders/:id';
+export const alias = 't_updateWorkOrder';

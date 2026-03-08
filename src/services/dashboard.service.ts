@@ -14,10 +14,6 @@ export interface DashboardStats {
     totalYield: number;
     avgRendemen: number;
     worksheetCount: number;
-    totalRevenue: number;
-    totalExpenses: number;
-    netProfit: number;
-    totalEmployees: number;
     stockSummary: StockSummary[];
 }
 
@@ -105,9 +101,6 @@ class DashboardService {
         // Get production stats
         const productionStats = await this.getProductionStats(params.id_factory, startDate, endDate);
 
-        // Get financial stats
-        const financialStats = await this.getFinancialStats(params.id_factory, startDate, endDate);
-
         // Get stock summary
         const stockSummary = await this.getStockSummary(params.id_factory);
 
@@ -116,10 +109,6 @@ class DashboardService {
             totalYield: productionStats.total_output,
             avgRendemen: productionStats.avg_rendemen,
             worksheetCount: productionStats.worksheet_count,
-            totalRevenue: financialStats.totalRevenue,
-            totalExpenses: financialStats.totalExpenses,
-            netProfit: financialStats.totalRevenue - financialStats.totalExpenses,
-            totalEmployees: await prisma.employee.count(),
             stockSummary
         };
     }
@@ -481,10 +470,6 @@ class DashboardService {
             avg_rendemen: acc.worksheet_count > 0 ? ((acc.avg_rendemen * acc.worksheet_count) + (stats.avg_rendemen * stats.worksheet_count)) / (acc.worksheet_count + stats.worksheet_count) : stats.avg_rendemen,
             worksheet_count: acc.worksheet_count + stats.worksheet_count
         }), { total_input: 0, total_output: 0, total_menir: 0, total_dedak: 0, total_sekam: 0, avg_rendemen: 0, worksheet_count: 0 });
-    }
-
-    private async getFinancialStats(factoryId?: number, startDate?: Date, endDate?: Date) {
-        return { totalRevenue: 0, totalExpenses: 0 };
     }
 
     private async getStockSummary(factoryId?: number): Promise<StockSummary[]> {

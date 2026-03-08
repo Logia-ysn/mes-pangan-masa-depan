@@ -44,8 +44,6 @@ export type T_createWorkOrder = (request: {
     data: any
 }>
 
-export const T_createWorkOrder_meta = {
-    method: 'POST' as const,
-    url: '/work-orders',
-    requireAuth: true
-}
+export const method = 'POST';
+export const url_path = '/work-orders';
+export const alias = 't_createWorkOrder';

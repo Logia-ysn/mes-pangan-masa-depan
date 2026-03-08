@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 
-import api, { worksheetApi, stockApi, factoryApi, machineApi, employeeApi, processCategoryApi, factoryMaterialApi } from '../../services/api';
+import api, { worksheetApi, stockApi, factoryApi, machineApi, processCategoryApi, factoryMaterialApi } from '../../services/api';
+const employeeApi = { getAll: async (_p?: any) => ({ data: { data: [] as any[] } }), create: async (_p?: any) => ({ data: { id: 1 } }) };
 import { logger } from '../../utils/logger';
 import SKUSelector from '../../components/Production/SKUSelector';
 import type { Factory, Machine, Employee, Stock, ProcessCategory, InputBatch, SideProduct } from '../../features/production/worksheet/types/worksheet.types';

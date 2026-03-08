@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import api, { supplierApi } from '../../services/api';
+import api from '../../services/api';
+const supplierApi = { getAll: async (_p?: any) => ({ data: { data: [] as any[] } }) };
 import { logger } from '../../utils/logger';
 import { useToast } from '../../contexts/ToastContext';
 import { useFactory } from '../../hooks/useFactory';

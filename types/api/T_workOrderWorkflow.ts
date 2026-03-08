@@ -30,8 +30,6 @@ export type T_workOrderWorkflow = (request: {
     data: any
 }>
 
-export const T_workOrderWorkflow_meta = {
-    method: 'POST' as const,
-    url: '/work-orders/:id/workflow',
-    requireAuth: true
-}
+export const method = 'POST';
+export const url_path = '/work-orders/:id/workflow';
+export const alias = 't_workOrderWorkflow';

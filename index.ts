@@ -48,7 +48,7 @@ const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
   return Number(this);
 };
 
-const server = new Server({ noCors: true });
+const server = new Server({ noCors: true, noTrustProxy: true } as any);
 
 // Trust proxy for secure cookies in production (Railway/Vercel)
 server.express.set('trust proxy', 1);

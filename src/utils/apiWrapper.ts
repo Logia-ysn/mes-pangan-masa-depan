@@ -10,6 +10,25 @@ type ApiHandler = (req: any, res: any) => Promise<any>;
  * 2. Standardized Response Format (Optional, but recommended)
  */
 export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) => {
+    if (res && !res.__isPatchedForNaiv) {
+        res.__isPatchedForNaiv = true;
+        const oJson = res.json;
+        res.json = function (...args: any[]) {
+            if (this.headersSent) return this;
+            return oJson.apply(this, args);
+        };
+        const oSend = res.send;
+        res.send = function (...args: any[]) {
+            if (this.headersSent) return this;
+            return oSend.apply(this, args);
+        };
+        const oStatus = res.status;
+        res.status = function (code: number) {
+            if (this.headersSent) return this;
+            return oStatus.apply(this, arguments as any);
+        };
+    }
+
     try {
         // NAIV filters the request object. We enrich it back from the raw Express request (res.req)
         // to ensure requireAuth and other utilities can see headers and cookies.

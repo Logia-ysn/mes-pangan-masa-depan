@@ -45,18 +45,6 @@ class ReturnType_0 {
   @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
   @IsNumber({}, { message: 'average_rendemen must be a number (decimal)' })
   average_rendemen!: number
-  @IsNotEmpty({ message: 'total_revenue cannot be empty' })
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'total_revenue must be a number (decimal)' })
-  total_revenue!: number
-  @IsNotEmpty({ message: 'total_expenses cannot be empty' })
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'total_expenses must be a number (decimal)' })
-  total_expenses!: number
-  @IsNotEmpty({ message: 'total_employees cannot be empty' })
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'total_employees must be a number (decimal)' })
-  total_employees!: number
   @IsNotEmpty({ message: 'production_trend cannot be empty' })
   @IsArray()
   @ValidateNested({ each: true })

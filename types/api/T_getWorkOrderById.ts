@@ -14,8 +14,6 @@ export type T_getWorkOrderById = (request: {
     data: any
 }>
 
-export const T_getWorkOrderById_meta = {
-    method: 'GET' as const,
-    url: '/work-orders/:id',
-    requireAuth: true
-}
+export const method = 'GET';
+export const url_path = '/work-orders/:id';
+export const alias = 't_getWorkOrderById';

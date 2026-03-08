@@ -42,8 +42,6 @@ export type T_getWorkOrders = (request: {
     total: number
 }>
 
-export const T_getWorkOrders_meta = {
-    method: 'GET' as const,
-    url: '/work-orders',
-    requireAuth: true
-}
+export const method = 'GET';
+export const url_path = '/work-orders';
+export const alias = 't_getWorkOrders';

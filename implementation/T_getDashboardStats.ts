@@ -2,7 +2,6 @@
 import { T_getDashboardStats } from "../types/api/T_getDashboardStats";
 import { requireAuth } from "../utility/auth";
 import { dashboardService } from "../src/services/dashboard.service";
-import { employeeRepository } from "../src/repositories/employee.repository";
 import { apiWrapper } from "../src/utils/apiWrapper";
 
 export const t_getDashboardStats: T_getDashboardStats = apiWrapper(async (req, res) => {
@@ -29,9 +28,6 @@ export const t_getDashboardStats: T_getDashboardStats = apiWrapper(async (req, r
     total_gabah_input: stats.totalProduction,
     total_beras_output: stats.totalYield,
     average_rendemen: stats.avgRendemen,
-    total_revenue: stats.totalRevenue,
-    total_expenses: stats.totalExpenses,
-    total_employees: stats.totalEmployees,
     production_trend: productionSummary.map(item => ({
       date: item.date,
       gabah_input: item.total_input,

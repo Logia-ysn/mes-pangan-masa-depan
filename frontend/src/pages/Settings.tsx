@@ -205,7 +205,7 @@ const Settings = () => {
         setModalConfig({
             isOpen: true,
             title: 'Generate Data Dummy',
-            message: 'Apakah Anda yakin ingin membuat data dummy? Ini akan menambahkan data sampel ke database (Multi-Factory, Sales, Purchasing).',
+            message: 'Apakah Anda yakin ingin membuat data dummy? Ini akan menambahkan data sampel ke database (Multi-Factory, Production, Inventory).',
             type: 'info',
             onConfirm: performSeed,
             showCancel: true
@@ -242,7 +242,7 @@ const Settings = () => {
             const res = await api.post('/admin/dummy/generate');
             const c = res.data.created;
             showSuccess("Berhasil",
-                `Data dummy berhasil dibuat! ${c.worksheets} worksheets, ${c.transactions} movements, ${c.sales} invoices, ${c.purchasing} POs.`
+                `Data dummy berhasil dibuat! ${c.worksheets} worksheets, ${c.transactions} movements.`
             );
             fetchCategories();
             fetchVarieties();
@@ -262,7 +262,7 @@ const Settings = () => {
             const res = await api.delete('/admin/dummy/delete');
             const d = res.data.deleted;
             showSuccess("Berhasil",
-                `Data dummy berhasil dihapus! ${d.worksheets} worksheets, ${d.movements} movements, ${d.invoices} invoices, ${d.purchase_orders} POs.`
+                `Data dummy berhasil dihapus! ${d.worksheets} worksheets, ${d.movements} movements.`
             );
             fetchCategories();
             fetchVarieties();
@@ -484,7 +484,7 @@ const Settings = () => {
                                     <div>
                                         <h4 style={{ fontWeight: 600, marginBottom: 4 }}>Informasi</h4>
                                         <p style={{ fontSize: '0.875rem' }}>
-                                            <strong>Generate Dummy:</strong> Membuat data sample produksi untuk pabrik aktif, stok, worksheet, invoice, dan purchase order.<br />
+                                            <strong>Generate Dummy:</strong> Membuat data sample produksi untuk pabrik aktif, stok, dan worksheet.<br />
                                             <strong>Hapus Dummy:</strong> Menghapus HANYA data dummy yang di-generate. Data asli tetap aman.<br />
                                             <strong>Hard Reset:</strong> Menghapus SEMUA data transaksi dan master data (kecuali User &amp; Factory). HATI-HATI!
                                         </p>
