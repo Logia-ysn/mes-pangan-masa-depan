@@ -141,6 +141,18 @@ export const stockApi = {
         api.post('/stocks/transfer', data),
 };
 
+// Purchase Orders
+export const purchaseOrderApi = {
+    getAll: (params?: Record<string, any>) => api.get('/purchase-orders', { params }),
+    getById: (id: number) => api.get(`/purchase-orders/${id}`),
+    create: (data: Record<string, any>) => api.post('/purchase-orders', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/purchase-orders/${id}`, data),
+    delete: (id: number) => api.delete(`/purchase-orders/${id}`),
+    approve: (id: number) => api.post(`/purchase-orders/${id}/approve`),
+    cancel: (id: number, data?: { reason: string }) => api.post(`/purchase-orders/${id}/cancel`, data),
+    getReceivableItems: (id: number) => api.get(`/purchase-orders/${id}/receivable`),
+};
+
 // Material Receipts
 export const materialReceiptApi = {
     getAll: (params?: Record<string, any>) => api.get('/material-receipts', { params }),
@@ -158,6 +170,15 @@ export const productTypeApi = {
     getAll: (params?: Record<string, any>) => api.get('/product-types', { params }),
     getById: (id: number) => api.get(`/product-types/${id}`),
     create: (data: Record<string, any>) => api.post('/product-types', data),
+};
+
+// Suppliers
+export const supplierApi = {
+    getAll: (params?: Record<string, any>) => api.get('/suppliers', { params }),
+    getById: (id: number) => api.get(`/suppliers/${id}`),
+    create: (data: Record<string, any>) => api.post('/suppliers', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/suppliers/${id}`, data),
+    delete: (id: number) => api.delete(`/suppliers/${id}`),
 };
 
 // Raw Material Categories

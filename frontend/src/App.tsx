@@ -12,6 +12,9 @@ import './index.css';
 const Login = React.lazy(() => import('./pages/auth/Login'));
 const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
 const Settings = React.lazy(() => import('./pages/Settings'));
+const PurchaseOrders = React.lazy(() => import('./pages/purchasing/PurchaseOrders'));
+const PurchaseOrderDetail = React.lazy(() => import('./pages/purchasing/PurchaseOrderDetail'));
+const Suppliers = React.lazy(() => import('./pages/purchasing/Suppliers'));
 const RawMaterialReceipt = React.lazy(() => import('./pages/production/RawMaterialReceipt'));
 const QCGabah = React.lazy(() => import('./pages/production/QCGabah'));
 const WorkOrders = React.lazy(() => import('./pages/production/WorkOrders'));
@@ -80,6 +83,15 @@ const AppRoutes = () => {
 
           {/* ===== Penerimaan Bahan Baku Module ===== */}
           <Route path="receiving">
+            <Route path="purchase-orders" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrders /></RoleGuard>
+            } />
+            <Route path="purchase-orders/:id" element={
+              <RoleGuard requiredRole="SUPERVISOR"><PurchaseOrderDetail /></RoleGuard>
+            } />
+            <Route path="suppliers" element={
+              <RoleGuard requiredRole="SUPERVISOR"><Suppliers /></RoleGuard>
+            } />
             <Route path="raw-materials" element={
               <RoleGuard requiredRole="OPERATOR"><RawMaterialReceipt /></RoleGuard>
             } />

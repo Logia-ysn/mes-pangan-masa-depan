@@ -19,8 +19,10 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             label: 'Penerimaan Material',
             icon: 'local_shipping',
             children: [
+                { label: 'Purchase Order', to: '/receiving/purchase-orders' },
                 { label: 'Penerimaan Bahan Baku', to: '/receiving/raw-materials' },
                 { label: 'QC Bahan Baku', to: '/receiving/qc-gabah' },
+                { label: 'Supplier', to: '/receiving/suppliers' },
             ]
         },
         {
