@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { prisma } from './src/libs/prisma';
-import { Server } from '@naiv/codegen-nodejs-typeorm';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -28,6 +27,16 @@ import { t_deleteDryingLog } from './implementation/T_deleteDryingLog';
 import { handler as t_getPOReceivableItems } from './implementation/T_getPOReceivableItems';
 import { registerEventListeners } from './src/events';
 
+import { t_getNCRs } from './implementation/T_getNCRs';
+import { t_getNCRById } from './implementation/T_getNCRById';
+import { t_createNCR } from './implementation/T_createNCR';
+import { t_updateNCR } from './implementation/T_updateNCR';
+import { t_resolveNCR } from './implementation/T_resolveNCR';
+import { t_deleteNCR } from './implementation/T_deleteNCR';
+import * as ppController from './implementation/process-parameter';
+import * as genealogyController from './implementation/batch-genealogy';
+import * as handoverController from './implementation/shift-handover';
+
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
 
@@ -37,7 +46,7 @@ const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
   return Number(this);
 };
 
-const server = new Server({ noCors: true });
+const server = { express: express() };
 
 // Trust proxy for secure cookies in production (Railway/Vercel)
 server.express.set('trust proxy', 1);
@@ -82,7 +91,7 @@ server.express.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // --- Cookie to Authorization Header Middleware ---
 // NAIV handlers only receive filtered request objects (headers, body, query, path).
 // We map the httpOnly cookie back to the Authorization header so NAIV handlers can see it.
-server.express.use((req, res, next) => {
+server.express.use((req: any, res: any, next: any) => {
   if (!req.headers.authorization && req.cookies?.token) {
     req.headers.authorization = `Bearer ${req.cookies.token}`;
   }
@@ -90,7 +99,7 @@ server.express.use((req, res, next) => {
 });
 
 // --- Request logging ---
-server.express.use((req, res, next) => {
+server.express.use((req: any, res: any, next: any) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
@@ -128,7 +137,7 @@ server.express.use('/auth/login', authLimiter);
 server.express.use('/auth/register', authLimiter);
 
 // --- Health check ---
-server.express.get('/health', (_req, res) => {
+server.express.get('/health', (_req: any, res: any) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -172,7 +181,7 @@ server.express.get('/api/audit-logs', auditLogsHandler);
 
 
 // --- Batch Code Generation API ---
-server.express.post('/batch-code/generate', express.json(), async (req, res) => {
+server.express.post('/batch-code/generate', express.json(), async (req: any, res: any) => {
   try {
     const { factoryCode, productTypeId, date } = req.body;
     if (!factoryCode || !productTypeId) {
@@ -191,7 +200,7 @@ server.express.post('/batch-code/generate', express.json(), async (req, res) => 
 });
 
 // --- Invoice PDF export ---
-server.express.get('/invoices/:id/pdf', async (req, res) => {
+server.express.get('/invoices/:id/pdf', async (req: any, res: any) => {
   try {
     await getUserFromToken(req);
 
@@ -215,7 +224,7 @@ server.express.get('/invoices/:id/pdf', async (req, res) => {
 });
 
 // --- Excel Export: Production Summary ---
-server.express.get('/reports/production-summary/excel', async (req, res) => {
+server.express.get('/reports/production-summary/excel', async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     const { id_factory, start_date, end_date } = req.query;
@@ -267,7 +276,7 @@ server.express.get('/reports/production-summary/excel', async (req, res) => {
 });
 
 // --- Excel Export: Sales Summary ---
-server.express.get('/reports/sales-summary/excel', async (req, res) => {
+server.express.get('/reports/sales-summary/excel', async (req: any, res: any) => {
   try {
     await getUserFromToken(req);
     const { id_factory, start_date, end_date } = req.query;
@@ -321,7 +330,7 @@ server.express.get('/reports/sales-summary/excel', async (req, res) => {
 });
 
 // --- Excel Export: Stock Report ---
-server.express.get('/reports/stock-report/excel', async (req, res) => {
+server.express.get('/reports/stock-report/excel', async (req: any, res: any) => {
   try {
     await getUserFromToken(req);
     const { id_factory, start_date, end_date } = req.query;
@@ -419,7 +428,7 @@ server.express.get('/reports/quality-trends', qualityTrendsHandler);
 server.express.get('/api/reports/quality-trends', qualityTrendsHandler);
 
 // --- File Upload API ---
-server.express.post('/upload', async (req, res) => {
+server.express.post('/upload', async (req: any, res: any) => {
   try {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ success: false, message: 'No files were uploaded.' });
@@ -453,28 +462,50 @@ server.express.post('/upload', async (req, res) => {
 });
 
 // --- Worksheet Workflow Routes ---
-server.express.post('/worksheets/:id/submit', express.json(), (req, res) => t_submitWorksheet(req as any, res as any));
-server.express.post('/worksheets/:id/approve', express.json(), (req, res) => t_approveWorksheet(req as any, res as any));
-server.express.post('/worksheets/:id/reject', express.json(), (req, res) => t_rejectWorksheet(req as any, res as any));
-server.express.post('/worksheets/:id/cancel', express.json(), (req, res) => t_cancelWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/submit', express.json(), (req: any, res: any) => t_submitWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/approve', express.json(), (req: any, res: any) => t_approveWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/reject', express.json(), (req: any, res: any) => t_rejectWorksheet(req as any, res as any));
+server.express.post('/worksheets/:id/cancel', express.json(), (req: any, res: any) => t_cancelWorksheet(req as any, res as any));
 
 // --- Production Audit Fixes (Manual Mount to avoid 404) ---
-server.express.get('/worksheets/:id/pdf', (req, res) => t_getWorksheetPdf(req as any, res as any));
-server.express.get('/qc-results', (req, res) => t_getQCResults(req as any, res as any));
-server.express.put('/qc-results', express.json(), (req, res) => t_updateQCResult(req as any, res as any));
-server.express.delete('/qc-results', (req, res) => t_deleteQCResult(req as any, res as any));
-server.express.get('/drying-logs', (req, res) => t_getDryingLogs(req as any, res as any));
-server.express.put('/drying-logs/:id', express.json(), (req, res) => t_updateDryingLog(req as any, res as any));
-server.express.delete('/drying-logs/:id', (req, res) => t_deleteDryingLog(req as any, res as any));
+server.express.get('/worksheets/:id/pdf', (req: any, res: any) => t_getWorksheetPdf(req as any, res as any));
+server.express.get('/qc-results', (req: any, res: any) => t_getQCResults(req as any, res as any));
+server.express.put('/qc-results', express.json(), (req: any, res: any) => t_updateQCResult(req as any, res as any));
+server.express.delete('/qc-results', (req: any, res: any) => t_deleteQCResult(req as any, res as any));
+server.express.get('/drying-logs', (req: any, res: any) => t_getDryingLogs(req as any, res as any));
+server.express.put('/drying-logs/:id', express.json(), (req: any, res: any) => t_updateDryingLog(req as any, res as any));
+server.express.delete('/drying-logs/:id', (req: any, res: any) => t_deleteDryingLog(req as any, res as any));
 
 // PO Receivable Items
-server.express.get('/purchase-orders/:id/receivable-items', (req, res) => t_getPOReceivableItems(req as any, res as any));
+server.express.get('/purchase-orders/:id/receivable-items', (req: any, res: any) => t_getPOReceivableItems(req as any, res as any));
+
+// --- NCR Routes ---
+server.express.get('/ncr', (req: any, res: any) => t_getNCRs(req as any, res as any));
+server.express.get('/ncr/:id', (req: any, res: any) => t_getNCRById(req as any, res as any));
+server.express.post('/ncr', express.json(), (req: any, res: any) => t_createNCR(req as any, res as any));
+server.express.put('/ncr/:id', express.json(), (req: any, res: any) => t_updateNCR(req as any, res as any));
+server.express.post('/ncr/:id/resolve', express.json(), (req: any, res: any) => t_resolveNCR(req as any, res as any));
+server.express.delete('/ncr/:id', (req: any, res: any) => t_deleteNCR(req as any, res as any));
+
+// --- Process Parameter Routes ---
+server.express.get('/process-parameters', ppController.getProcessParameters as any);
+server.express.post('/process-parameters', express.json(), ppController.createProcessParameter as any);
+server.express.get('/process-parameters/machine/:id/trend', ppController.getMachineTrend as any);
+
+// --- Batch Genealogy Routes ---
+server.express.get('/batch-genealogy/:batchCode/forward', genealogyController.traceForward as any);
+server.express.get('/batch-genealogy/:batchCode/backward', genealogyController.traceBackward as any);
+
+// --- Shift Handover Routes ---
+server.express.get('/shift-handovers', handoverController.getHandovers as any);
+server.express.post('/shift-handovers', express.json(), handoverController.createHandover as any);
+server.express.post('/shift-handovers/:id/acknowledge', handoverController.acknowledgeHandover as any);
 
 // --- Backup & Restore API (Admin Only) ---
 
 const ADMIN_ROLES = ['ADMIN', 'SUPERUSER'];
 
-server.express.post('/admin/backup', express.json(), async (req, res) => {
+server.express.post('/admin/backup', express.json(), async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     if (!ADMIN_ROLES.includes(user.role)) {
@@ -490,7 +521,7 @@ server.express.post('/admin/backup', express.json(), async (req, res) => {
   }
 });
 
-server.express.get('/admin/backups', async (req, res) => {
+server.express.get('/admin/backups', async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     if (!ADMIN_ROLES.includes(user.role)) {
@@ -503,7 +534,7 @@ server.express.get('/admin/backups', async (req, res) => {
   }
 });
 
-server.express.get('/admin/backups/:fileName/download', async (req, res) => {
+server.express.get('/admin/backups/:fileName/download', async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     if (!ADMIN_ROLES.includes(user.role)) {
@@ -516,7 +547,7 @@ server.express.get('/admin/backups/:fileName/download', async (req, res) => {
   }
 });
 
-server.express.delete('/admin/backups/:fileName', async (req, res) => {
+server.express.delete('/admin/backups/:fileName', async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     if (!ADMIN_ROLES.includes(user.role)) {
@@ -530,7 +561,7 @@ server.express.delete('/admin/backups/:fileName', async (req, res) => {
   }
 });
 
-server.express.post('/admin/restore', async (req: any, res) => {
+server.express.post('/admin/restore', async (req: any, res: any) => {
   try {
     const user = await getUserFromToken(req);
     if (!ADMIN_ROLES.includes(user.role)) {
@@ -567,7 +598,7 @@ server.express.post('/admin/restore', async (req: any, res) => {
 });
 
 // --- Logout (clears httpOnly cookie) ---
-server.express.post('/auth/logout', (_req, res) => {
+server.express.post('/auth/logout', (_req: any, res: any) => {
   res.clearCookie('token', {
     httpOnly: true,
     path: '/',
@@ -581,23 +612,24 @@ server.express.post('/auth/logout', (_req, res) => {
 const port = Number(process.env.PORT || 3005);
 console.log(`Starting server on port ${port}...`);
 
-server.run({
-  port: port,
-  types_path: path.resolve(__dirname, 'types'),
-  implementation_path: path.resolve(__dirname, 'implementation'),
-  async beforeStart() {
-    await prisma.$connect();
-    console.log('Prisma connected');
+const startServer = async () => {
+  await prisma.$connect();
+  console.log('Prisma connected');
 
-    // Auto-seed batch code mappings if empty
-    const { BatchNumberingService } = require('./src/services/batch-numbering.service');
-    const seeded = await BatchNumberingService.seedDefaultMappings();
-    if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
+  // Auto-seed batch code mappings if empty
+  const { BatchNumberingService } = require('./src/services/batch-numbering.service');
+  const seeded = await BatchNumberingService.seedDefaultMappings();
+  if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
 
-    // Register production event listeners
-    registerEventListeners();
-  }
-});
+  // Register production event listeners
+  registerEventListeners();
+
+  server.express.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+};
+
+startServer();
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {

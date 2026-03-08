@@ -1,4 +1,5 @@
 import { registerWorkOrderListeners } from './work-order-listener';
+import { registerNCRListeners } from './ncr-listener';
 
 /**
  * Register all production event listeners.
@@ -6,5 +7,6 @@ import { registerWorkOrderListeners } from './work-order-listener';
  */
 export function registerEventListeners() {
     registerWorkOrderListeners();
+    registerNCRListeners();
     console.log('[EventSystem] All production event listeners registered');
 }

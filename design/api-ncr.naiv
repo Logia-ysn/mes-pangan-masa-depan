@@ -1,0 +1,107 @@
+naiv_version: 0.1.0
+
+type NonConformanceReport {
+  id: int32
+  id_factory: int32
+  report_number: string
+  report_date: string
+  issue_title: string
+  description: string
+  severity: string
+  status: string
+  id_worksheet: int32?
+  batch_code: string?
+  reported_by: int32
+  resolved_by: int32?
+  action_plan: string?
+  action_taken: string?
+  resolved_at: string?
+  created_at: string
+  updated_at: string
+  Factory: {
+    id: int32
+    name: string
+  }
+  ReportedByUser: {
+    id: int32
+    fullname: string
+  }
+  ResolvedByUser: {
+    id: int32?
+    fullname: string?
+  }?
+  Worksheet: {
+    id: int32?
+    batch_code: string?
+  }?
+}
+
+api T_getNCRs {
+  method: GET
+  path: /ncr
+  query {
+    limit: int32?
+    offset: int32?
+    id_factory: int32?
+    status: string?
+    severity: string?
+  }
+  response {
+    data: NonConformanceReport[]
+    total: int32
+  }
+}
+
+api T_getNCRById {
+  method: GET
+  path: /ncr/:id
+  response: NonConformanceReport
+}
+
+api T_createNCR {
+  method: POST
+  path: /ncr
+  body {
+    id_factory: int32
+    report_date: string
+    issue_title: string
+    description: string
+    severity: string
+    id_worksheet: int32?
+    batch_code: string?
+  }
+  response: NonConformanceReport
+}
+
+api T_updateNCR {
+  method: PUT
+  path: /ncr/:id
+  body {
+    issue_title: string?
+    description: string?
+    severity: string?
+    status: string?
+    id_worksheet: int32?
+    batch_code: string?
+  }
+  response: NonConformanceReport
+}
+
+api T_resolveNCR {
+  method: POST
+  path: /ncr/:id/resolve
+  body {
+    action_plan: string
+    action_taken: string
+    status: string
+  }
+  response: NonConformanceReport
+}
+
+api T_deleteNCR {
+  method: DELETE
+  path: /ncr/:id
+  response {
+    success: boolean
+  }
+}

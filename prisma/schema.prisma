@@ -123,6 +123,9 @@ model Factory {
   StockOpname           StockOpname[]
   QCResult              QCResult[]
   DowntimeEvent         DowntimeEvent[]
+  NonConformanceReport  NonConformanceReport[]
+  ProcessParameterLog   ProcessParameterLog[]
+  ShiftHandover         ShiftHandover[]
 }
 
 model FactoryMaterialConfig {
@@ -167,34 +170,35 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id              Int         @id(map: "PK_fe59f574f9f138df4b52fb7ee7a") @default(autoincrement())
-  id_invoice      Int
-  id_product_type Int
-  quantity        Decimal     @db.Decimal(15, 2)
-  unit_price      Decimal     @db.Decimal(15, 2)
-  subtotal        Decimal     @db.Decimal(15, 2)
-  Invoice         Invoice     @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_bd5cd6fccadcc384a73f93c3c89")
-  ProductType     ProductType @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c3c3c7442a541e37357ff4b2328")
+  id                Int                 @id(map: "PK_fe59f574f9f138df4b52fb7ee7a") @default(autoincrement())
+  id_invoice        Int
+  id_product_type   Int
+  quantity          Decimal             @db.Decimal(15, 2)
+  unit_price        Decimal             @db.Decimal(15, 2)
+  subtotal          Decimal             @db.Decimal(15, 2)
+  Invoice           Invoice             @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_bd5cd6fccadcc384a73f93c3c89")
+  ProductType       ProductType         @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c3c3c7442a541e37357ff4b2328")
   DeliveryOrderItem DeliveryOrderItem[]
 }
 
 model Machine {
-  id                    Int                 @id(map: "PK_575ee17453f39be625e174d7a1f") @default(autoincrement())
+  id                    Int                   @id(map: "PK_575ee17453f39be625e174d7a1f") @default(autoincrement())
   id_factory            Int
-  code                  String              @unique @db.VarChar(50)
-  name                  String              @db.VarChar(200)
-  machine_type          String?             @db.VarChar(100)
-  capacity_per_hour     Decimal?            @db.Decimal(10, 2)
-  status                Machine_status_enum @default(ACTIVE)
-  last_maintenance_date DateTime?           @db.Date
-  next_maintenance_date DateTime?           @db.Date
+  code                  String                @unique @db.VarChar(50)
+  name                  String                @db.VarChar(200)
+  machine_type          String?               @db.VarChar(100)
+  capacity_per_hour     Decimal?              @db.Decimal(10, 2)
+  status                Machine_status_enum   @default(ACTIVE)
+  last_maintenance_date DateTime?             @db.Date
+  next_maintenance_date DateTime?             @db.Date
   id_production_line    Int?
-  sequence_order        Int?                @default(0)
-  Factory               Factory             @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b8a0fe79ae166740619fce48848")
-  ProductionLine        ProductionLine?     @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  sequence_order        Int?                  @default(0)
+  Factory               Factory               @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b8a0fe79ae166740619fce48848")
+  ProductionLine        ProductionLine?       @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
   Maintenance           Maintenance[]
   Worksheet             Worksheet[]
   DowntimeEvent         DowntimeEvent[]
+  ProcessParameterLog   ProcessParameterLog[]
 
   @@index([id_factory], map: "IDX_machine_factory")
   @@index([id_production_line])
@@ -376,28 +380,28 @@ model RawMaterialCategory {
 }
 
 model RawMaterialQualityAnalysis {
-  moisture_value       Decimal?       @db.Decimal(10, 2)
-  density_value        Decimal?       @db.Decimal(10, 2)
-  green_percentage     Decimal?       @db.Decimal(10, 2)
-  yellow_percentage    Decimal?       @db.Decimal(10, 2)
-  damaged_percentage   Decimal?       @db.Decimal(10, 2)
-  rotten_percentage    Decimal?       @db.Decimal(10, 2)
-  defect_percentage    Decimal?       @db.Decimal(10, 2)
-  notes                String?
-  created_at           DateTime       @default(now()) @db.Timestamp(6)
-  updated_at           DateTime       @updatedAt @db.Timestamp(6)
-  analysis_date        DateTime       @default(dbgenerated("('now'::text)::date")) @db.Date
-  moisture_grade       String?        @db.VarChar(20)
-  density_grade        String?        @db.VarChar(20)
-  red_percentage       Decimal?       @db.Decimal(10, 2)
-  color_grade          String?        @db.VarChar(20)
-  image_url            String?
-  id                   Int            @id(map: "PK_360eda0c8661d53b9df013fa43b") @default(autoincrement())
-  batch_id             String         @db.VarChar(50)
-  id_stock_movement    Int?
-  final_grade          String?        @db.VarChar(20)
-  empty_weight         Decimal?       @db.Decimal(15, 2)
-  StockMovement        StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
+  moisture_value     Decimal?       @db.Decimal(10, 2)
+  density_value      Decimal?       @db.Decimal(10, 2)
+  green_percentage   Decimal?       @db.Decimal(10, 2)
+  yellow_percentage  Decimal?       @db.Decimal(10, 2)
+  damaged_percentage Decimal?       @db.Decimal(10, 2)
+  rotten_percentage  Decimal?       @db.Decimal(10, 2)
+  defect_percentage  Decimal?       @db.Decimal(10, 2)
+  notes              String?
+  created_at         DateTime       @default(now()) @db.Timestamp(6)
+  updated_at         DateTime       @updatedAt @db.Timestamp(6)
+  analysis_date      DateTime       @default(dbgenerated("('now'::text)::date")) @db.Date
+  moisture_grade     String?        @db.VarChar(20)
+  density_grade      String?        @db.VarChar(20)
+  red_percentage     Decimal?       @db.Decimal(10, 2)
+  color_grade        String?        @db.VarChar(20)
+  image_url          String?
+  id                 Int            @id(map: "PK_360eda0c8661d53b9df013fa43b") @default(autoincrement())
+  batch_id           String         @db.VarChar(50)
+  id_stock_movement  Int?
+  final_grade        String?        @db.VarChar(20)
+  empty_weight       Decimal?       @db.Decimal(15, 2)
+  StockMovement      StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
 }
 
 /// @deprecated Use RiceVariety instead. Kept for backward compatibility.
@@ -459,54 +463,59 @@ model StockMovement {
 }
 
 model Supplier {
-  id             Int             @id(map: "PK_03ea59de9d1ab05d7d6e5d3e953") @default(autoincrement())
-  code           String          @unique @db.VarChar(20)
-  name           String          @db.VarChar(200)
-  contact_person String?         @db.VarChar(200)
-  phone          String?         @db.VarChar(20)
-  email          String?         @db.VarChar(100)
-  address        String?
-  is_active      Boolean         @default(true)
-  created_at     DateTime        @default(now()) @db.Timestamp(6)
+  id              Int               @id(map: "PK_03ea59de9d1ab05d7d6e5d3e953") @default(autoincrement())
+  code            String            @unique @db.VarChar(20)
+  name            String            @db.VarChar(200)
+  contact_person  String?           @db.VarChar(200)
+  phone           String?           @db.VarChar(20)
+  email           String?           @db.VarChar(100)
+  address         String?
+  is_active       Boolean           @default(true)
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
   MaterialReceipt MaterialReceipt[]
-  PurchaseOrder  PurchaseOrder[]
+  PurchaseOrder   PurchaseOrder[]
 }
 
 model User {
-  id            Int             @id(map: "PK_9862f679340fb2388436a5ab3e4") @default(autoincrement())
-  email         String          @unique @db.VarChar(100)
-  password_hash String          @db.VarChar(255)
-  fullname      String          @db.VarChar(200)
-  role          User_role_enum  @default(OPERATOR)
-  id_factory    Int?
-  is_active     Boolean         @default(true)
-  created_at    DateTime        @default(now()) @db.Timestamp(6)
-  updated_at    DateTime        @updatedAt @db.Timestamp(6)
-  Attendance    Attendance[]
-  AuditLog      AuditLog[]
-  DailyExpense  DailyExpense[]
-  Employee      Employee[]
-  GoodsReceipt  GoodsReceipt[]
-  Invoice       Invoice[]
-  Maintenance   Maintenance[]
-  MaterialReceiptOperator MaterialReceipt[] @relation("MaterialReceiptOperator")
-  MaterialReceiptApprover MaterialReceipt[] @relation("MaterialReceiptApprover")
-  MaterialReceiptPaidBy   MaterialReceipt[] @relation("MaterialReceiptPaidBy")
-  Notification  Notification[]
-  Payment       Payment[]
-  PurchaseOrder PurchaseOrder[]
-  StockMovement StockMovement[]
-  Factory            Factory?     @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
-  Worksheet          Worksheet[]
-  WorksheetSubmitted Worksheet[]  @relation("WorksheetSubmittedBy")
-  WorksheetApproved  Worksheet[]  @relation("WorksheetApprovedBy")
-  WorksheetRejected  Worksheet[]  @relation("WorksheetRejectedBy")
-  DryingLog          DryingLog[]
-  DeliveryOrder      DeliveryOrder[]
-  StockOpname        StockOpname[]
-  QCResult           QCResult[]
-  WorkOrder          WorkOrder[]
-  DowntimeEvent      DowntimeEvent[]
+  id                           Int                    @id(map: "PK_9862f679340fb2388436a5ab3e4") @default(autoincrement())
+  email                        String                 @unique @db.VarChar(100)
+  password_hash                String                 @db.VarChar(255)
+  fullname                     String                 @db.VarChar(200)
+  role                         User_role_enum         @default(OPERATOR)
+  id_factory                   Int?
+  is_active                    Boolean                @default(true)
+  created_at                   DateTime               @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime               @updatedAt @db.Timestamp(6)
+  Attendance                   Attendance[]
+  AuditLog                     AuditLog[]
+  DailyExpense                 DailyExpense[]
+  Employee                     Employee[]
+  GoodsReceipt                 GoodsReceipt[]
+  Invoice                      Invoice[]
+  Maintenance                  Maintenance[]
+  MaterialReceiptOperator      MaterialReceipt[]      @relation("MaterialReceiptOperator")
+  MaterialReceiptApprover      MaterialReceipt[]      @relation("MaterialReceiptApprover")
+  MaterialReceiptPaidBy        MaterialReceipt[]      @relation("MaterialReceiptPaidBy")
+  Notification                 Notification[]
+  Payment                      Payment[]
+  PurchaseOrder                PurchaseOrder[]
+  StockMovement                StockMovement[]
+  Factory                      Factory?               @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_488e9d8940dc65f34cdf82d750f")
+  Worksheet                    Worksheet[]
+  WorksheetSubmitted           Worksheet[]            @relation("WorksheetSubmittedBy")
+  WorksheetApproved            Worksheet[]            @relation("WorksheetApprovedBy")
+  WorksheetRejected            Worksheet[]            @relation("WorksheetRejectedBy")
+  DryingLog                    DryingLog[]
+  DeliveryOrder                DeliveryOrder[]
+  StockOpname                  StockOpname[]
+  QCResult                     QCResult[]
+  WorkOrder                    WorkOrder[]
+  DowntimeEvent                DowntimeEvent[]
+  NonConformanceReport         NonConformanceReport[] @relation("NCROperator")
+  NonConformanceReportResolved NonConformanceReport[] @relation("NCRResolver")
+  ProcessParameterLog          ProcessParameterLog[]
+  HandoverOutgoing             ShiftHandover[] @relation("HandoverOutgoing")
+  HandoverIncoming             ShiftHandover[] @relation("HandoverIncoming")
 }
 
 model AuditLog {
@@ -583,6 +592,8 @@ model Worksheet {
   WorksheetInputBatch   WorksheetInputBatch[]
   WorksheetSideProduct  WorksheetSideProduct[]
   QCResult              QCResult[]
+  NonConformanceReport  NonConformanceReport[]
+  ProcessParameterLog   ProcessParameterLog[]
 
   @@index([id_factory], map: "IDX_worksheet_factory")
   @@index([id_user], map: "IDX_worksheet_user")
@@ -694,45 +705,45 @@ model GoodsReceiptItem {
 }
 
 model MaterialReceipt {
-  id                 Int                          @id @default(autoincrement())
-  receipt_number     String                       @unique @db.VarChar(50)
-  id_stock_movement  Int
-  id_supplier        Int
-  id_factory         Int
-  id_user            Int
-  id_product_type    Int
-  id_variety         Int?
-  receipt_date       DateTime                     @db.Date
-  batch_code         String                       @db.VarChar(50)
-  quantity           Decimal                      @db.Decimal(15, 2)
-  unit_price         Decimal                      @db.Decimal(15, 2)
-  other_costs        Decimal                      @default(0) @db.Decimal(15, 2)
-  total_amount       Decimal                      @db.Decimal(15, 2)
-  status             MaterialReceipt_status_enum  @default(WAITING_APPROVAL)
-  approved_by        Int?
-  approved_at        DateTime?                    @db.Timestamp(6)
-  paid_by            Int?
-  paid_at            DateTime?                    @db.Timestamp(6)
-  payment_reference  String?                      @db.VarChar(100)
-  payment_method     Payment_payment_method_enum?
-  delivery_note_url  String?
-  receipt_url        String?
-  notes              String?
-  created_at         DateTime                     @default(now()) @db.Timestamp(6)
-  updated_at         DateTime                     @updatedAt @db.Timestamp(6)
+  id                Int                          @id @default(autoincrement())
+  receipt_number    String                       @unique @db.VarChar(50)
+  id_stock_movement Int
+  id_supplier       Int
+  id_factory        Int
+  id_user           Int
+  id_product_type   Int
+  id_variety        Int?
+  receipt_date      DateTime                     @db.Date
+  batch_code        String                       @db.VarChar(50)
+  quantity          Decimal                      @db.Decimal(15, 2)
+  unit_price        Decimal                      @db.Decimal(15, 2)
+  other_costs       Decimal                      @default(0) @db.Decimal(15, 2)
+  total_amount      Decimal                      @db.Decimal(15, 2)
+  status            MaterialReceipt_status_enum  @default(WAITING_APPROVAL)
+  approved_by       Int?
+  approved_at       DateTime?                    @db.Timestamp(6)
+  paid_by           Int?
+  paid_at           DateTime?                    @db.Timestamp(6)
+  payment_reference String?                      @db.VarChar(100)
+  payment_method    Payment_payment_method_enum?
+  delivery_note_url String?
+  receipt_url       String?
+  notes             String?
+  created_at        DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                     @updatedAt @db.Timestamp(6)
 
-  StockMovement      StockMovement                @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Supplier           Supplier                     @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Factory            Factory                      @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User               User                         @relation("MaterialReceiptOperator", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ProductType        ProductType                  @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Approver           User?                        @relation("MaterialReceiptApprover", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  PaidByUser         User?                        @relation("MaterialReceiptPaidBy", fields: [paid_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  id_purchase_order       Int?
-  id_purchase_order_item  Int?
-  PurchaseOrder      PurchaseOrder?     @relation(fields: [id_purchase_order], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  PurchaseOrderItem  PurchaseOrderItem? @relation(fields: [id_purchase_order_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  StockMovement StockMovement @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Supplier      Supplier      @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Factory       Factory       @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User          User          @relation("MaterialReceiptOperator", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ProductType   ProductType   @relation(fields: [id_product_type], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Approver      User?         @relation("MaterialReceiptApprover", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  PaidByUser    User?         @relation("MaterialReceiptPaidBy", fields: [paid_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  id_purchase_order      Int?
+  id_purchase_order_item Int?
+  PurchaseOrder          PurchaseOrder?     @relation(fields: [id_purchase_order], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  PurchaseOrderItem      PurchaseOrderItem? @relation(fields: [id_purchase_order_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([id_factory])
   @@index([id_supplier])
@@ -919,24 +930,24 @@ enum WorkOrder_priority_enum {
 }
 
 model DryingLog {
-  id                Int       @id @default(autoincrement())
-  id_factory        Int
-  id_user           Int
-  batch_code        String    @db.VarChar(50)
-  drying_date       DateTime  @db.Date
-  method            String    @default("SUN_DRY") @db.VarChar(50)
-  initial_weight    Decimal   @db.Decimal(15, 2)
-  final_weight      Decimal   @db.Decimal(15, 2)
-  initial_moisture  Decimal?  @db.Decimal(5, 2)
-  final_moisture    Decimal?  @db.Decimal(5, 2)
-  downtime_hours    Decimal?  @db.Decimal(5, 2)
-  shrinkage_kg      Decimal?  @db.Decimal(15, 2)
-  shrinkage_pct     Decimal?  @db.Decimal(5, 2)
-  notes             String?
-  created_at        DateTime  @default(now()) @db.Timestamp(6)
-  
-  Factory           Factory   @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User              User      @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id               Int      @id @default(autoincrement())
+  id_factory       Int
+  id_user          Int
+  batch_code       String   @db.VarChar(50)
+  drying_date      DateTime @db.Date
+  method           String   @default("SUN_DRY") @db.VarChar(50)
+  initial_weight   Decimal  @db.Decimal(15, 2)
+  final_weight     Decimal  @db.Decimal(15, 2)
+  initial_moisture Decimal? @db.Decimal(5, 2)
+  final_moisture   Decimal? @db.Decimal(5, 2)
+  downtime_hours   Decimal? @db.Decimal(5, 2)
+  shrinkage_kg     Decimal? @db.Decimal(15, 2)
+  shrinkage_pct    Decimal? @db.Decimal(5, 2)
+  notes            String?
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+
+  Factory Factory @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User    User    @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([id_factory])
   @@index([drying_date])
@@ -944,17 +955,17 @@ model DryingLog {
 }
 
 model DeliveryOrder {
-  id                Int       @id @default(autoincrement())
-  id_invoice        Int
-  id_user           Int
-  do_number         String    @unique @db.VarChar(50)
-  delivery_date     DateTime  @db.Date
-  received_date     DateTime? @db.Date
-  driver_name       String?   @db.VarChar(100)
-  vehicle_number    String?   @db.VarChar(20)
-  status            String    @default("PENDING") @db.VarChar(20)
-  notes             String?
-  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  id_invoice     Int
+  id_user        Int
+  do_number      String    @unique @db.VarChar(50)
+  delivery_date  DateTime  @db.Date
+  received_date  DateTime? @db.Date
+  driver_name    String?   @db.VarChar(100)
+  vehicle_number String?   @db.VarChar(20)
+  status         String    @default("PENDING") @db.VarChar(20)
+  notes          String?
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
 
   Invoice           Invoice             @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User              User                @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -964,90 +975,90 @@ model DeliveryOrder {
 }
 
 model DeliveryOrderItem {
-  id                  Int           @id @default(autoincrement())
-  id_delivery_order   Int
-  id_invoice_item     Int
-  quantity_delivered  Decimal       @db.Decimal(15, 2)
-  
-  DeliveryOrder       DeliveryOrder @relation(fields: [id_delivery_order], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  InvoiceItem         InvoiceItem   @relation(fields: [id_invoice_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                 Int     @id @default(autoincrement())
+  id_delivery_order  Int
+  id_invoice_item    Int
+  quantity_delivered Decimal @db.Decimal(15, 2)
+
+  DeliveryOrder DeliveryOrder @relation(fields: [id_delivery_order], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  InvoiceItem   InvoiceItem   @relation(fields: [id_invoice_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model StockOpname {
-  id                Int       @id @default(autoincrement())
-  id_factory        Int
-  id_user           Int
-  opname_date       DateTime  @db.Date
-  status            String    @default("DRAFT") @db.VarChar(20)
-  notes             String?
-  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  id          Int      @id @default(autoincrement())
+  id_factory  Int
+  id_user     Int
+  opname_date DateTime @db.Date
+  status      String   @default("DRAFT") @db.VarChar(20)
+  notes       String?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
 
-  Factory           Factory           @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User              User              @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  StockOpnameItem   StockOpnameItem[]
+  Factory         Factory           @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User            User              @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  StockOpnameItem StockOpnameItem[]
 
   @@index([id_factory])
   @@index([opname_date])
 }
 
 model StockOpnameItem {
-  id                Int           @id @default(autoincrement())
-  id_stock_opname   Int
-  id_stock          Int
-  system_quantity   Decimal       @db.Decimal(15, 2)
-  actual_quantity   Decimal       @db.Decimal(15, 2)
-  difference        Decimal       @db.Decimal(15, 2)
-  notes             String?
+  id              Int     @id @default(autoincrement())
+  id_stock_opname Int
+  id_stock        Int
+  system_quantity Decimal @db.Decimal(15, 2)
+  actual_quantity Decimal @db.Decimal(15, 2)
+  difference      Decimal @db.Decimal(15, 2)
+  notes           String?
 
-  StockOpname       StockOpname   @relation(fields: [id_stock_opname], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Stock             Stock         @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  StockOpname StockOpname @relation(fields: [id_stock_opname], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Stock       Stock       @relation(fields: [id_stock], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model QCResult {
-  id                Int       @id @default(autoincrement())
+  id                Int      @id @default(autoincrement())
   id_factory        Int
   id_user           Int
-  qc_date           DateTime  @db.Date
-  batch_code        String?   @db.VarChar(50)
+  qc_date           DateTime @db.Date
+  batch_code        String?  @db.VarChar(50)
   id_worksheet      Int?
-  moisture_content  Decimal?  @db.Decimal(5, 2)
-  broken_percentage Decimal?  @db.Decimal(5, 2)
-  whiteness_degree  Decimal?  @db.Decimal(5, 2)
-  grade             String?   @db.VarChar(50)
+  moisture_content  Decimal? @db.Decimal(5, 2)
+  broken_percentage Decimal? @db.Decimal(5, 2)
+  whiteness_degree  Decimal? @db.Decimal(5, 2)
+  grade             String?  @db.VarChar(50)
   notes             String?
-  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
 
-  Factory           Factory   @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User              User      @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Worksheet         Worksheet? @relation(fields: [id_worksheet], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  Factory   Factory    @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User      User       @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Worksheet Worksheet? @relation(fields: [id_worksheet], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([id_factory])
   @@index([batch_code])
 }
 
 model WorkOrder {
-  id                Int                      @id @default(autoincrement())
-  id_factory        Int
-  work_order_number String                   @unique @db.VarChar(50)
-  title             String                   @db.VarChar(200)
-  description       String?
-  status            WorkOrder_status_enum    @default(PLANNED)
-  priority          WorkOrder_priority_enum  @default(NORMAL)
+  id                 Int                     @id @default(autoincrement())
+  id_factory         Int
+  work_order_number  String                  @unique @db.VarChar(50)
+  title              String                  @db.VarChar(200)
+  description        String?
+  status             WorkOrder_status_enum   @default(PLANNED)
+  priority           WorkOrder_priority_enum @default(NORMAL)
   id_production_line Int?
-  planned_start     DateTime?                @db.Timestamp(6)
-  planned_end       DateTime?                @db.Timestamp(6)
-  actual_start      DateTime?                @db.Timestamp(6)
-  actual_end        DateTime?                @db.Timestamp(6)
-  target_quantity   Decimal?                 @db.Decimal(15, 2)
-  actual_quantity   Decimal?                 @db.Decimal(15, 2)
-  id_user           Int
-  notes             String?
-  created_at        DateTime                 @default(now()) @db.Timestamp(6)
-  updated_at        DateTime                 @updatedAt @db.Timestamp(6)
-  Factory           Factory                  @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User              User                     @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ProductionLine    ProductionLine?          @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  Worksheet         Worksheet[]
+  planned_start      DateTime?               @db.Timestamp(6)
+  planned_end        DateTime?               @db.Timestamp(6)
+  actual_start       DateTime?               @db.Timestamp(6)
+  actual_end         DateTime?               @db.Timestamp(6)
+  target_quantity    Decimal?                @db.Decimal(15, 2)
+  actual_quantity    Decimal?                @db.Decimal(15, 2)
+  id_user            Int
+  notes              String?
+  created_at         DateTime                @default(now()) @db.Timestamp(6)
+  updated_at         DateTime                @updatedAt @db.Timestamp(6)
+  Factory            Factory                 @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User               User                    @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ProductionLine     ProductionLine?         @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  Worksheet          Worksheet[]
 
   @@index([id_factory])
   @@index([status])
@@ -1062,26 +1073,130 @@ enum DowntimeEvent_category_enum {
 }
 
 model DowntimeEvent {
-  id              Int                         @id @default(autoincrement())
-  id_machine      Int
-  id_factory      Int
-  id_user         Int
-  start_time      DateTime                    @db.Timestamp(6)
-  end_time        DateTime?                   @db.Timestamp(6)
-  duration_minutes Decimal?                   @db.Decimal(10, 2)
-  category        DowntimeEvent_category_enum @default(UNPLANNED)
-  reason          String?
-  resolution      String?
-  status          String                      @default("OPEN") @db.VarChar(20) // OPEN, RESOLVED
-  created_at      DateTime                    @default(now()) @db.Timestamp(6)
-  updated_at      DateTime                    @updatedAt @db.Timestamp(6)
+  id               Int                         @id @default(autoincrement())
+  id_machine       Int
+  id_factory       Int
+  id_user          Int
+  start_time       DateTime                    @db.Timestamp(6)
+  end_time         DateTime?                   @db.Timestamp(6)
+  duration_minutes Decimal?                    @db.Decimal(10, 2)
+  category         DowntimeEvent_category_enum @default(UNPLANNED)
+  reason           String?
+  resolution       String?
+  status           String                      @default("OPEN") @db.VarChar(20) // OPEN, RESOLVED
+  created_at       DateTime                    @default(now()) @db.Timestamp(6)
+  updated_at       DateTime                    @updatedAt @db.Timestamp(6)
 
-  Machine         Machine                     @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Factory         Factory                     @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User            User                        @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Machine Machine @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Factory Factory @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User    User    @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([id_machine])
   @@index([id_factory])
   @@index([start_time])
   @@index([status])
+}
+
+enum NCR_status_enum {
+  OPEN
+  INVESTIGATING
+  ACTION_TAKEN
+  CLOSED
+}
+
+enum NCR_severity_enum {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model NonConformanceReport {
+  id            Int               @id @default(autoincrement())
+  id_factory    Int
+  report_number String            @unique @db.VarChar(50)
+  report_date   DateTime          @db.Timestamp(6)
+  issue_title   String            @db.VarChar(200)
+  description   String
+  severity      NCR_severity_enum @default(MEDIUM)
+  status        NCR_status_enum   @default(OPEN)
+
+  id_worksheet Int?
+  batch_code   String? @db.VarChar(50)
+
+  reported_by  Int
+  resolved_by  Int?
+  action_plan  String?
+  action_taken String?
+  resolved_at  DateTime? @db.Timestamp(6)
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  Factory        Factory    @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ReportedByUser User       @relation("NCROperator", fields: [reported_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ResolvedByUser User?      @relation("NCRResolver", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Worksheet      Worksheet? @relation(fields: [id_worksheet], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([id_factory])
+  @@index([report_number])
+  @@index([status])
+  @@index([severity])
+  @@index([id_worksheet])
+}
+
+model ProcessParameterLog {
+  id           Int     @id @default(autoincrement())
+  id_factory   Int
+  id_machine   Int
+  id_user      Int
+  batch_code   String? @db.VarChar(50)
+  id_worksheet Int?
+
+  temperature Decimal? @db.Decimal(10, 2)
+  humidity    Decimal? @db.Decimal(10, 2)
+  pressure    Decimal? @db.Decimal(10, 2)
+  motor_speed Decimal? @db.Decimal(10, 2)
+  ampere      Decimal? @db.Decimal(10, 2)
+
+  recorded_at DateTime @default(now()) @db.Timestamp(6)
+  notes       String?
+
+  Factory   Factory    @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Machine   Machine    @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User      User       @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Worksheet Worksheet? @relation(fields: [id_worksheet], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([id_factory])
+  @@index([id_machine])
+  @@index([recorded_at])
+  @@index([batch_code])
+}
+
+enum ShiftHandover_status_enum {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+}
+
+model ShiftHandover {
+  id               Int                       @id @default(autoincrement())
+  id_factory       Int
+  date             DateTime                  @db.Date
+  shift            Worksheet_shift_enum
+  outgoing_user_id Int
+  incoming_user_id Int?
+  notes            String                    @db.Text
+  issues_reported  String?                   @db.Text
+  status           ShiftHandover_status_enum @default(DRAFT)
+  created_at       DateTime                  @default(now()) @db.Timestamp(6)
+  submitted_at     DateTime?                 @db.Timestamp(6)
+  acknowledged_at  DateTime?                 @db.Timestamp(6)
+  Factory          Factory                   @relation(fields: [id_factory], references: [id])
+  OutgoingUser     User                      @relation("HandoverOutgoing", fields: [outgoing_user_id], references: [id])
+  IncomingUser     User?                     @relation("HandoverIncoming", fields: [incoming_user_id], references: [id])
+
+  @@index([id_factory])
+  @@index([date])
+  @@index([shift])
 }

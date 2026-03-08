@@ -11,6 +11,8 @@ export const EVENTS = {
     WORK_ORDER_STARTED: 'workOrder.started',
     WORK_ORDER_COMPLETED: 'workOrder.completed',
     WORK_ORDER_CANCELLED: 'workOrder.cancelled',
+    NCR_CREATED: 'ncr.created',
+    NCR_RESOLVED: 'ncr.resolved',
 } as const;
 
 // Event Payloads
@@ -30,8 +32,19 @@ export interface WorkOrderStatusChangedPayload {
     userId: number;
 }
 
+export interface NCREventPayload {
+    ncrId: number;
+    reportNumber: string;
+    severity: string;
+    userId: number;
+}
+
 // Typed Event Bus
 class ProductionEventBus extends EventEmitter {
+    emitNCREvent(eventName: string, payload: NCREventPayload) {
+        this.emit(eventName, payload);
+    }
+
     emitWorksheetStatusChange(payload: WorksheetStatusChangedPayload) {
         this.emit(EVENTS.WORKSHEET_STATUS_CHANGED, payload);
 

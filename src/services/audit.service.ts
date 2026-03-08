@@ -3,7 +3,7 @@ import { prisma } from '../libs/prisma';
 
 export interface AuditLogOptions {
     userId: number;
-    action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT';
+    action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'RESOLVE';
     tableName: string;
     recordId: number;
     oldValue?: any;

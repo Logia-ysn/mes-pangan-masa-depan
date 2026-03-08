@@ -18,6 +18,8 @@ const WorkOrders = React.lazy(() => import('./pages/production/WorkOrders'));
 const Worksheets = React.lazy(() => import('./pages/production/Worksheets'));
 const WorksheetDetail = React.lazy(() => import('./pages/production/WorksheetDetail'));
 const WorksheetForm = React.lazy(() => import('./pages/production/WorksheetForm'));
+const ProductionScheduling = React.lazy(() => import('./pages/production/ProductionScheduling'));
+const ShiftHandover = React.lazy(() => import('./pages/production/ShiftHandover'));
 const ProductionLines = React.lazy(() => import('./pages/production/ProductionLines'));
 const DryingLogs = React.lazy(() => import('./pages/production/DryingLogs'));
 const QCResults = React.lazy(() => import('./pages/production/QCResults'));
@@ -33,9 +35,12 @@ const ProductionReport = React.lazy(() => import('./pages/reports/ProductionRepo
 const COGMReport = React.lazy(() => import('./pages/reports/COGMReport'));
 const StockReport = React.lazy(() => import('./pages/reports/StockReport'));
 const QualityTrends = React.lazy(() => import('./pages/reports/QualityTrends'));
+const ProcessParameters = React.lazy(() => import('./pages/reports/ProcessParameters'));
+const BatchGenealogy = React.lazy(() => import('./pages/inventory/BatchGenealogy'));
 const Users = React.lazy(() => import('./pages/admin/Users'));
 const AuditLogs = React.lazy(() => import('./pages/admin/AuditLogs'));
 const Factories = React.lazy(() => import('./pages/admin/Factories'));
+const NonConformance = React.lazy(() => import('./pages/quality/NonConformance'));
 
 import RoleGuard from './components/RoleGuard';
 import LogoLoader from './components/UI/LogoLoader';
@@ -106,14 +111,18 @@ const AppRoutes = () => {
             <Route path="rendemen" element={
               <RoleGuard requiredRole="SUPERVISOR"><RendemenMonitor /></RoleGuard>
             } />
-            <Route path="scheduling" element={<div>Coming Soon</div>} />
-            <Route path="shift-handover" element={<div>Coming Soon</div>} />
+            <Route path="scheduling" element={
+              <RoleGuard requiredRole="SUPERVISOR"><ProductionScheduling /></RoleGuard>
+            } />
+            <Route path="shift-handover" element={
+              <RoleGuard requiredRole="OPERATOR"><ShiftHandover /></RoleGuard>
+            } />
           </Route>
 
           {/* ===== Kualitas Module ===== */}
           <Route path="quality">
             <Route path="parameters" element={<div>Coming Soon</div>} />
-            <Route path="ncr" element={<div>Coming Soon</div>} />
+            <Route path="ncr" element={<NonConformance />} />
           </Route>
 
           {/* ===== Inventory Module ===== */}
@@ -125,7 +134,7 @@ const AppRoutes = () => {
             <Route path="stock-opname" element={
               <RoleGuard requiredRole="SUPERVISOR"><StockOpname /></RoleGuard>
             } />
-            <Route path="batch-genealogy" element={<div>Coming Soon</div>} />
+            <Route path="batch-genealogy" element={<BatchGenealogy />} />
           </Route>
 
           {/* ===== Mesin & Maintenance Module ===== */}
@@ -150,7 +159,9 @@ const AppRoutes = () => {
             <Route path="quality" element={
               <RoleGuard requiredRole="SUPERVISOR"><QualityTrends /></RoleGuard>
             } />
-            <Route path="process-params" element={<div>Coming Soon</div>} />
+            <Route path="process-params" element={
+              <RoleGuard requiredRole="SUPERVISOR"><ProcessParameters /></RoleGuard>
+            } />
           </Route>
 
           {/* ===== Admin Module ===== */}

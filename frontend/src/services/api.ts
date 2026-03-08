@@ -440,4 +440,35 @@ export const downtimeEventApi = {
     delete: (id: number) => api.delete(`/downtime-events/${id}`),
 };
 
+// Non-Conformance Reports (NCR)
+export const ncrApi = {
+    getAll: (params?: Record<string, any>) => api.get('/ncr', { params }),
+    getById: (id: number) => api.get(`/ncr/${id}`),
+    create: (data: Record<string, any>) => api.post('/ncr', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/ncr/${id}`, data),
+    resolve: (id: number, data: Record<string, any>) => api.post(`/ncr/${id}/resolve`, data),
+    delete: (id: number) => api.delete(`/ncr/${id}`),
+};
+
+
+// Process Parameter Log
+export const processParamsApi = {
+    getAll: (params?: Record<string, any>) => api.get('/process-parameters', { params }),
+    create: (data: Record<string, any>) => api.post('/process-parameters', data),
+    getMachineTrend: (id: number, params?: Record<string, any>) => api.get(`/process-parameters/machine/${id}/trend`, { params }),
+};
+
+// Batch Genealogy
+export const genealogyApi = {
+    traceForward: (batchCode: string) => api.get(`/batch-genealogy/${batchCode}/forward`).then(res => res.data.data),
+    traceBackward: (batchCode: string) => api.get(`/batch-genealogy/${batchCode}/backward`).then(res => res.data.data),
+};
+
+// Shift Handover
+export const handoverApi = {
+    getHandovers: (params?: Record<string, any>) => api.get('/shift-handovers', { params }),
+    createHandover: (data: any) => api.post('/shift-handovers', data),
+    acknowledgeHandover: (id: number) => api.post(`/shift-handovers/${id}/acknowledge`)
+};
+
 export default api;
