@@ -67,6 +67,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             icon: 'precision_manufacturing',
             children: [
                 { label: 'Daftar Mesin', to: '/equipment/machines' },
+                { label: 'Lini Produksi', to: '/equipment/production-lines' },
+                { label: 'Work Orders', to: '/equipment/work-orders' },
                 { label: 'Maintenance', to: '/equipment/maintenance' },
                 { label: 'OEE Monitor', to: '/equipment/oee' },
             ]

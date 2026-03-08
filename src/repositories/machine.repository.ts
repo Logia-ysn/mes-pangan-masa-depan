@@ -22,7 +22,8 @@ export class MachineRepository extends BaseRepository<Machine> {
                 skip: params.offset || 0,
                 orderBy: { id: 'asc' },
                 include: {
-                    Factory: true
+                    Factory: true,
+                    ProductionLine: true
                 }
             }),
             this.model.count({ where })

@@ -53,6 +53,10 @@ export class T_createWorksheet_body {
   @IsOptional()
   @IsString({ message: 'notes must be a string' })
   notes?: string
+  @IsOptional()
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'id_production_line must be a number (decimal)' })
+  id_production_line?: number
 }
 
 export type T_createWorksheet = (request: {

@@ -26,6 +26,7 @@ import { t_getDryingLogs } from './implementation/T_getDryingLogs';
 import { t_updateDryingLog } from './implementation/T_updateDryingLog';
 import { t_deleteDryingLog } from './implementation/T_deleteDryingLog';
 import { handler as t_getPOReceivableItems } from './implementation/T_getPOReceivableItems';
+import { registerEventListeners } from './src/events';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
@@ -592,6 +593,9 @@ server.run({
     const { BatchNumberingService } = require('./src/services/batch-numbering.service');
     const seeded = await BatchNumberingService.seedDefaultMappings();
     if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
+
+    // Register production event listeners
+    registerEventListeners();
   }
 });
 

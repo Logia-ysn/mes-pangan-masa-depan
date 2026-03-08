@@ -203,6 +203,7 @@ class WorksheetService {
             process_steps: dto.process_steps,
             id_machines: dto.id_machines ? dto.id_machines : Prisma.JsonNull,
             id_operators: dto.id_operators ? dto.id_operators : Prisma.JsonNull,
+            id_production_line: dto.id_production_line ? Number(dto.id_production_line) : null,
         };
     }
 

@@ -74,6 +74,7 @@ export interface CreateWorksheetDTO {
     id_machines?: number[];
     id_operators?: number[];
     id_input_product_type?: number;
+    id_production_line?: number;
 }
 
 // ─── Update Worksheet DTO ───────────────────────────────────────
@@ -133,6 +134,7 @@ export interface WorksheetListParams {
     status?: string;
     start_date?: string;
     end_date?: string;
+    id_production_line?: number;
 }
 
 // ─── Worksheet List Result ──────────────────────────────────────

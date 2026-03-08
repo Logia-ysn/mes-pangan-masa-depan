@@ -17,6 +17,8 @@ const WorksheetDetail = React.lazy(() => import('./pages/production/WorksheetDet
 const WorksheetForm = React.lazy(() => import('./pages/production/WorksheetForm'));
 const Stocks = React.lazy(() => import('./pages/production/Stocks'));
 const Machines = React.lazy(() => import('./pages/production/Machines'));
+const ProductionLines = React.lazy(() => import('./pages/production/ProductionLines'));
+const WorkOrders = React.lazy(() => import('./pages/production/WorkOrders'));
 const Maintenance = React.lazy(() => import('./pages/production/Maintenance'));
 const OEE = React.lazy(() => import('./pages/production/OEE'));
 const RawMaterialReceipt = React.lazy(() => import('./pages/production/RawMaterialReceipt'));
@@ -181,6 +183,12 @@ const AppRoutes = () => {
           {/* ===== Mesin & Maintenance Module ===== */}
           <Route path="equipment">
             <Route path="machines" element={<Machines />} />
+            <Route path="production-lines" element={
+              <RoleGuard requiredRole="SUPERVISOR"><ProductionLines /></RoleGuard>
+            } />
+            <Route path="work-orders" element={
+              <RoleGuard requiredRole="SUPERVISOR"><WorkOrders /></RoleGuard>
+            } />
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="oee" element={<OEE />} />
           </Route>

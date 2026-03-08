@@ -24,7 +24,9 @@ export const t_updateMachine: T_updateMachine = apiWrapper(async (req, res) => {
     purchase_date,
     vendor_id,
     purchase_price,
-    warranty_months
+    warranty_months,
+    id_production_line,
+    sequence_order
   } = req.body as any;
 
   const updateData: any = {};
@@ -41,6 +43,8 @@ export const t_updateMachine: T_updateMachine = apiWrapper(async (req, res) => {
   if (vendor_id !== undefined) updateData.vendor_id = vendor_id ? Number(vendor_id) : null;
   if (purchase_price !== undefined) updateData.purchase_price = purchase_price ? Number(purchase_price) : null;
   if (warranty_months !== undefined) updateData.warranty_months = warranty_months ? Number(warranty_months) : null;
+  if (id_production_line !== undefined) updateData.id_production_line = id_production_line ? Number(id_production_line) : null;
+  if (sequence_order !== undefined) updateData.sequence_order = sequence_order ? Number(sequence_order) : null;
 
   updateData.updated_at = new Date();
 

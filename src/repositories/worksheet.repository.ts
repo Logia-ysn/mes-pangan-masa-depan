@@ -16,6 +16,7 @@ export interface WorksheetListParams {
     process_step?: string;
     start_date?: Date;
     end_date?: Date;
+    id_production_line?: number;
 }
 
 export interface ProductionStats {
@@ -54,7 +55,8 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
                         }
                     }
                 },
-                WorksheetSideProduct: true
+                WorksheetSideProduct: true,
+                ProductionLine: true
             }
         });
     }
@@ -126,6 +128,10 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
             if (params.end_date) where.worksheet_date.lte = params.end_date;
         }
 
+        if (params.id_production_line) {
+            where.id_production_line = Number(params.id_production_line);
+        }
+
         const [worksheets, total] = await Promise.all([
             this.model.findMany({
                 where,
@@ -140,7 +146,8 @@ export class WorksheetRepository extends BaseRepository<Worksheet> {
                     User: true,
                     ProductType: true,
                     Machine: true,
-                    WorksheetSideProduct: true
+                    WorksheetSideProduct: true,
+                    ProductionLine: true
                 }
             }),
             this.model.count({ where })

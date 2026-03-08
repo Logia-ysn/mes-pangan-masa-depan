@@ -1,5 +1,26 @@
 # Development Log
 
+## 2026-03-07 — Scalable Production: Lini Produksi & Work Order (v2.28.0)
+
+### Motivasi
+Seiring berkembangnya skala bisnis, kapasitas produksi meningkat dan pabrik baru beroperasi. Sebelumnya, setiap Worksheet berdiri sendiri tanpa konsep "Lini Produksi" (grup mesin berurutan) atau "Work Order" (perintah kerja multi-tahap). Fitur ini menambahkan dua entitas baru tersebut agar sistem dapat bertumbuh secara scalable dan mudah dipantau kapabilitasnya.
+
+### Fitur Baru
+1. **Lini Produksi (Production Line)**:
+   - Pengelompokan mesin-mesin dalam satu lini produksi (cth: Line 1 = Sortir → Husker → Polisher).
+   - Penambahan skema tabel `ProductionLine`.
+   - Modifikasi entitas `Machine` dan `Worksheet` untuk menambahkan referensi `id_production_line` serta urutan antrean `sequence_order`.
+   - Modul Frontend terintegrasi di `/production-lines` dengan manajemen assign/remove mesin dalam lini terkait.
+
+2. **Perintah Kerja (Work Order)**:
+   - Surat Perintah Kerja (SPK) yang mengelompokkan Worksheet produksi menjadi beberapa tahapan proses.
+   - Skema tabel `WorkOrder` yang dilengkapi enum Status dan Prioritas.
+   - Entitas `Worksheet` dapat ditetapkan sebagai child dari sebuah `WorkOrder` berbasis urutan `step_number`.
+   - Implementasi Event Bus System (`productionEventBus`) guna me-*listen* pada event perubahan status (status change) WorkSheet untuk auto-update progres Work Order.
+
+### Keputusan Desain
+1. **Backward Compatible**: Penambahan fitur `id_production_line` & `id_work_order` bersifat opsional (nullable). Data historis Worksheet *single-stage* sebelumnya tetap berjalan lancar.
+2. **Event-driven Architecture**: Pengambilan pendekatan asinkron (EventBus) pada *update status* Worksheet ke WorkOrder untuk menghindari terbentuknya file God-Method.
 ## 2026-03-02 — Worksheet Module Refactoring (v2.27.0)
 
 ### Motivasi

@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.28.0] - 2026-03-07
+
+### Ditambahkan
+- **Fitur Lini Produksi (Production Lines)** — Entitas utama sistem terbaru guna mengelompokkan mesin-mesin yang bekerja berurutan menjadi satu kesatuan lini, mempermudah kalkulasi Overall Equipment Effectiveness (OEE) maupun load balancing jadwal produksi.
+- **Halaman Lini Produksi** — Layout frontend (`/production-lines`) guna mengelola dan menata daftar antrean operasi (`sequence_order`) tiap mesin dalam satu lini.
+- **Fitur Work Order (Surat Perintah Kerja)** — Sistem operasi tingkat atas yang dapat menaungi multi-tahap produksi dari beberapa Worksheet secara terikat untuk merunut alur satu SPK.
+- **Halaman Work Orders** — Layout antarmuka baru (`/work-orders`) berorientasi progres dengan perbandingan Quantity Aktual VS Target beserta lencana status.
+- **Production Event Bus** — Pembangunan infrastruktur pengamat-event (event-listener backend) via `productionEventBus` guna menangkap pergantian status Worksheet anak agar sinkron memajukan status pada level ayah (Work Order).
+
+### Diubah
+- **Integrasi Mesin & Worksheet Terpadu** — Komponen penambahan form Worksheet & Machine (API Create & Update) diperbarui ke dalam skema adaptif mendukung relasi lini & SPK tanpa me-reboot rancangan DB historis.
 ## [2.27.0] - 2026-03-02
 
 ### Refactored

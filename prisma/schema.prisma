@@ -113,9 +113,11 @@ model Factory {
   Machine               Machine[]
   MaterialReceipt       MaterialReceipt[]
   OutputProduct         OutputProduct[]
+  ProductionLine        ProductionLine[]
   PurchaseOrder         PurchaseOrder[]
   Stock                 Stock[]
   User                  User[]
+  WorkOrder             WorkOrder[]
   Worksheet             Worksheet[]
   DryingLog             DryingLog[]
   StockOpname           StockOpname[]
@@ -185,11 +187,34 @@ model Machine {
   status                Machine_status_enum @default(ACTIVE)
   last_maintenance_date DateTime?           @db.Date
   next_maintenance_date DateTime?           @db.Date
+  id_production_line    Int?
+  sequence_order        Int?                @default(0)
   Factory               Factory             @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b8a0fe79ae166740619fce48848")
+  ProductionLine        ProductionLine?     @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
   Maintenance           Maintenance[]
   Worksheet             Worksheet[]
 
   @@index([id_factory], map: "IDX_machine_factory")
+  @@index([id_production_line])
+}
+
+model ProductionLine {
+  id                Int         @id @default(autoincrement())
+  id_factory        Int
+  code              String      @unique @db.VarChar(30)
+  name              String      @db.VarChar(200)
+  description       String?
+  is_active         Boolean     @default(true)
+  capacity_per_hour Decimal?    @db.Decimal(10, 2)
+  created_at        DateTime    @default(now()) @db.Timestamp(6)
+  updated_at        DateTime    @updatedAt @db.Timestamp(6)
+  Factory           Factory     @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Machine           Machine[]
+  Worksheet         Worksheet[]
+  WorkOrder         WorkOrder[]
+
+  @@index([id_factory])
+  @@index([code])
 }
 
 model Maintenance {
@@ -478,6 +503,7 @@ model User {
   DeliveryOrder      DeliveryOrder[]
   StockOpname        StockOpname[]
   QCResult           QCResult[]
+  WorkOrder          WorkOrder[]
 }
 
 model AuditLog {
@@ -528,6 +554,9 @@ model Worksheet {
   id_input_product_type Int?
   id_machines           Json?
   id_operators          Json?
+  id_production_line    Int?
+  id_work_order         Int?
+  step_number           Int?
   // Workflow status fields
   status                Worksheet_status_enum  @default(DRAFT)
   submitted_at          DateTime?              @db.Timestamp(6)
@@ -546,6 +575,8 @@ model Worksheet {
   SubmittedByUser       User?                  @relation("WorksheetSubmittedBy", fields: [submitted_by], references: [id])
   ApprovedByUser        User?                  @relation("WorksheetApprovedBy", fields: [approved_by], references: [id])
   RejectedByUser        User?                  @relation("WorksheetRejectedBy", fields: [rejected_by], references: [id])
+  ProductionLine        ProductionLine?        @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  WorkOrder             WorkOrder?             @relation(fields: [id_work_order], references: [id], onDelete: SetNull, onUpdate: NoAction)
   WorksheetInputBatch   WorksheetInputBatch[]
   WorksheetSideProduct  WorksheetSideProduct[]
   QCResult              QCResult[]
@@ -554,6 +585,7 @@ model Worksheet {
   @@index([id_user], map: "IDX_worksheet_user")
   @@index([worksheet_date], map: "IDX_worksheet_date")
   @@index([status], map: "IDX_worksheet_status")
+  @@index([id_work_order])
 }
 
 model WorksheetInputBatch {
@@ -869,6 +901,20 @@ enum SideProductType {
   REJECT
 }
 
+enum WorkOrder_status_enum {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrder_priority_enum {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 model DryingLog {
   id                Int       @id @default(autoincrement())
   id_factory        Int
@@ -974,4 +1020,33 @@ model QCResult {
 
   @@index([id_factory])
   @@index([batch_code])
+}
+
+model WorkOrder {
+  id                Int                      @id @default(autoincrement())
+  id_factory        Int
+  work_order_number String                   @unique @db.VarChar(50)
+  title             String                   @db.VarChar(200)
+  description       String?
+  status            WorkOrder_status_enum    @default(PLANNED)
+  priority          WorkOrder_priority_enum  @default(NORMAL)
+  id_production_line Int?
+  planned_start     DateTime?                @db.Timestamp(6)
+  planned_end       DateTime?                @db.Timestamp(6)
+  actual_start      DateTime?                @db.Timestamp(6)
+  actual_end        DateTime?                @db.Timestamp(6)
+  target_quantity   Decimal?                 @db.Decimal(15, 2)
+  actual_quantity   Decimal?                 @db.Decimal(15, 2)
+  id_user           Int
+  notes             String?
+  created_at        DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                 @updatedAt @db.Timestamp(6)
+  Factory           Factory                  @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User              User                     @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ProductionLine    ProductionLine?          @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  Worksheet         Worksheet[]
+
+  @@index([id_factory])
+  @@index([status])
+  @@index([work_order_number])
 }

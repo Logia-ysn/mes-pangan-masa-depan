@@ -215,6 +215,34 @@ export const machineApi = {
     delete: (id: number) => api.delete(`/machines/${id}`),
 };
 
+// Production Lines
+export const productionLineApi = {
+    getAll: (params?: Record<string, any>) => api.get('/production-lines', { params }),
+    getById: (id: number) => api.get(`/production-lines/${id}`),
+    create: (data: Record<string, any>) => api.post('/production-lines', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/production-lines/${id}`, data),
+    delete: (id: number) => api.delete(`/production-lines/${id}`),
+    assignMachine: (lineId: number, data: { id_machine: number; sequence_order: number }) =>
+        api.post(`/production-lines/${lineId}/machines`, data),
+    removeMachine: (lineId: number, machineId: number) =>
+        api.delete(`/production-lines/${lineId}/machines/${machineId}`),
+};
+
+// Work Orders
+export const workOrderApi = {
+    getAll: (params?: Record<string, any>) => api.get('/work-orders', { params }),
+    getById: (id: number) => api.get(`/work-orders/${id}`),
+    create: (data: Record<string, any>) => api.post('/work-orders', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/work-orders/${id}`, data),
+    delete: (id: number) => api.delete(`/work-orders/${id}`),
+    workflow: (id: number, data: { action: string; actual_quantity?: number; reason?: string }) =>
+        api.post(`/work-orders/${id}/workflow`, data),
+    addWorksheet: (id: number, data: { id_worksheet: number; step_number: number }) =>
+        api.post(`/work-orders/${id}/worksheets`, data),
+    removeWorksheet: (id: number, worksheetId: number) =>
+        api.delete(`/work-orders/${id}/worksheets/${worksheetId}`),
+};
+
 // Process Categories
 export const processCategoryApi = {
     getAll: (params?: { is_main_process?: boolean; is_active?: boolean }) =>

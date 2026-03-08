@@ -29,6 +29,14 @@ export class T_createMachine_body {
   @IsOptional()
   @IsString({ message: 'status must be a string' })
   status?: string
+  @IsOptional()
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'id_production_line must be a number (decimal)' })
+  id_production_line?: number
+  @IsOptional()
+  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+  @IsNumber({}, { message: 'sequence_order must be a number (decimal)' })
+  sequence_order?: number
 }
 
 export type T_createMachine = (request: {

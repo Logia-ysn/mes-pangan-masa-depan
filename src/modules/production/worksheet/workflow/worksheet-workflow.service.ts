@@ -17,13 +17,14 @@ import { auditService } from '../../../../services/audit.service';
 import { worksheetStockService } from '../stock/worksheet-stock.service';
 import { hppCalculator } from '../hpp/hpp-calculator.service';
 import type { WorksheetWithRelations } from '../worksheet.types';
+import { productionEventBus } from '../../../../events/production-event-bus';
 
 export class WorksheetWorkflowService {
     /**
      * Submit worksheet for approval: DRAFT/REJECTED → SUBMITTED
      */
     async submit(id: number, userId: number): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const worksheet = await tx.worksheet.findUnique({
                 where: { id },
                 include: { WorksheetInputBatch: true, WorksheetSideProduct: true }
@@ -72,6 +73,18 @@ export class WorksheetWorkflowService {
 
             return updatedWorksheet;
         });
+
+        // Emit event AFTER transaction commits
+        productionEventBus.emitWorksheetStatusChange({
+            worksheetId: id,
+            workOrderId: (result as any).id_work_order,
+            oldStatus: 'DRAFT',
+            newStatus: 'SUBMITTED',
+            userId,
+            factoryId: result.id_factory,
+        });
+
+        return result;
     }
 
     /**
@@ -79,7 +92,7 @@ export class WorksheetWorkflowService {
      * SUBMITTED → COMPLETED (stock IN for output, OUT for input)
      */
     async approve(id: number, approverId: number): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const worksheet = await tx.worksheet.findUnique({
                 where: { id },
                 include: {
@@ -151,13 +164,25 @@ export class WorksheetWorkflowService {
 
             return completedWorksheet;
         });
+
+        // Emit event AFTER transaction commits
+        productionEventBus.emitWorksheetStatusChange({
+            worksheetId: id,
+            workOrderId: (result as any).id_work_order,
+            oldStatus: 'SUBMITTED',
+            newStatus: 'APPROVED',
+            userId: approverId,
+            factoryId: result.id_factory,
+        });
+
+        return result;
     }
 
     /**
      * Reject worksheet: SUBMITTED → REJECTED
      */
     async reject(id: number, rejectorId: number, reason: string): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const worksheet = await tx.worksheet.findUnique({ where: { id } });
             if (!worksheet) throw new NotFoundError('Worksheet', id);
             if (worksheet.status !== Worksheet_status_enum.SUBMITTED) {
@@ -193,6 +218,18 @@ export class WorksheetWorkflowService {
 
             return rejectedWorksheet;
         });
+
+        // Emit event AFTER transaction commits
+        productionEventBus.emitWorksheetStatusChange({
+            worksheetId: id,
+            workOrderId: (result as any).id_work_order,
+            oldStatus: 'SUBMITTED',
+            newStatus: 'REJECTED',
+            userId: rejectorId,
+            factoryId: result.id_factory,
+        });
+
+        return result;
     }
 
     /**
@@ -201,7 +238,7 @@ export class WorksheetWorkflowService {
      * - COMPLETED → CANCELLED (with stock reversal)
      */
     async cancel(id: number, userId: number, reason?: string): Promise<Worksheet> {
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const worksheet = await tx.worksheet.findUnique({
                 where: { id },
                 include: {
@@ -248,6 +285,18 @@ export class WorksheetWorkflowService {
 
             return cancelledWorksheet;
         });
+
+        // Emit event AFTER transaction commits
+        productionEventBus.emitWorksheetStatusChange({
+            worksheetId: id,
+            workOrderId: (result as any).id_work_order,
+            oldStatus: 'ACTIVE',
+            newStatus: 'CANCELLED',
+            userId,
+            factoryId: result.id_factory,
+        });
+
+        return result;
     }
 }
 
