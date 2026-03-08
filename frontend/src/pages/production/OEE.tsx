@@ -33,6 +33,7 @@ interface Factory {
 const OEE = () => {
     const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
+    const [downtimes, setDowntimes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState('daily');
 
@@ -60,15 +61,20 @@ const OEE = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [worksheetsRes, machinesRes] = await Promise.all([
+            const [worksheetsRes, machinesRes, downtimeRes] = await Promise.all([
                 api.get('/worksheets', { params: { limit: 100, id_factory: selectedFactory || undefined } }),
-                api.get('/machines', { params: { id_factory: selectedFactory || undefined } })
+                api.get('/machines', { params: { id_factory: selectedFactory || undefined } }),
+                api.get('/downtime-events', { params: { limit: 1000, id_factory: selectedFactory || undefined } })
             ]);
             // Handle both array and paginated response formats
             const worksheetsData = worksheetsRes.data?.data || worksheetsRes.data || [];
             setWorksheets(Array.isArray(worksheetsData) ? worksheetsData : []);
+
             const machinesData = machinesRes.data?.data || machinesRes.data || [];
             setMachines(Array.isArray(machinesData) ? machinesData : []);
+
+            const downtimesData = downtimeRes.data?.data || downtimeRes.data || [];
+            setDowntimes(Array.isArray(downtimesData) ? downtimesData : []);
         } catch (error) {
             logger.error('Error fetching data:', error);
         } finally {
@@ -83,7 +89,10 @@ const OEE = () => {
 
         // Sum all values
         const totalMachineHours = worksheets.reduce((sum, w) => sum + (w.machine_hours || 0), 0);
-        const totalDowntimeHours = worksheets.reduce((sum, w) => sum + (w.downtime_hours || 0), 0);
+        const wsDowntimeHours = worksheets.reduce((sum, w) => sum + (w.downtime_hours || 0), 0);
+        const eventDowntimeHours = downtimes.reduce((sum, d) => sum + (d.duration_minutes ? d.duration_minutes / 60 : 0), 0);
+        const totalDowntimeHours = wsDowntimeHours + eventDowntimeHours;
+
         const totalBerasOutput = worksheets.reduce((sum, w) => sum + (w.beras_output || 0), 0);
 
         const totalMenirOutput = worksheets.reduce((sum, w) => sum + (w.menir_output || 0), 0);

@@ -356,3 +356,19 @@ table QCResult {
   notes text
   created_at timestamp notnull default=NOW()
 }
+
+table DowntimeEvent {
+  id bigint pk inc notnull
+  id_machine Machine.id notnull
+  id_factory Factory.id notnull
+  id_user User.id notnull
+  start_time timestamp notnull
+  end_time timestamp
+  duration_minutes decimal(10,2)
+  category varchar(50) notnull default="UNPLANNED"
+  reason text
+  resolution text
+  status varchar(20) notnull default="OPEN"
+  created_at timestamp notnull default=NOW()
+  updated_at timestamp notnull default=NOW()
+}

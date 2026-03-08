@@ -58,11 +58,11 @@ const Login = () => {
                             Mengelola hasil panen dari padi hingga produksi.
                         </h1>
                         <p className="brand-subtext">
-                            Optimalkan operasi penggilingan Anda, lacak inventaris secara real-time, dan tingkatkan efisiensi rantai pasok dengan solusi ERP terintegrasi.
+                            Optimalkan operasi penggilingan Anda, lacak inventaris secara real-time, dan tingkatkan efisiensi lantai produksi dengan solusi MES terintegrasi.
                         </p>
 
                         <div className="author-credit" style={{ marginTop: 40, padding: '12px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', backdropFilter: 'blur(4px)', width: 'fit-content', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>ERP ini dibuat oleh Yayang SN - LOGIA</span>
+                            <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>MES ini dibuat oleh Yayang SN - LOGIA</span>
                         </div>
                     </div>
                 </div>
@@ -162,7 +162,7 @@ const Login = () => {
                             <span>Semua sistem berjalan normal</span>
                         </div>
                         <div className="app-version">
-                            © {new Date().getFullYear()} ERP Pangan Masa Depan v{import.meta.env.VITE_APP_VERSION}
+                            © {new Date().getFullYear()} MES Pangan Masa Depan v{import.meta.env.VITE_APP_VERSION}
                         </div>
                     </div>
                 </div>

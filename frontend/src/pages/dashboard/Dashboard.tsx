@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { dashboardApi, invoiceApi, purchaseOrderApi } from '../../services/api';
-import api from '../../services/api'; // For daily-expenses
+import { dashboardApi, workOrderApi } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import KPICard from '../../components/Dashboard/KPICard';
 import MachinePanel from '../../components/Dashboard/MachinePanel';
@@ -79,7 +78,7 @@ import LogoLoader from '../../components/UI/LogoLoader';
 
 const Dashboard = () => {
     const [data, setData] = useState<ExecutiveDashboardData | null>(null);
-    const [finances, setFinances] = useState({ revenue: 0, expense: 0, profit: 0 });
+    const [activeWorkOrders, setActiveWorkOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'7' | '30'>('7');
     const { theme } = useTheme();
@@ -95,31 +94,12 @@ const Dashboard = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await dashboardApi.getExecutive(
-                    selectedFactory ? { id_factory: selectedFactory } : undefined
-                );
-                setData(response.data);
-
-                // Fetch financial data (naive aggregation for demo purposes)
-                const dateParams = dateRange === '30'
-                    ? { lte: new Date().toISOString(), gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
-                    : { lte: new Date().toISOString(), gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() };
-
-                const [invoices, expenses, pos] = await Promise.all([
-                    invoiceApi.getAll({ limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte }),
-                    api.get('/daily-expenses', { params: { limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte } }),
-                    purchaseOrderApi.getAll({ limit: 1000, start_date: dateParams.gte, end_date: dateParams.lte })
+                const [dashRes, woRes] = await Promise.all([
+                    dashboardApi.getExecutive(selectedFactory ? { id_factory: selectedFactory } : undefined),
+                    workOrderApi.getAll({ status: 'IN_PROGRESS', limit: 5 })
                 ]);
-
-                // Calculate Revenue (from COMPLETED/PAID invoices ideally, but we'll sum total_amount)
-                const revenue = (invoices.data?.data || []).reduce((sum: number, inv: any) => sum + (Number(inv.total_amount) || 0), 0);
-
-                // Calculate Expenses
-                const accExpenses = (expenses.data?.data || []).reduce((sum: number, exp: any) => sum + (Number(exp.amount) || 0), 0);
-                const posExpenses = (pos.data?.data || []).reduce((sum: number, po: any) => sum + (Number(po.total_amount) || 0), 0);
-                const expense = accExpenses + posExpenses;
-
-                setFinances({ revenue, expense, profit: revenue - expense });
+                setData(dashRes.data);
+                setActiveWorkOrders(woRes.data?.data || []);
 
             } catch (error) {
                 logger.error('Error fetching executive dashboard:', error);
@@ -134,9 +114,6 @@ const Dashboard = () => {
 
     const formatNumber = (num: number) =>
         new Intl.NumberFormat('id-ID').format(Number(num));
-
-    const formatRp = (num: number) =>
-        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(num));
 
     const formatWeight = (kg: number) => {
         if (kg >= 1000) {
@@ -271,30 +248,55 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Section 0: Financial Summary */}
+            {/* Section 0: Active Work Orders */}
             <div className="card" style={{ marginBottom: 24 }}>
                 <div className="card-header">
-                    <h3 className="card-title">Ringkasan Keuangan ({dateRange} Hari Terakhir)</h3>
+                    <h3 className="card-title">Work Orders Berjalan</h3>
+                    <Link to="/production/work-orders" className="btn btn-ghost btn-sm">Lihat Semua</Link>
                 </div>
-                <div className="kpi-grid" style={{ marginTop: 0 }}>
-                    <KPICard
-                        label="Total Pendapatan (Revenue)"
-                        value={formatRp(finances.revenue)}
-                        icon="payments"
-                        status="good"
-                    />
-                    <KPICard
-                        label="Total Pengeluaran (Expense)"
-                        value={formatRp(finances.expense)}
-                        icon="receipt_long"
-                        status={finances.expense > finances.revenue ? 'critical' : 'warning'}
-                    />
-                    <KPICard
-                        label="Laba Kotor (Gross Profit)"
-                        value={formatRp(finances.profit)}
-                        icon="account_balance_wallet"
-                        status={finances.profit > 0 ? 'good' : finances.profit < 0 ? 'critical' : 'warning'}
-                    />
+                <div className="table-responsive" style={{ padding: '0 24px 24px' }}>
+                    {activeWorkOrders.length > 0 ? (
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>NO. WO</th>
+                                    <th>PRODUK TARGET</th>
+                                    <th>PABRIK</th>
+                                    <th>PROGRES</th>
+                                    <th>PRIORITAS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeWorkOrders.map((wo: any) => {
+                                    const pct = wo.target_quantity > 0 ? (wo.actual_quantity / wo.target_quantity) * 100 : 0;
+                                    return (
+                                        <tr key={wo.id}>
+                                            <td style={{ fontWeight: 600 }}>{wo.work_order_number}</td>
+                                            <td>{wo.target_product || '-'}</td>
+                                            <td>{wo.Factory?.code || '-'}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ flex: 1, height: 6, background: 'var(--bg-tertiary)', borderRadius: 3, overflow: 'hidden' }}>
+                                                        <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: 'var(--primary)' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '0.85rem' }}>{pct.toFixed(0)}%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${wo.priority === 'HIGH' || wo.priority === 'URGENT' ? 'critical' : 'warning'}`}>
+                                                    {wo.priority}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)' }}>
+                            <p>Tidak ada Work Order yang sedang berjalan.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 

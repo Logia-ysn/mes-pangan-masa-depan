@@ -122,6 +122,7 @@ model Factory {
   DryingLog             DryingLog[]
   StockOpname           StockOpname[]
   QCResult              QCResult[]
+  DowntimeEvent         DowntimeEvent[]
 }
 
 model FactoryMaterialConfig {
@@ -193,6 +194,7 @@ model Machine {
   ProductionLine        ProductionLine?     @relation(fields: [id_production_line], references: [id], onDelete: SetNull, onUpdate: NoAction)
   Maintenance           Maintenance[]
   Worksheet             Worksheet[]
+  DowntimeEvent         DowntimeEvent[]
 
   @@index([id_factory], map: "IDX_machine_factory")
   @@index([id_production_line])
@@ -504,6 +506,7 @@ model User {
   StockOpname        StockOpname[]
   QCResult           QCResult[]
   WorkOrder          WorkOrder[]
+  DowntimeEvent      DowntimeEvent[]
 }
 
 model AuditLog {
@@ -1049,4 +1052,36 @@ model WorkOrder {
   @@index([id_factory])
   @@index([status])
   @@index([work_order_number])
+}
+
+enum DowntimeEvent_category_enum {
+  PLANNED
+  UNPLANNED
+  CHANGEOVER
+  CLEANING
+}
+
+model DowntimeEvent {
+  id              Int                         @id @default(autoincrement())
+  id_machine      Int
+  id_factory      Int
+  id_user         Int
+  start_time      DateTime                    @db.Timestamp(6)
+  end_time        DateTime?                   @db.Timestamp(6)
+  duration_minutes Decimal?                   @db.Decimal(10, 2)
+  category        DowntimeEvent_category_enum @default(UNPLANNED)
+  reason          String?
+  resolution      String?
+  status          String                      @default("OPEN") @db.VarChar(20) // OPEN, RESOLVED
+  created_at      DateTime                    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime                    @updatedAt @db.Timestamp(6)
+
+  Machine         Machine                     @relation(fields: [id_machine], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Factory         Factory                     @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User            User                        @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id_machine])
+  @@index([id_factory])
+  @@index([start_time])
+  @@index([status])
 }

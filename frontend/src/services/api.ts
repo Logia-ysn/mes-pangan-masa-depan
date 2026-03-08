@@ -430,4 +430,14 @@ export const auditApi = {
         api.get('/audit-logs', { params }),
 };
 
+// Downtime Events
+export const downtimeEventApi = {
+    getAll: (params?: Record<string, any>) => api.get('/downtime-events', { params }),
+    getById: (id: number) => api.get(`/downtime-events/${id}`),
+    create: (data: Record<string, any>) => api.post('/downtime-events', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/downtime-events/${id}`, data),
+    resolve: (id: number, data: Record<string, any>) => api.put(`/downtime-events/${id}/resolve`, data),
+    delete: (id: number) => api.delete(`/downtime-events/${id}`),
+};
+
 export default api;

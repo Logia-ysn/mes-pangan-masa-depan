@@ -37,14 +37,6 @@ export class T_updateMachine_body {
   @IsOptional()
   @IsString({ message: 'next_maintenance_date must be a string' })
   next_maintenance_date?: string
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'id_production_line must be a number (decimal)' })
-  id_production_line?: number
-  @IsOptional()
-  @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
-  @IsNumber({}, { message: 'sequence_order must be a number (decimal)' })
-  sequence_order?: number
 }
 
 export type T_updateMachine = (request: {

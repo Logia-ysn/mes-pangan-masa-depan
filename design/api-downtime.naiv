@@ -1,0 +1,91 @@
+api get /downtime-events {
+  alias getDowntimeEvents
+  headers {
+    authorization string required
+  }
+  query {
+    limit number
+    offset number
+    id_machine number
+    id_factory number
+    category string
+    status string
+    start_date string
+    end_date string
+  }
+  return {
+    total number required
+    data array table.DowntimeEvent required
+  } required
+}
+
+api get /downtime-events/:id {
+  alias getDowntimeEventById
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return table.DowntimeEvent required
+}
+
+api post /downtime-events {
+  alias createDowntimeEvent
+  headers {
+    authorization string required
+  }
+  body {
+    id_machine number required
+    id_factory number required
+    start_time string required
+    end_time string
+    category string required
+    reason string
+  }
+  return table.DowntimeEvent required
+}
+
+api put /downtime-events/:id {
+  alias updateDowntimeEvent
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    id_machine number
+    start_time string
+    end_time string
+    category string
+    reason string
+  }
+  return table.DowntimeEvent required
+}
+
+api put /downtime-events/:id/resolve {
+  alias resolveDowntimeEvent
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  body {
+    end_time string required
+    resolution string
+  }
+  return table.DowntimeEvent required
+}
+
+api delete /downtime-events/:id {
+  alias deleteDowntimeEvent
+  headers {
+    authorization string required
+  }
+  path {
+    id number required
+  }
+  return schema.MessageResponse required
+}
