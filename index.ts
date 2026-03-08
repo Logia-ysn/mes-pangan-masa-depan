@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 import { prisma } from './src/libs/prisma';
+// @ts-ignore
+import { Server } from '@naiv/codegen-nodejs-typeorm';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -46,7 +48,7 @@ const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
   return Number(this);
 };
 
-const server = { express: express() };
+const server = new Server({ noCors: true });
 
 // Trust proxy for secure cookies in production (Railway/Vercel)
 server.express.set('trust proxy', 1);
@@ -612,24 +614,23 @@ server.express.post('/auth/logout', (_req: any, res: any) => {
 const port = Number(process.env.PORT || 3005);
 console.log(`Starting server on port ${port}...`);
 
-const startServer = async () => {
-  await prisma.$connect();
-  console.log('Prisma connected');
+server.run({
+  port: port,
+  types_path: path.resolve(__dirname, 'types'),
+  implementation_path: path.resolve(__dirname, 'implementation'),
+  async beforeStart() {
+    await prisma.$connect();
+    console.log('Prisma connected');
 
-  // Auto-seed batch code mappings if empty
-  const { BatchNumberingService } = require('./src/services/batch-numbering.service');
-  const seeded = await BatchNumberingService.seedDefaultMappings();
-  if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
+    // Auto-seed batch code mappings if empty
+    const { BatchNumberingService } = require('./src/services/batch-numbering.service');
+    const seeded = await BatchNumberingService.seedDefaultMappings();
+    if (seeded > 0) console.log(`Seeded ${seeded} batch code mappings`);
 
-  // Register production event listeners
-  registerEventListeners();
-
-  server.express.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-};
-
-startServer();
+    // Register production event listeners
+    registerEventListeners();
+  }
+});
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {

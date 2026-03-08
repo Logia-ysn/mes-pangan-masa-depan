@@ -35,7 +35,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@naiv/codegen-nodejs-typeorm": "^0.0.1",
+    "@naiv/codegen-nodejs-typeorm": "^0.0.2",
     "@prisma/client": "^6.4.0",
     "@types/express-fileupload": "^1.5.1",
     "@types/jsonwebtoken": "^9.0.10",
