@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.29.0] - 2026-03-09
+
+### ERP to MES Transformation (Major Release)
+- **Fase 0: Rebranding & Cleanup** — Menghapus modul non-manufaktur (Sales, Purchasing, Finance, HR) dari antarmuka pengguna, menjadikan aplikasi secara murni fungsional sebagai Manufacturing Execution System (MES).
+- **Fase 1: Production Control Center** — Dasbor operasional dirombak total dan difokuskan pada pemantauan produksi realtime (Active Work Orders, Production Today, Rendemen Harian, dan OEE mesin).
+- **Fase 2: Non-Conformance Report (NCR)** — Penambahan modul pelaporan ketidaksesuaian kualitas (NCR) terintegrasi dengan pencatatan investigasi dan persetujuan tindakan korektif.
+- **Fase 4: Batch Genealogy** — Implementasi visualisasi *traceability* batch secara *Forward* dan *Backward* dalam bentuk Treeview untuk melacak asal gabah (Raw Material) hingga menjadi beras kemasan (Finished Goods).
+- **Fase 5: Production Scheduling** — Fitur Kanban board interaktif untuk mengelola status Work Order (Planned, In Progress, Completed, Cancelled) dilengkapi prioritas warna.
+- **Fase 6: Shift Handover Log** — Sistem pencatatan serah terima shift operasional antar regu jaga (shift) dengan pengesahan digital (acknowledgment).
+
 ## [2.28.0] - 2026-03-07
 
 ### Ditambahkan

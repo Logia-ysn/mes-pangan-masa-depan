@@ -1,6 +1,6 @@
-# ERP Pangan Masa Depan
+# MES Pangan Masa Depan
 
-> **Modern ERP Manufacturing System with AI-Powered Quality Analysis for Rice Mill Industry**
+> **Modern Manufacturing Execution System (MES) with AI-Powered Quality Analysis for the Rice Mill Industry**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
@@ -13,10 +13,10 @@
 
 ## Deskripsi
 
-**ERP Pangan Masa Depan** adalah sistem Enterprise Resource Planning (ERP) yang dirancang khusus untuk industri penggilingan padi modern. Sistem ini mengintegrasikan **Machine Learning** untuk analisis kualitas gabah secara otomatis melalui computer vision.
+**MES Pangan Masa Depan** adalah sistem Manufacturing Execution System (MES) yang berfokus secara eksklusif pada eksekusi produksi (shop-floor) di industri penggilingan padi modern. Sistem ini mengintegrasikan **Machine Learning** untuk analisis kualitas gabah secara otomatis melalui computer vision.
 
-**Scope Aplikasi**: Penerimaan Bahan Baku, Produksi, Inventory, Maintenance, Pembelian, dan Penjualan.
-HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
+**Scope Aplikasi**: Penerimaan Bahan Baku, Produksi (Work Order, Penjadwalan, Silsilah Batch, Shift Handover), Inventory, Kualitas (QC & NCR), dan Peralatan.
+Pembelian, Penjualan, Keuangan, dan HRD dikelola oleh perangkat lunak ERP terpisah (di luar scope MES).
 
 ---
 
@@ -28,9 +28,9 @@ HRD dan Keuangan menggunakan aplikasi pihak ketiga (di luar scope).
 | **Quality Control** | Selesai | ML Grain Analysis, Kalibrasi HSV, Grading (v2.22.0) |
 | **Dashboard** | Selesai | KPI, Grafik Produksi, Machine Summary, Inventory Snapshot |
 | **Penerimaan Bahan Baku** | Selesai | Raw Material Receipt + QC Integration |
-| **Penjualan (v2.1.0)** | Selesai | Customer, Invoice, Payment, Stock Deduction, PDF Export |
-| **Pembelian (v2.2.0)** | Selesai | Purchase Order, Goods Receipt, Stock Integration |
-| **Phase 4 (v2.26.0)** | Selesai | DO, QC Produk Jadi, Drying Log, Stock Opname, Financial Dash |
+| **Penjualan (Legacy)** | Hide/Del | Modul ERP yang telah dikeluarkan dari scope antarmuka MES. |
+| **Pembelian (Legacy)** | Hide/Del | Modul ERP yang telah dikeluarkan dari scope antarmuka MES. |
+| **Transformasi MES (v2.29.0)** | Selesai | Batch Genealogy, Production Scheduling, NCR, Shift Handover |
 | **Authentication** | Selesai | Login, Register, Role-based Access (5 level) |
 | **Multi-Factory** | Selesai | Support PMD-1 & PMD-2 |
 | **Mobile UX (v2.17.0)** | Selesai | Horizontal scroll factory selector, typography scaling |
