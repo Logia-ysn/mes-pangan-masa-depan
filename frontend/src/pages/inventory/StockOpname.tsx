@@ -146,151 +146,194 @@ export default function StockOpnamePage() {
 
     return (
         <div className="page-content">
-            <div className="page-header">
-                <div className="page-title">
-                    <h1>Stock Opname</h1>
-                    <p className="text-secondary text-sm block" style={{ marginTop: '0.25rem' }}>
-                        Lakukan perhitungan stok fisik. Sistem akan otomatis membuat penyesuaian (Adjustment).
-                    </p>
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 16,
+                        background: 'linear-gradient(135deg, var(--warning), #f59e0b)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.2)'
+                    }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 32 }}>inventory_2</span>
+                    </div>
+                    <div>
+                        <h1 className="page-title" style={{ margin: 0 }}>Stock Opname</h1>
+                        <p className="page-subtitle">Lakukan perhitungan stok fisik. Sistem akan otomatis membuat penyesuaian (Adjustment).</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-3" style={{ gap: 24, alignItems: 'flex-start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, alignItems: 'flex-start' }}>
                 {/* Left Form: Configuration */}
-                <div className="card" style={{ padding: 24 }}>
-                    <h3 className="card-title text-lg flex items-center" style={{ gap: 8, marginBottom: 20 }}>
-                        <span className="material-symbols-outlined text-primary">domain</span>
+                <div className="glass-card" style={{ padding: 24 }}>
+                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, fontWeight: 700, marginBottom: 20 }}>
+                        <span className="material-symbols-outlined text-warning" style={{ fontSize: 20 }}>settings_applications</span>
                         Konfigurasi Opname
                     </h3>
 
-                    <div className="form-group" style={{ marginBottom: 16 }}>
-                        <label className="form-label">Lokasi Pabrik</label>
-                        <select
-                            className="form-control"
-                            value={selectedFactory}
-                            onChange={(e) => setSelectedFactory(e.target.value ? Number(e.target.value) : '')}
-                            disabled={isLoadingFactories || isSubmitting}
-                        >
-                            <option value="">-- Pilih Pabrik --</option>
-                            {factories.map((f) => (
-                                <option key={f.id} value={f.id}>{f.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                        <div>
+                            <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2">Lokasi Pabrik</label>
+                            <select
+                                className="form-control"
+                                style={{ background: 'var(--bg-surface)', border: 'none' }}
+                                value={selectedFactory}
+                                onChange={(e) => setSelectedFactory(e.target.value ? Number(e.target.value) : '')}
+                                disabled={isLoadingFactories || isSubmitting}
+                            >
+                                <option value="">-- Pilih Pabrik --</option>
+                                {factories.map((f) => (
+                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="form-group" style={{ marginBottom: 16 }}>
-                        <label className="form-label">Tanggal Pelaksanaan</label>
-                        <input
-                            type="date"
-                            required
-                            className="form-control"
-                            value={opnameDate}
-                            onChange={(e) => setOpnameDate(e.target.value)}
-                            disabled={isSubmitting}
-                        />
-                    </div>
+                        <div>
+                            <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2">Tanggal Pelaksanaan</label>
+                            <input
+                                type="date"
+                                required
+                                className="form-control"
+                                style={{ background: 'var(--bg-surface)', border: 'none' }}
+                                value={opnameDate}
+                                onChange={(e) => setOpnameDate(e.target.value)}
+                                disabled={isSubmitting}
+                            />
+                        </div>
 
-                    <div className="form-group" style={{ marginBottom: 24 }}>
-                        <label className="form-label">Keterangan (Opsional)</label>
-                        <textarea
-                            rows={3}
-                            className="form-control"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Contoh: Stok opname rutin bulan berjalan..."
-                            disabled={isSubmitting}
-                        />
+                        <div>
+                            <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2">Keterangan</label>
+                            <textarea
+                                rows={4}
+                                className="form-control"
+                                style={{ background: 'var(--bg-surface)', border: 'none', resize: 'none' }}
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Contoh: Stok opname rutin bulan berjalan..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
                     </div>
 
                     <button
                         type="button"
                         className="btn btn-primary"
-                        style={{ width: '100%', justifyContent: 'center' }}
+                        style={{
+                            width: '100%', justifyContent: 'center', height: 48,
+                            background: 'linear-gradient(135deg, var(--warning), #f59e0b)', border: 'none'
+                        }}
                         disabled={isSubmitting || opnameItems.length === 0}
                         onClick={handleSubmit}
                     >
                         {isSubmitting ? (
-                            <><span className="material-symbols-outlined animate-spin icon-sm">sync</span> Menyimpan...</>
+                            <><span className="material-symbols-outlined animate-spin icon-sm mr-2">sync</span> Menyimpan...</>
                         ) : (
-                            <><span className="material-symbols-outlined icon-sm">save</span> Simpan Stock Opname</>
+                            <><span className="material-symbols-outlined icon-sm mr-2">save</span> Simpan Perhitungan</>
                         )}
                     </button>
                 </div>
 
                 {/* Right Table: Items List */}
-                <div className="card" style={{ gridColumn: 'span 2' }}>
-                    <div className="card-header" style={{ padding: 20, display: 'flex', justifyContent: 'space-between' }}>
-                        <h3 className="card-title text-lg">Worksheet Perhitungan Fisik</h3>
+                <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Worksheet Perhitungan Fisik</h3>
                         {isLoadingStock && (
-                            <span className="text-secondary text-sm flex items-center" style={{ gap: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span className="material-symbols-outlined animate-spin icon-sm">sync</span>
-                                Memuat data...
+                                DATA SYNCING...
                             </span>
                         )}
                     </div>
 
-                    <div className="table-container">
+                    <div className="table-responsive">
                         {selectedFactory === '' ? (
-                            <div style={{ padding: 80, textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 12 }}>warehouse</span>
-                                <p>Silakan pilih lokasi pabrik di panel samping terlebih dahulu</p>
+                            <div style={{ padding: '100px 24px', textAlign: 'center' }}>
+                                <div style={{
+                                    width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-elevated)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+                                    color: 'var(--text-muted)'
+                                }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 40 }}>warehouse</span>
+                                </div>
+                                <h3 style={{ color: 'var(--text-primary)', margin: 0 }}>Tentukan Lokasi</h3>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>Silakan pilih lokasi pabrik di panel samping untuk memulai perhitungan.</p>
                             </div>
                         ) : stockItems.length === 0 && !isLoadingStock ? (
-                            <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 12 }}>inventory_2</span>
-                                <p>Tidak ada data stok (0 items) di pabrik ini.</p>
+                            <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+                                <div style={{
+                                    width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-elevated)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+                                    color: 'var(--text-muted)'
+                                }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 40 }}>inventory_2</span>
+                                </div>
+                                <h3 style={{ color: 'var(--text-primary)', margin: 0 }}>Gudang Kosong</h3>
+                                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>Tidak ada data stok (0 items) ditemukan di pabrik ini.</p>
                             </div>
                         ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <table className="table-premium">
                                 <thead>
                                     <tr>
-                                        <th className="text-left" style={{ padding: '12px 16px' }}>Produk</th>
-                                        <th className="text-right" style={{ padding: '12px 16px', width: 120 }}>Sistem (Kg)</th>
-                                        <th className="text-right" style={{ padding: '12px 16px', width: 120 }}>Fisik (Kg)</th>
-                                        <th className="text-right" style={{ padding: '12px 16px', width: 100 }}>Selisih</th>
-                                        <th className="text-left" style={{ padding: '12px 16px' }}>Catatan</th>
+                                        <th style={{ paddingLeft: 24 }}>Produk & Kategori</th>
+                                        <th style={{ textAlign: 'right' }}>Sistem (Kg)</th>
+                                        <th style={{ textAlign: 'center', width: 140 }}>Fisik (Kg)</th>
+                                        <th style={{ textAlign: 'right', width: 120 }}>Selisih</th>
+                                        <th style={{ paddingRight: 24 }}>Catatan Perubahan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {opnameItems.map((item) => {
-                                        const diffColor = item.difference > 0 ? '#10b981' : item.difference < 0 ? '#ef4444' : 'inherit';
-
+                                        const isDiff = item.difference !== 0;
                                         return (
-                                            <tr key={item.id_stock} style={{ backgroundColor: item.difference !== 0 ? 'rgba(245, 158, 11, 0.05)' : '' }}>
-                                                <td style={{ padding: '12px 16px' }}>
-                                                    <div className="font-bold">{item.name}</div>
-                                                    <div className="text-xs text-secondary">{item.category}</div>
+                                            <tr key={item.id_stock} className="premium-row" style={{ background: isDiff ? 'rgba(245, 158, 11, 0.03)' : '' }}>
+                                                <td style={{ paddingLeft: 24 }}>
+                                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{item.name}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>{item.category}</div>
                                                 </td>
-                                                <td className="text-right font-mono" style={{ padding: '12px 16px' }}>
-                                                    {formatNumber(item.system_quantity)}
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <span style={{ fontWeight: 800, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                                                        {formatNumber(item.system_quantity)}
+                                                    </span>
                                                 </td>
-                                                <td style={{ padding: '8px 16px' }}>
+                                                <td style={{ textAlign: 'center' }}>
                                                     <input
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
-                                                        className="form-control text-right"
+                                                        className="form-control"
                                                         style={{
-                                                            width: '100%',
+                                                            width: '100px',
+                                                            textAlign: 'right',
                                                             padding: '6px 10px',
-                                                            borderColor: item.difference !== 0 ? 'var(--warning-color)' : ''
+                                                            background: 'var(--bg-surface)',
+                                                            border: isDiff ? '1px solid var(--warning)' : '1px solid var(--border-subtle)',
+                                                            fontSize: 13, fontWeight: 700, margin: '0 auto'
                                                         }}
                                                         value={item.actual_quantity}
                                                         onChange={(e) => handleActualQuantityChange(item.id_stock, e.target.value)}
                                                         disabled={isSubmitting}
                                                     />
                                                 </td>
-                                                <td className="text-right font-mono font-bold" style={{ padding: '12px 16px', color: diffColor }}>
-                                                    {item.difference > 0 ? '+' : ''}{formatNumber(item.difference)}
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <div style={{
+                                                        fontWeight: 800,
+                                                        color: item.difference > 0 ? 'var(--success)' : item.difference < 0 ? 'var(--error)' : 'var(--text-muted)',
+                                                        fontFamily: 'monospace'
+                                                    }}>
+                                                        {item.difference > 0 ? '+' : ''}{formatNumber(item.difference)}
+                                                    </div>
                                                 </td>
-                                                <td style={{ padding: '8px 16px' }}>
+                                                <td style={{ paddingRight: 24 }}>
                                                     <input
                                                         type="text"
-                                                        className="form-control text-sm"
-                                                        style={{ width: '100%', padding: '6px 10px' }}
+                                                        className="form-control"
+                                                        style={{
+                                                            width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-subtle)',
+                                                            fontSize: 12, borderRadius: 0, padding: '4px 0'
+                                                        }}
                                                         value={item.notes}
                                                         onChange={(e) => handleNotesChange(item.id_stock, e.target.value)}
-                                                        placeholder={item.difference !== 0 ? "Alasan selisih..." : ""}
+                                                        placeholder={isDiff ? "Alasan selisih..." : "Tambahkan catatan..."}
                                                         disabled={isSubmitting}
                                                     />
                                                 </td>

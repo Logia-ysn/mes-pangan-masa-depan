@@ -192,132 +192,217 @@ const DryingLogs = () => {
 
     return (
         <div className="page-content">
-            <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 className="card-title">Drying Log (Pengeringan)</h2>
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setIsModalOpen(true); }}>
-                        <span className="material-symbols-outlined icon-sm">add</span>
-                        Tambah Log
-                    </button>
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 16,
+                        background: 'linear-gradient(135deg, var(--warning), #fbbf24)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.2)'
+                    }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 32 }}>sunny</span>
+                    </div>
+                    <div>
+                        <h1 className="page-title" style={{ margin: 0 }}>Drying Log (Pengeringan)</h1>
+                        <p className="page-subtitle">Monitor kadar air dan penyusutan bahan baku</p>
+                    </div>
+                </div>
+                <button className="btn btn-primary" style={{ paddingLeft: 20, paddingRight: 24 }} onClick={() => { resetForm(); setIsModalOpen(true); }}>
+                    <span className="material-symbols-outlined" style={{ marginRight: 8 }}>add_circle</span>
+                    Tambah Log Baru
+                </button>
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="grid grid-4" style={{ gap: 20, marginBottom: 24 }}>
+                <div className="glass-card premium-hover" style={{ padding: 20, borderLeft: '4px solid var(--primary)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em' }}>TOTAL BATCH</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{totalItems}</div>
+                </div>
+                <div className="glass-card premium-hover" style={{ padding: 20, borderLeft: '4px solid var(--warning)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em' }}>AVG SHRINKAGE</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {logs.length > 0 ? (logs.reduce((acc, curr) => acc + (curr.shrinkage_pct || 0), 0) / logs.length).toFixed(2) : 0}%
+                    </div>
+                </div>
+                <div className="glass-card premium-hover" style={{ padding: 20, borderLeft: '4px solid var(--success)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em' }}>AVG MOISTURE (OUT)</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {logs.length > 0 ? (logs.reduce((acc, curr) => acc + (curr.final_moisture || 0), 0) / logs.length).toFixed(1) : 0}%
+                    </div>
+                </div>
+                <div className="glass-card premium-hover" style={{ padding: 20, borderLeft: '4px solid #8b5cf6' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em' }}>AVG PROCESS TIME</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {logs.length > 0 ? (logs.reduce((acc, curr) => acc + (curr.downtime_hours || 0), 0) / logs.length).toFixed(1) : 0}d
+                    </div>
+                </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', gap: 16 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 20 }}>search</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            style={{ paddingLeft: 40, border: 'none', background: 'var(--bg-surface)' }}
+                            placeholder="Cari Batch Code (Gbh-xxxx)..."
+                            value={searchBatch}
+                            onChange={(e) => {
+                                setSearchBatch(e.target.value);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+                    <select
+                        className="form-control"
+                        style={{ width: 220, border: 'none', background: 'var(--bg-surface)' }}
+                        value={selectedFactory}
+                        onChange={(e) => {
+                            setSelectedFactory(e.target.value);
+                            setPage(1);
+                        }}
+                    >
+                        <option value="">Semua Pabrik</option>
+                        {factories.map(f => (
+                            <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                    </select>
                 </div>
 
-                <div className="card-body">
-                    <div className="filters-container" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                        <div className="form-group" style={{ minWidth: 200, marginBottom: 0 }}>
-                            <select
-                                className="form-control"
-                                value={selectedFactory}
-                                onChange={(e) => {
-                                    setSelectedFactory(e.target.value);
-                                    setPage(1);
-                                }}
-                            >
-                                <option value="">Semua Pabrik</option>
-                                {factories.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                            <div className="input-icon">
-                                <span className="material-symbols-outlined">search</span>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Cari Batch Code..."
-                                    value={searchBatch}
-                                    onChange={(e) => {
-                                        setSearchBatch(e.target.value);
-                                        setPage(1);
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
+                <div className="card-body" style={{ padding: 0 }}>
                     {loading ? (
-                        <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            <LogoLoader />
-                        </div>
+                        <div style={{ padding: '100px 0', textAlign: 'center' }}><LogoLoader /></div>
                     ) : logs.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>sunny</span>
-                            <p>Tidak ada catatan pengeringan ditemukan.</p>
+                        <div className="empty-state" style={{ padding: '100px 24px' }}>
+                            <div style={{
+                                width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-elevated)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
+                                color: 'var(--text-muted)'
+                            }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 40 }}>data_loss_prevention</span>
+                            </div>
+                            <h3>Tidak ada catatan pengeringan</h3>
+                            <p>Sesuaikan filter atau klik "Tambah Log" untuk merekam data baru.</p>
                         </div>
                     ) : (
-                        <>
-                            <div className="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Tanggal</th>
-                                            <th>Batch Code</th>
-                                            <th>Metode</th>
-                                            <th style={{ textAlign: 'right' }}>Berat Awal (kg)</th>
-                                            <th style={{ textAlign: 'right' }}>Berat Akhir (kg)</th>
-                                            <th style={{ textAlign: 'right' }}>K.A. Awal (%)</th>
-                                            <th style={{ textAlign: 'right' }}>K.A. Akhir (%)</th>
-                                            <th style={{ textAlign: 'right' }}>Total Susut</th>
-                                            <th>Analis</th>
-                                            <th style={{ textAlign: 'center' }}>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {logs.map((log) => (
-                                            <tr key={log.id}>
-                                                <td>{new Date(log.drying_date).toLocaleDateString()}</td>
-                                                <td>
-                                                    <span className="badge badge-primary">{log.batch_code}</span>
-                                                </td>
-                                                <td>{log.method.replace('_', ' ')}</td>
-                                                <td style={{ textAlign: 'right' }}>{Number(log.initial_weight).toLocaleString('id-ID')}</td>
-                                                <td style={{ textAlign: 'right' }}>{Number(log.final_weight).toLocaleString('id-ID')}</td>
-                                                <td style={{ textAlign: 'right' }}>{log.initial_moisture ? Number(log.initial_moisture).toFixed(1) : '-'}</td>
-                                                <td style={{ textAlign: 'right' }}>{log.final_moisture ? Number(log.final_moisture).toFixed(1) : '-'}</td>
-                                                <td style={{ textAlign: 'right' }}>
-                                                    {log.shrinkage_kg ? (
-                                                        <div style={{ color: 'var(--danger-color)', fontWeight: 500 }}>
-                                                            {Number(log.shrinkage_pct).toFixed(2)}%
-                                                            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                                                ({Number(log.shrinkage_kg).toLocaleString('id-ID')} kg)
-                                                            </div>
-                                                        </div>
-                                                    ) : '-'}
-                                                </td>
-                                                <td>{log.User?.fullname || '-'}</td>
-                                                <td style={{ textAlign: 'center' }}>
-                                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                                                        <button
-                                                            className="btn btn-ghost btn-icon btn-sm"
-                                                            onClick={() => handleEdit(log)}
-                                                            title="Edit"
-                                                        >
-                                                            <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: 18 }}>edit</span>
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-ghost btn-icon btn-sm"
-                                                            onClick={() => handleDelete(log.id)}
-                                                            title="Hapus"
-                                                        >
-                                                            <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 18 }}>delete</span>
-                                                        </button>
+                        <div className="table-responsive">
+                            <table className="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th style={{ paddingLeft: 24 }}>Batch & Tanggal</th>
+                                        <th>Metode</th>
+                                        <th style={{ textAlign: 'center' }}>Proses</th>
+                                        <th style={{ textAlign: 'center' }}>Moisture (%)</th>
+                                        <th style={{ textAlign: 'center' }}>Susut (%)</th>
+                                        <th>Operator</th>
+                                        <th style={{ textAlign: 'center' }}>Detail</th>
+                                        <th style={{ textAlign: 'right', paddingRight: 24 }}>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {logs.map((log) => (
+                                        <tr key={log.id} className="premium-row">
+                                            <td style={{ paddingLeft: 24 }}>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{log.batch_code}</div>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12 }}>calendar_today</span>
+                                                    {new Date(log.drying_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{
+                                                        width: 32, height: 32, borderRadius: 8,
+                                                        background: log.method === 'SUN_DRY' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(19, 127, 236, 0.1)',
+                                                        color: log.method === 'SUN_DRY' ? 'var(--warning)' : 'var(--primary)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                    }}>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                                                            {log.method === 'SUN_DRY' ? 'wb_sunny' : 'cyclone'}
+                                                        </span>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <Pagination
-                                currentPage={page}
-                                totalPages={totalPages}
-                                onPageChange={setPage}
-                                totalItems={totalItems}
-                                itemsPerPage={ITEMS_PER_PAGE}
-                            />
-                        </>
+                                                    <span style={{ fontSize: 13, fontWeight: 500 }}>
+                                                        {log.method === 'SUN_DRY' ? 'Sun Dry' : (log.method === 'MECHANICAL_DRYER' ? 'Mechanical' : 'Mixed')}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: 14, fontWeight: 700 }}>{log.initial_weight.toLocaleString('id-ID')}</div>
+                                                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kg Input</div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: 12, fontWeight: 600 }}>{log.initial_moisture || '-'}</div>
+                                                        <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>IN</div>
+                                                    </div>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--border-color)' }}>arrow_forward</span>
+                                                    <div style={{ textAlign: 'left' }}>
+                                                        <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--success)' }}>{log.final_moisture || '-'}</div>
+                                                        <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>OUT</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                {log.shrinkage_pct ? (
+                                                    <div style={{
+                                                        display: 'inline-flex', padding: '4px 10px', borderRadius: 20,
+                                                        background: 'rgba(244, 63, 94, 0.1)', color: 'var(--error)',
+                                                        fontSize: 12, fontWeight: 800, alignItems: 'center', gap: 4
+                                                    }}>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>trending_down</span>
+                                                        {Number(log.shrinkage_pct).toFixed(2)}%
+                                                    </div>
+                                                ) : '-'}
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+                                                        {log.User?.fullname?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{log.User?.fullname || 'System'}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                {log.notes && (
+                                                    <span
+                                                        className="material-symbols-outlined"
+                                                        style={{ color: 'var(--text-muted)', cursor: 'help', fontSize: 18 }}
+                                                        title={log.notes}
+                                                    >info</span>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'right', paddingRight: 24 }}>
+                                                <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleEdit(log)}>
+                                                        <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: 18 }}>edit</span>
+                                                    </button>
+                                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(log.id)}>
+                                                        <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 18 }}>delete</span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
+
+                {logs.length > 0 && (
+                    <div style={{ padding: '0 24px 20px' }}>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                            totalItems={totalItems}
+                        />
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (

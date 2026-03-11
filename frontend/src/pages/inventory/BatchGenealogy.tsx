@@ -45,52 +45,92 @@ export default function BatchGenealogy() {
 
     const renderNode = (node: GenealogyData, isRoot = false) => {
         return (
-            <div className={`mt-4 ${!isRoot ? 'ml-8 relative' : ''}`}>
+            <div className={`mt-6 ${!isRoot ? 'ml-10 relative' : ''}`}>
                 {!isRoot && (
-                    <div className="absolute -left-6 top-6 bottom-0 w-4 border-l-2 border-b-2 border-border rounded-bl" />
+                    <div style={{
+                        position: 'absolute', left: '-24px', top: '24px', bottom: 0, width: '24px',
+                        borderLeft: '2px dashed rgba(255, 255, 255, 0.1)',
+                        borderBottom: '2px dashed rgba(255, 255, 255, 0.1)',
+                        borderRadius: '0 0 0 12px'
+                    }} />
                 )}
-                <div className={`p-4 border rounded-lg bg-card shadow-sm z-10 relative ${isRoot ? 'ring-2 ring-primary' : ''}`}>
-                    <div className="flex justify-between">
-                        <div className="flex items-center gap-2">
-                            <Database className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-bold text-lg">{node.batch_code}</span>
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-muted whitespace-nowrap">{node.type}</span>
+                <div className={`glass-card relative z-10 transition-all hover:scale-[1.01] ${isRoot ? 'border-primary shadow-lg shadow-primary/20' : ''}`} style={{ padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                                width: 36, height: 36, borderRadius: 10, background: 'rgba(59, 130, 246, 0.1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6'
+                            }}>
+                                <Database className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text-primary)' }}>{node.batch_code}</div>
+                                <span style={{
+                                    padding: '2px 8px', fontSize: 10, fontWeight: 700, borderRadius: 6,
+                                    background: 'var(--bg-elevated)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px'
+                                }}>{node.type}</span>
+                            </div>
                         </div>
                         {node.quantity && (
-                            <div className="font-semibold">{Number(node.quantity).toLocaleString('id-ID')} kg</div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{Number(node.quantity).toLocaleString('id-ID')}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>KILOGRAM (KG)</div>
+                            </div>
                         )}
                     </div>
 
-                    <div className="mt-2 text-sm">
+                    <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                         {node.product_name && (
-                            <div className="flex items-center gap-1.5 text-primary font-medium">
-                                <Package className="h-4 w-4" /> {node.product_name}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Package className="h-4 w-4 text-primary" />
+                                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{node.product_name}</span>
                             </div>
                         )}
                         {node.date && (
-                            <div className="flex items-center gap-1.5 text-muted-foreground mt-1">
-                                <Calendar className="h-3.5 w-3.5" />
-                                {format(new Date(node.date), 'dd MMM yyyy HH:mm')}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Calendar className="h-4 w-4 text-slate-500" />
+                                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{format(new Date(node.date), 'dd MMM yyyy HH:mm')}</span>
                             </div>
                         )}
                     </div>
 
                     {node.details && Object.keys(node.details).length > 0 && (
-                        <div className="mt-3 bg-muted/30 p-2 rounded grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                            {node.details.factory && <div>Factory: {node.details.factory}</div>}
-                            {node.details.shift && <div>Shift: {node.details.shift}</div>}
-                            {node.details.worksheet_id && (
-                                <div className="flex gap-1 items-center">
-                                    <FileText className="h-3 w-3" /> WO/WS ID: {node.details.worksheet_id}
+                        <div style={{
+                            marginTop: 16, padding: '12px 16px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.02)',
+                            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, border: '1px solid rgba(255, 255, 255, 0.05)'
+                        }}>
+                            {node.details.factory && (
+                                <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Factory</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600 }}>{node.details.factory}</div>
                                 </div>
                             )}
-                            {node.details.invoice_id && <div>Invoice: {node.details.invoice_id}</div>}
+                            {node.details.shift && (
+                                <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Shift</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600 }}>{node.details.shift}</div>
+                                </div>
+                            )}
+                            {node.details.worksheet_id && (
+                                <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Process ID</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <FileText className="h-3 w-3" /> {node.details.worksheet_id}
+                                    </div>
+                                </div>
+                            )}
+                            {node.details.invoice_id && (
+                                <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Invoice</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600 }}>{node.details.invoice_id}</div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
                 {node.children && node.children.length > 0 && (
-                    <div className="ml-4 border-l-2 border-border">
+                    <div style={{ borderLeft: '2px solid rgba(255, 255, 255, 0.05)', marginLeft: 16 }}>
                         {node.children.map((child, idx) => (
                             <div key={idx}>{renderNode(child, false)}</div>
                         ))}
@@ -101,61 +141,84 @@ export default function BatchGenealogy() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-end">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Batch Genealogy</h1>
-                    <p className="text-muted-foreground">Telusuri asal-usul produksi (Traceability)</p>
+        <div className="page-content">
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 16,
+                        background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', boxShadow: '0 8px 16px rgba(19, 127, 236, 0.2)'
+                    }}>
+                        <Search className="h-8 w-8" />
+                    </div>
+                    <div>
+                        <h1 className="page-title" style={{ margin: 0 }}>Batch Genealogy</h1>
+                        <p className="page-subtitle">Telusuri asal-usul produksi dan rantai pasokan (End-to-End Traceability)</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="p-6 bg-card border rounded-lg shadow-sm">
-                <div className="flex max-w-2xl mx-auto gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            className="pl-9 pr-4 py-2 w-full border rounded-md"
-                            placeholder="Masukkan Kode Batch..."
-                            value={searchInput}
-                            onChange={e => setSearchInput(e.target.value)}
-                        />
+            <div className="glass-card" style={{ padding: '32px' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div style={{ position: 'relative', display: 'flex', gap: 12 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                            <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, color: 'var(--text-muted)' }} />
+                            <input
+                                type="text"
+                                className="form-control"
+                                style={{ paddingLeft: 48, height: 56, fontSize: 16, background: 'var(--bg-surface)', border: 'none' }}
+                                placeholder="Masukkan Kode Batch Produksi / Material..."
+                                value={searchInput}
+                                onChange={e => setSearchInput(e.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => fetchTrace('BACKWARD')}
+                            disabled={loading || !searchInput}
+                            className="btn btn-secondary"
+                            style={{ height: 56, padding: '0 24px' }}
+                        >
+                            <ArrowLeft className="h-5 w-5 mr-2" /> Backward Trace
+                        </button>
+
+                        <button
+                            onClick={() => fetchTrace('FORWARD')}
+                            disabled={loading || !searchInput}
+                            className="btn btn-primary"
+                            style={{ height: 56, padding: '0 24px', background: 'linear-gradient(135deg, var(--primary), #3b82f6)', border: 'none' }}
+                        >
+                            Forward Trace <ArrowRight className="h-5 w-5 ml-2" />
+                        </button>
                     </div>
 
-                    <button
-                        onClick={() => fetchTrace('BACKWARD')}
-                        disabled={loading || !searchInput}
-                        className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md flex items-center gap-2 hover:bg-secondary/80 disabled:opacity-50"
-                    >
-                        <ArrowLeft className="h-4 w-4" /> Trace Backward
-                    </button>
-
-                    <button
-                        onClick={() => fetchTrace('FORWARD')}
-                        disabled={loading || !searchInput}
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
-                    >
-                        Trace Forward <ArrowRight className="h-4 w-4" />
-                    </button>
-                </div>
-
-                <div className="mt-2 text-center text-xs text-muted-foreground">
-                    Backward: Cari asal muasal bahan baku dari sebuah Finish Good Batch. <br />
-                    Forward: Cari ke mana gabah/bahan baku digunakan.
+                    <div style={{
+                        marginTop: 20, padding: '12px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.02)', fontSize: 12,
+                        color: 'var(--text-muted)', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}>
+                        <strong style={{ color: 'var(--primary)' }}>TIPS:</strong> Backward mencari asal muasal bahan baku. Forward mencari ke pemakaian produk akhir.
+                    </div>
                 </div>
             </div>
 
             {loading && (
-                <div className="py-20 text-center animate-pulse text-muted-foreground">
-                    Menganalisis pohon silsilah...
+                <div style={{ padding: '100px 0', textAlign: 'center' }}>
+                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-6"></div>
+                    <h3 style={{ margin: 0, fontSize: 18, color: 'var(--text-primary)' }}>Menganalisis Silsilah Batch</h3>
+                    <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Silakan tunggu sebentar, sistem sedang memetakan hubungan antar batch...</p>
                 </div>
             )}
 
             {!loading && treeData && (
-                <div className="max-w-4xl mx-auto pb-10">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        Hasil Penelusuran {viewMode === 'FORWARD' ? 'Maju' : 'Mundur'}
-                    </h3>
+                <div style={{ maxWidth: '900px', margin: '40px auto 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, padding: '0 8px' }}>
+                        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)' }}></div>
+                            Peta Silsilah {viewMode === 'FORWARD' ? 'Maju (Downstream)' : 'Mundur (Upstream)'}
+                        </h3>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', opacity: 0.6 }}>ROOT NODE: {treeData.batch_code}</span>
+                    </div>
                     {renderNode(treeData, true)}
                 </div>
             )}

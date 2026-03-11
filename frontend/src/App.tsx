@@ -22,7 +22,6 @@ const Worksheets = React.lazy(() => import('./pages/production/Worksheets'));
 const WorksheetDetail = React.lazy(() => import('./pages/production/WorksheetDetail'));
 const WorksheetForm = React.lazy(() => import('./pages/production/WorksheetForm'));
 const ProductionScheduling = React.lazy(() => import('./pages/production/ProductionScheduling'));
-const ShiftHandover = React.lazy(() => import('./pages/production/ShiftHandover'));
 const ProductionLines = React.lazy(() => import('./pages/production/ProductionLines'));
 const DryingLogs = React.lazy(() => import('./pages/production/DryingLogs'));
 const QCResults = React.lazy(() => import('./pages/production/QCResults'));
@@ -43,6 +42,7 @@ const BatchGenealogy = React.lazy(() => import('./pages/inventory/BatchGenealogy
 const Users = React.lazy(() => import('./pages/admin/Users'));
 const AuditLogs = React.lazy(() => import('./pages/admin/AuditLogs'));
 const Factories = React.lazy(() => import('./pages/admin/Factories'));
+const ProductTypes = React.lazy(() => import('./pages/admin/ProductTypes'));
 const NonConformance = React.lazy(() => import('./pages/quality/NonConformance'));
 
 import RoleGuard from './components/RoleGuard';
@@ -126,14 +126,10 @@ const AppRoutes = () => {
             <Route path="scheduling" element={
               <RoleGuard requiredRole="SUPERVISOR"><ProductionScheduling /></RoleGuard>
             } />
-            <Route path="shift-handover" element={
-              <RoleGuard requiredRole="OPERATOR"><ShiftHandover /></RoleGuard>
-            } />
           </Route>
 
           {/* ===== Kualitas Module ===== */}
           <Route path="quality">
-            <Route path="parameters" element={<div>Coming Soon</div>} />
             <Route path="ncr" element={<NonConformance />} />
           </Route>
 
@@ -187,7 +183,9 @@ const AppRoutes = () => {
             <Route path="factories" element={
               <RoleGuard requiredRole="ADMIN"><Factories /></RoleGuard>
             } />
-            <Route path="product-types" element={<div>Coming Soon</div>} />
+            <Route path="product-types" element={
+              <RoleGuard requiredRole="ADMIN"><ProductTypes /></RoleGuard>
+            } />
           </Route>
 
           {/* Legacy routes - redirect to new paths */}

@@ -170,6 +170,8 @@ export const productTypeApi = {
     getAll: (params?: Record<string, any>) => api.get('/product-types', { params }),
     getById: (id: number) => api.get(`/product-types/${id}`),
     create: (data: Record<string, any>) => api.post('/product-types', data),
+    update: (id: number, data: Record<string, any>) => api.put(`/product-types/${id}`, data),
+    delete: (id: number) => api.delete(`/product-types/${id}`),
 };
 
 // Suppliers

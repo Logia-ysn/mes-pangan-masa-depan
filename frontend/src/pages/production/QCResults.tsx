@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { qcResultApi, factoryApi } from '../../services/api';
+import { factoryApi, qcResultApi } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import Pagination from '../../components/UI/Pagination';
+import { Plus, Search, FlaskConical, Edit2, Trash2, X, Factory as FactoryIcon, CheckCircle2, AlertTriangle, XCircle, Calendar } from 'lucide-react';
 
 interface Factory {
     id: number;
@@ -179,164 +180,215 @@ const QCResults = () => {
 
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
+    const getGradeBadge = (grade: string | null) => {
+        if (!grade) return <span className="text-slate-400 font-medium">-</span>;
+        switch (grade.toLowerCase()) {
+            case 'premium':
+                return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle2 className="w-3.5 h-3.5" /> Premium</span>;
+            case 'medium':
+                return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200"><CheckCircle2 className="w-3.5 h-3.5" /> Medium</span>;
+            case 'reject':
+                return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200"><XCircle className="w-3.5 h-3.5" /> Reject</span>;
+            default:
+                return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200"><AlertTriangle className="w-3.5 h-3.5" /> {grade}</span>;
+        }
+    };
+
     return (
         <div className="page-content">
-            <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 className="card-title">QC Produk Jadi (Beras)</h2>
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setIsModalOpen(true); }}>
-                        <span className="material-symbols-outlined icon-sm">add</span>
-                        Input Hasil QC
-                    </button>
-                </div>
-
-                <div className="card-body">
-                    <div className="filters-container" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                        <div className="form-group" style={{ minWidth: 200, marginBottom: 0 }}>
-                            <select
-                                className="form-control"
-                                value={selectedFactory}
-                                onChange={(e) => {
-                                    setSelectedFactory(e.target.value);
-                                    setPage(1);
-                                }}
-                            >
-                                <option value="">Semua Pabrik</option>
-                                {factories.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                            <div className="input-icon">
-                                <span className="material-symbols-outlined">search</span>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Cari Batch Code..."
-                                    value={searchBatch}
-                                    onChange={(e) => {
-                                        setSearchBatch(e.target.value);
-                                        setPage(1);
-                                    }}
-                                />
-                            </div>
-                        </div>
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 16,
+                        background: 'linear-gradient(135deg, var(--primary), #8b5cf6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', boxShadow: '0 8px 16px rgba(139, 92, 246, 0.2)'
+                    }}>
+                        <FlaskConical className="h-8 w-8" />
                     </div>
-
-                    {loading ? (
-                        <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            <span className="material-symbols-outlined rotating" style={{ fontSize: 32 }}>sync</span>
-                            <div style={{ marginTop: 8 }}>Memuat data...</div>
-                        </div>
-                    ) : results.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>science</span>
-                            <p>Tidak ada hasil QC ditemukan.</p>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Tanggal QC</th>
-                                            <th>Batch Code</th>
-                                            <th style={{ textAlign: 'center' }}>Kadar Air (%)</th>
-                                            <th style={{ textAlign: 'center' }}>Broken (%)</th>
-                                            <th style={{ textAlign: 'center' }}>Derajat Sosoh</th>
-                                            <th style={{ textAlign: 'center' }}>Grade Akhir</th>
-                                            <th>Analis</th>
-                                            <th style={{ textAlign: 'center' }}>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {results.map((res) => (
-                                            <tr key={res.id}>
-                                                <td>{new Date(res.qc_date).toLocaleDateString()}</td>
-                                                <td>
-                                                    {res.batch_code ? (
-                                                        <span className="badge badge-primary">{res.batch_code}</span>
-                                                    ) : '-'}
-                                                    {res.Worksheet && (
-                                                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-                                                            WS: {res.Worksheet.batch_code || `#${res.Worksheet.id}`}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td style={{ textAlign: 'center' }}>{res.moisture_content ? Number(res.moisture_content).toFixed(1) : '-'}</td>
-                                                <td style={{ textAlign: 'center' }}>{res.broken_percentage ? Number(res.broken_percentage).toFixed(1) : '-'}</td>
-                                                <td style={{ textAlign: 'center' }}>{res.whiteness_degree ? Number(res.whiteness_degree).toFixed(1) : '-'}</td>
-                                                <td style={{ textAlign: 'center' }}>
-                                                    {res.grade ? (
-                                                        <span className={`badge ${res.grade === 'Premium' ? 'badge-success' : res.grade === 'Medium' ? 'badge-warning' : 'badge-secondary'}`}>
-                                                            {res.grade}
-                                                        </span>
-                                                    ) : '-'}
-                                                </td>
-                                                <td>{res.User?.fullname || '-'}</td>
-                                                <td style={{ textAlign: 'center' }}>
-                                                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                                                        <button
-                                                            className="btn btn-ghost btn-icon btn-sm"
-                                                            onClick={() => handleEdit(res)}
-                                                            title="Edit"
-                                                        >
-                                                            <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: 18 }}>edit</span>
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-ghost btn-icon btn-sm"
-                                                            onClick={() => handleDelete(res.id)}
-                                                            title="Hapus"
-                                                        >
-                                                            <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: 18 }}>delete</span>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <Pagination
-                                currentPage={page}
-                                totalPages={totalPages}
-                                onPageChange={setPage}
-                                totalItems={totalItems}
-                                itemsPerPage={ITEMS_PER_PAGE}
-                            />
-                        </>
-                    )}
+                    <div>
+                        <h1 className="page-title" style={{ margin: 0 }}>QC Produk Jadi</h1>
+                        <p className="page-subtitle">Inspeksi kualitas harian dan penentuan grade hasil giling</p>
+                    </div>
                 </div>
+                <button
+                    className="btn btn-primary"
+                    style={{ paddingLeft: 20, paddingRight: 24 }}
+                    onClick={() => { resetForm(); setIsModalOpen(true); }}
+                >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Input Hasil QC
+                </button>
             </div>
 
+            <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', gap: 16 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            className="form-control"
+                            style={{ paddingLeft: 40, border: 'none', background: 'var(--bg-surface)' }}
+                            placeholder="Cari Batch Code..."
+                            value={searchBatch}
+                            onChange={(e) => {
+                                setSearchBatch(e.target.value);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <FactoryIcon className="w-5 h-5 text-slate-400" />
+                        <select
+                            className="form-control"
+                            style={{ width: 220, border: 'none', background: 'var(--bg-surface)' }}
+                            value={selectedFactory}
+                            onChange={(e) => {
+                                setSelectedFactory(e.target.value);
+                                setPage(1);
+                            }}
+                        >
+                            <option value="">Semua Pabrik</option>
+                            {factories.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="card-body" style={{ padding: 0 }}>
+                    {loading ? (
+                        <div style={{ padding: '100px 0', textAlign: 'center' }}>
+                            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                            <span className="text-sm font-bold text-slate-400 tracking-widest uppercase">Analyzing Quality Data</span>
+                        </div>
+                    ) : results.length === 0 ? (
+                        <div className="empty-state" style={{ padding: '100px 24px' }}>
+                            <div style={{
+                                width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-elevated)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
+                                color: 'var(--text-muted)'
+                            }}>
+                                <FlaskConical className="h-10 w-10" />
+                            </div>
+                            <h3>Tidak ada hasil QC</h3>
+                            <p>Sesuaikan filter atau klik "Input Hasil QC" untuk merekam data baru.</p>
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th style={{ paddingLeft: 24 }}>Batch & Tanggal</th>
+                                        <th style={{ textAlign: 'center' }}>K.A (%)</th>
+                                        <th style={{ textAlign: 'center' }}>Patah (%)</th>
+                                        <th style={{ textAlign: 'center' }}>Sosoh (%)</th>
+                                        <th style={{ textAlign: 'center' }}>Grade Akhir</th>
+                                        <th>Analis</th>
+                                        <th style={{ textAlign: 'right', paddingRight: 24 }}>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {results.map((res) => (
+                                        <tr key={res.id} className="premium-row">
+                                            <td style={{ paddingLeft: 24 }}>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{res.batch_code || '-'}</div>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <Calendar className="h-3 w-3" />
+                                                    {new Date(res.qc_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{
+                                                    fontSize: 14, fontWeight: 800,
+                                                    color: Number(res.moisture_content) > 14 ? 'var(--error)' : 'var(--text-primary)'
+                                                }}>
+                                                    {res.moisture_content ? Number(res.moisture_content).toFixed(1) : '-'}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: 14, fontWeight: 700 }}>{res.broken_percentage ? Number(res.broken_percentage).toFixed(1) : '-'}</div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: 14, fontWeight: 700 }}>{res.whiteness_degree ? Number(res.whiteness_degree).toFixed(1) : '-'}</div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                {getGradeBadge(res.grade)}
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+                                                        {res.User?.fullname?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{res.User?.fullname || 'System'}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'right', paddingRight: 24 }}>
+                                                <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleEdit(res)}>
+                                                        <Edit2 className="w-4 h-4 text-primary" />
+                                                    </button>
+                                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(res.id)}>
+                                                        <Trash2 className="w-4 h-4 text-error" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {results.length > 0 && (
+                    <div style={{ padding: '0 24px 20px' }}>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                            totalItems={totalItems}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Modal Input/Edit */}
             {isModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">{isEditMode ? 'Edit Hasil QC Produk Jadi' : 'Input Hasil QC Produk Jadi'}</h3>
-                            <button className="modal-close" onClick={() => setIsModalOpen(false)}>
-                                <span className="material-symbols-outlined">close</span>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-card w-full max-w-2xl rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="px-6 py-4 border-b flex justify-between items-center bg-muted/30">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <FlaskConical className="w-5 h-5 text-primary" />
+                                {isEditMode ? 'Edit Hasil QC Produk Jadi' : 'Input Hasil QC Produk Jadi'}
+                            </h3>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-muted-foreground hover:bg-muted p-1.5 rounded-md transition-colors"
+                            >
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleFormSubmit}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Tanggal QC</label>
+
+                        <div className="p-6 overflow-y-auto">
+                            <form id="qcForm" onSubmit={handleFormSubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Tanggal QC <span className="text-red-500">*</span></label>
                                         <input
                                             type="date"
-                                            className="form-control"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             name="qc_date"
                                             value={formData.qc_date}
                                             onChange={handleFormChange}
                                             required
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Pabrik</label>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Pabrik <span className="text-red-500">*</span></label>
                                         <select
-                                            className="form-control"
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             name="id_factory"
                                             value={formData.id_factory}
                                             onChange={handleFormChange}
@@ -348,67 +400,74 @@ const QCResults = () => {
                                         </select>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label className="form-label">Batch Code</label>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Batch Code</label>
                                         <input
                                             type="text"
-                                            className="form-control"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             name="batch_code"
                                             value={formData.batch_code}
                                             onChange={handleFormChange}
                                             placeholder="Contoh: BRS-20260226-001"
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">ID Worksheet (Opsional)</label>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">ID Worksheet (Opsional)</label>
                                         <input
                                             type="number"
-                                            className="form-control"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             name="id_worksheet"
                                             value={formData.id_worksheet}
                                             onChange={handleFormChange}
                                             placeholder="ID Worksheet terkait"
                                         />
                                     </div>
+                                </div>
 
-                                    <div className="form-group">
-                                        <label className="form-label">Kadar Air (%) (Target ≤ 14%)</label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            className="form-control"
-                                            name="moisture_content"
-                                            value={formData.moisture_content}
-                                            onChange={handleFormChange}
-                                        />
+                                <div className="bg-muted/30 p-4 rounded-lg border space-y-4">
+                                    <h4 className="font-semibold text-sm border-b pb-2">Parameter Kualitas</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex justify-between">Kadar Air (%) <span className="text-[10px] text-green-600">≤ 14%</span></label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary"
+                                                name="moisture_content"
+                                                value={formData.moisture_content}
+                                                onChange={handleFormChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex justify-between">Beras Patah (%)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary"
+                                                name="broken_percentage"
+                                                value={formData.broken_percentage}
+                                                onChange={handleFormChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex justify-between">Derajat Sosoh (%)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:border-primary"
+                                                name="whiteness_degree"
+                                                value={formData.whiteness_degree}
+                                                onChange={handleFormChange}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Derajat Sosoh (%)</label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            className="form-control"
-                                            name="whiteness_degree"
-                                            value={formData.whiteness_degree}
-                                            onChange={handleFormChange}
-                                        />
-                                    </div>
+                                </div>
 
-                                    <div className="form-group">
-                                        <label className="form-label">Beras Patah / Broken (%)</label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            className="form-control"
-                                            name="broken_percentage"
-                                            value={formData.broken_percentage}
-                                            onChange={handleFormChange}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Grade</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Keputusan Grade Akhir</label>
                                         <select
-                                            className="form-control"
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             name="grade"
                                             value={formData.grade}
                                             onChange={handleFormChange}
@@ -419,28 +478,42 @@ const QCResults = () => {
                                             <option value="Reject">Reject / Turun Mutu</option>
                                         </select>
                                     </div>
-
-                                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                                        <label className="form-label">Catatan</label>
-                                        <textarea
-                                            className="form-control"
-                                            name="notes"
-                                            value={formData.notes}
-                                            onChange={handleFormChange}
-                                            rows={2}
-                                        />
-                                    </div>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
-                                    <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-                                        Batal
-                                    </button>
-                                    <button type="submit" className="btn btn-primary" disabled={submitting}>
-                                        {submitting ? 'Menyimpan...' : (isEditMode ? 'Perbarui QC' : 'Simpan QC')}
-                                    </button>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Catatan Analis</label>
+                                    <textarea
+                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        name="notes"
+                                        value={formData.notes}
+                                        onChange={handleFormChange}
+                                        rows={3}
+                                        placeholder="Tambahkan observasi visual atau keterangan khusus..."
+                                    />
                                 </div>
                             </form>
+                        </div>
+
+                        <div className="p-6 border-t bg-muted/20 flex justify-end gap-3 mt-auto">
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                                onClick={() => setIsModalOpen(false)}
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="submit"
+                                form="qcForm"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>Menyimpan...</>
+                                ) : (
+                                    isEditMode ? 'Simpan Perubahan' : 'Proses QC'
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

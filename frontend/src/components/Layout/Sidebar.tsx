@@ -34,7 +34,6 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
                 { label: 'Lini Produksi', to: '/production/lines' },
                 { label: 'Drying Log', to: '/production/drying-logs' },
                 { label: 'Jadwal Produksi', to: '/production/scheduling' },
-                { label: 'Shift Handover', to: '/production/shift-handover' },
             ]
         },
         {
@@ -42,7 +41,6 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }
             icon: 'verified',
             children: [
                 { label: 'QC Produk Jadi', to: '/production/qc-results' },
-                { label: 'Parameter Kualitas', to: '/quality/parameters' },
                 { label: 'Non-Conformance', to: '/quality/ncr' },
                 { label: 'Tren Kualitas', to: '/reports/quality' },
                 { label: 'Monitor Rendemen', to: '/production/rendemen' },

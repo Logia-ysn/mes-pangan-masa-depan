@@ -24,7 +24,6 @@ import {
     Droplets
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import LogoLoader from '../../components/UI/LogoLoader';
 
 const QualityTrends: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -100,45 +99,55 @@ const QualityTrends: React.FC = () => {
     const avgGreen = data.length > 0 ? (data.reduce((s, i) => s + i.green, 0) / data.length).toFixed(1) : '0';
 
     const tooltipStyle = {
-        borderRadius: '12px',
-        border: '1px solid var(--border-color)',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-        background: 'var(--bg-card)',
-        fontSize: '0.8125rem',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'rgba(15, 23, 42, 0.9)', // slate-900 with opacity
+        backdropFilter: 'blur(12px)',
+        color: '#f8fafc', // slate-50
+        fontSize: '0.8rem',
+        padding: '16px',
+        borderLeft: '4px solid var(--primary)'
     };
 
     return (
         <div className="page-content">
-            {/* Header */}
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <TrendingUp color="var(--primary)" size={32} />
-                        Tren Kualitas (SPC)
-                    </h1>
-                    <p>Visualisasi parameter kualitas gabah dan beras dari waktu ke waktu.</p>
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 16,
+                        background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', boxShadow: '0 8px 16px rgba(19, 127, 236, 0.2)'
+                    }}>
+                        <TrendingUp className="h-8 w-8" />
+                    </div>
+                    <div>
+                        <h1 className="page-title" style={{ margin: 0 }}>Quality Trends (SPC)</h1>
+                        <p className="page-subtitle">Visualisasi parameter kualitas gabah dan beras dari waktu ke waktu</p>
+                    </div>
                 </div>
-                <div className="page-header-actions">
-                    <button
-                        className="btn btn-primary"
-                        onClick={fetchData}
-                        disabled={loading}
-                    >
-                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} style={{ marginRight: '8px' }} />
-                        Segarkan Data
-                    </button>
-                </div>
+                <button
+                    onClick={fetchData}
+                    disabled={loading}
+                    className="btn btn-primary"
+                    style={{ background: 'linear-gradient(135deg, var(--primary), #3b82f6)', border: 'none' }}
+                >
+                    <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Segarkan Data
+                </button>
             </div>
 
             {/* Filters Bar */}
-            <div className="card mb-6" style={{ padding: '24px' }}>
-                <div className="grid grid-3" style={{ gap: '20px', alignItems: 'end' }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Factory size={14} /> Pilih Pabrik
+            <div className="glass-card" style={{ marginBottom: 24, padding: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2 flex items-center gap-2">
+                            <Factory className="w-3.5 h-3.5" /> Pilih Pabrik
                         </label>
                         <select
-                            className="form-input form-select"
+                            className="form-control"
+                            style={{ background: 'var(--bg-surface)', border: 'none' }}
                             value={selectedFactory}
                             onChange={(e) => setSelectedFactory(e.target.value)}
                         >
@@ -148,24 +157,26 @@ const QualityTrends: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Calendar size={14} /> Periode Mulai
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2 flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5" /> Periode Mulai
                         </label>
                         <input
                             type="date"
-                            className="form-input"
+                            className="form-control"
+                            style={{ background: 'var(--bg-surface)', border: 'none' }}
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
                         />
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Calendar size={14} /> Periode Akhir
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 tracking-widest uppercase block mb-2 flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5" /> Periode Akhir
                         </label>
                         <input
                             type="date"
-                            className="form-input"
+                            className="form-control"
+                            style={{ background: 'var(--bg-surface)', border: 'none' }}
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
                         />
@@ -174,89 +185,104 @@ const QualityTrends: React.FC = () => {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-3 mb-6" style={{ gap: '20px' }}>
-                <div className="stat-card" style={{ borderLeft: '4px solid #3b82f6' }}>
-                    <div className="stat-card-header">
-                        <span className="stat-card-label">Rerata Kadar Air</span>
-                        <Droplets style={{ color: '#3b82f6' }} size={20} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 24 }}>
+                <div className="glass-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Rerata Kadar Air</span>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Droplets className="text-blue-500 w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="stat-card-value">
+                    <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: 4 }}>
                         {avgMoisture}
-                        <span style={{ fontSize: '1rem', marginLeft: '4px', opacity: 0.6 }}>%</span>
+                        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>%</span>
+                    </div>
+                    <div style={{ width: '100%', height: 4, background: 'rgba(59, 130, 246, 0.1)', borderRadius: 2, marginTop: 12 }}>
+                        <div style={{ width: `${Math.min(Number(avgMoisture) * 5, 100)}%`, height: '100%', background: '#3b82f6', borderRadius: 2 }}></div>
                     </div>
                 </div>
-                <div className="stat-card" style={{ borderLeft: '4px solid #10b981' }}>
-                    <div className="stat-card-header">
-                        <span className="stat-card-label">Rerata Densitas</span>
-                        <BarChart2 style={{ color: '#10b981' }} size={20} />
+
+                <div className="glass-card" style={{ borderLeft: '4px solid #10b981' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Rerata Densitas</span>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <BarChart2 className="text-emerald-500 w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="stat-card-value">
+                    <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: 4 }}>
                         {avgDensity}
-                        <span style={{ fontSize: '1rem', marginLeft: '4px', opacity: 0.6 }}>g/L</span>
+                        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>g/L</span>
+                    </div>
+                    <div style={{ width: '100%', height: 4, background: 'rgba(16, 185, 129, 0.1)', borderRadius: 2, marginTop: 12 }}>
+                        <div style={{ width: `${Math.min(Number(avgDensity) / 10, 100)}%`, height: '100%', background: '#10b981', borderRadius: 2 }}></div>
                     </div>
                 </div>
-                <div className="stat-card" style={{ borderLeft: '4px solid #f59e0b' }}>
-                    <div className="stat-card-header">
-                        <span className="stat-card-label">Rerata Butir Hijau</span>
-                        <Activity style={{ color: '#f59e0b' }} size={20} />
+
+                <div className="glass-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">Rerata Butir Hijau</span>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Activity className="text-amber-500 w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="stat-card-value">
+                    <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: 4 }}>
                         {avgGreen}
-                        <span style={{ fontSize: '1rem', marginLeft: '4px', opacity: 0.6 }}>%</span>
+                        <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>%</span>
+                    </div>
+                    <div style={{ width: '100%', height: 4, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 2, marginTop: 12 }}>
+                        <div style={{ width: `${Math.min(Number(avgGreen) * 10, 100)}%`, height: '100%', background: '#f59e0b', borderRadius: 2 }}></div>
                     </div>
                 </div>
             </div>
 
-            {/* Loading State */}
-            {loading && data.length === 0 && (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-                    <LogoLoader small text="Memuat data kualitas..." />
+            {loading && data.length === 0 ? (
+                <div style={{ padding: '100px 0', textAlign: 'center' }} className="glass-card">
+                    <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                    <span className="text-sm font-bold text-slate-400 tracking-widest uppercase">Analyzing Quality Matrix</span>
                 </div>
-            )}
-
-            {/* Charts */}
-            {!loading && data.length === 0 ? (
-                <div className="card" style={{ padding: '80px 24px', textAlign: 'center' }}>
-                    <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
-                    <h3 style={{ fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>Belum Ada Data Kualitas</h3>
-                    <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
-                        Tidak ditemukan data analisis kualitas untuk periode yang dipilih. Coba ubah filter tanggal atau pabrik.
+            ) : data.length === 0 ? (
+                <div style={{ padding: '80px 20px', textAlign: 'center' }} className="glass-card">
+                    <Activity className="w-16 h-16 text-slate-600 mx-auto mb-4 opacity-20" />
+                    <h3 style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Data Belum Tersedia</h3>
+                    <p style={{ color: 'var(--text-muted)', maxWidth: 400, margin: '8px auto' }}>
+                        Tidak ditemukan data analisis kualitas untuk periode yang dipilih. Silakan sesuaikan parameter pencarian.
                     </p>
                 </div>
-            ) : data.length > 0 && (
-                <>
-                    {/* Moisture & Density Charts - Side by Side */}
-                    <div className="grid grid-2 mb-6" style={{ gap: '24px' }}>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Charts Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: 24 }}>
                         {/* Moisture Chart */}
-                        <div className="card" style={{ padding: '24px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Droplets size={18} color="#3b82f6" />
+                        <div className="glass-card" style={{ padding: '24px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0, fontSize: 16, fontWeight: 700 }}>
+                                    <Droplets className="w-5 h-5 text-blue-500" />
                                     Tren Kadar Air
                                 </h3>
-                                <span className="badge badge-info">%</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: 6 }}>PARAMETER (%)</span>
                             </div>
-                            <div style={{ width: '100%', height: '300px' }}>
+                            <div style={{ height: 300 }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={data}>
+                                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
                                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                                        <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                                        <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dx={-5} />
-                                        <Tooltip contentStyle={tooltipStyle} />
+                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                                        <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'rgba(59, 130, 246, 0.2)', strokeWidth: 2 }} />
                                         <Area
                                             type="monotone"
                                             dataKey="moisture"
-                                            name="Kadar Air (%)"
+                                            name="Kadar Air"
                                             stroke="#3b82f6"
-                                            strokeWidth={3}
+                                            strokeWidth={4}
                                             fillOpacity={1}
                                             fill="url(#colorMoisture)"
+                                            animationDuration={1500}
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
@@ -264,29 +290,30 @@ const QualityTrends: React.FC = () => {
                         </div>
 
                         {/* Density Chart */}
-                        <div className="card" style={{ padding: '24px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <BarChart2 size={18} color="#10b981" />
+                        <div className="glass-card" style={{ padding: '24px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0, fontSize: 16, fontWeight: 700 }}>
+                                    <BarChart2 className="w-5 h-5 text-emerald-500" />
                                     Tren Densitas
                                 </h3>
-                                <span className="badge badge-success">g/L</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: 6 }}>UNIT (g/L)</span>
                             </div>
-                            <div style={{ width: '100%', height: '300px' }}>
+                            <div style={{ height: 300 }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={data}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                                        <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                                        <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dx={-5} />
-                                        <Tooltip contentStyle={tooltipStyle} />
+                                    <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                                        <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'rgba(16, 185, 129, 0.2)', strokeWidth: 2 }} />
                                         <Line
                                             type="monotone"
                                             dataKey="density"
-                                            name="Densitas (g/L)"
+                                            name="Densitas"
                                             stroke="#10b981"
-                                            strokeWidth={3}
-                                            dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                                            activeDot={{ r: 6, strokeWidth: 0 }}
+                                            strokeWidth={4}
+                                            dot={{ r: 6, fill: '#10b981', strokeWidth: 3, stroke: 'var(--bg-glass)' }}
+                                            activeDot={{ r: 8, strokeWidth: 0, fill: '#10b981' }}
+                                            animationDuration={1500}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
@@ -295,30 +322,43 @@ const QualityTrends: React.FC = () => {
                     </div>
 
                     {/* Green Distribution - Full Width */}
-                    <div className="card" style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Activity size={18} color="#f59e0b" />
+                    <div className="glass-card" style={{ padding: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0, fontSize: 16, fontWeight: 700 }}>
+                                <Activity className="w-5 h-5 text-amber-500" />
                                 Distribusi Persentase Butir Hijau
                             </h3>
-                            <span className="badge badge-warning">SPC Parameter</span>
+                            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, fontWeight: 700 }}>SPC ANALYTICS</button>
                         </div>
-                        <div style={{ width: '100%', height: '300px' }}>
+                        <div style={{ height: 320 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                                    <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                                    <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} dx={-5} />
+                                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#d97706" stopOpacity={0.8} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                                     <Tooltip
-                                        cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                                        cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                                         contentStyle={tooltipStyle}
                                     />
-                                    <Bar dataKey="green" name="Biji Hijau (%)" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={36} />
+                                    <Bar
+                                        dataKey="green"
+                                        name="Biji Hijau"
+                                        fill="url(#colorGreen)"
+                                        radius={[8, 8, 0, 0]}
+                                        barSize={40}
+                                        animationDuration={1500}
+                                    />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
-                </>
+                </div>
             )}
         </div>
     );

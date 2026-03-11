@@ -226,111 +226,242 @@ const ProductionLines = () => {
             {loading ? (
                 <div className="loading-container"><div className="loading-spinner" /></div>
             ) : lines.length === 0 ? (
-                <div className="empty-state">
-                    <span className="material-symbols-outlined" style={{ fontSize: 64, color: 'var(--text-muted)' }}>route</span>
-                    <h3>Belum ada lini produksi</h3>
-                    <p>Klik "Tambah Lini" untuk membuat lini produksi baru.</p>
+                <div className="empty-state glass-card" style={{ padding: '60px 20px' }}>
+                    <div className="empty-state-icon-container" style={{
+                        background: 'linear-gradient(135deg, var(--primary-light), var(--primary))',
+                        width: 80, height: 80, borderRadius: '50%', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+                        color: 'white', boxShadow: '0 10px 25px rgba(19, 127, 236, 0.3)'
+                    }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 40 }}>route</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Belum ada lini produksi</h3>
+                    <p style={{ color: 'var(--text-secondary)', maxWidth: 300, margin: '0 auto' }}>Mulai dengan membuat lini produksi baru untuk mengelola mesin di pabrik Anda.</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 24 }}>
                     {lines.map(line => (
-                        <div key={line.id} className="card" style={{ padding: 20 }}>
-                            {/* Card Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                <div>
-                                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--primary)' }}>route</span>
-                                        {line.name}
-                                    </h3>
-                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{line.code}</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                    <span
-                                        className={`badge ${line.is_active ? 'badge-success' : 'badge-error'}`}
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => handleToggleActive(line)}
-                                        title={line.is_active ? 'Klik untuk nonaktifkan' : 'Klik untuk aktifkan'}
-                                    >
-                                        {line.is_active ? 'Aktif' : 'Nonaktif'}
-                                    </span>
-                                </div>
-                            </div>
+                        <div key={line.id} className="glass-card premium-hover" style={{
+                            padding: 0,
+                            border: '1px solid var(--glass-border)',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            {/* Card Header with Gradient Accent */}
+                            <div style={{
+                                height: 6,
+                                background: line.is_active
+                                    ? 'linear-gradient(90deg, var(--primary), var(--primary-light))'
+                                    : 'linear-gradient(90deg, var(--text-muted), var(--border-color))'
+                            }} />
 
-                            {/* Description */}
-                            {line.description && (
-                                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
-                                    {line.description}
-                                </p>
-                            )}
-
-                            {/* Stats */}
-                            <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 13 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>precision_manufacturing</span>
-                                    <strong>{line._count?.Machine || 0}</strong> mesin
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>description</span>
-                                    <strong>{line._count?.Worksheet || 0}</strong> worksheet
-                                </div>
-                                {line.capacity_per_hour && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>speed</span>
-                                        {Number(line.capacity_per_hour)} kg/jam
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Machines List */}
-                            {line.Machine && line.Machine.length > 0 && (
-                                <div style={{ marginBottom: 12 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                        Mesin dalam lini
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        {line.Machine.sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0)).map((m, idx) => (
-                                            <div key={m.id} style={{
-                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                padding: '6px 10px', borderRadius: 6, background: 'var(--bg-secondary)',
-                                                fontSize: 13
+                            <div style={{ padding: 24 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                        <div style={{
+                                            width: 48, height: 48, borderRadius: 12,
+                                            background: line.is_active ? 'var(--primary-light)' : 'var(--bg-elevated)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            color: line.is_active ? 'white' : 'var(--text-muted)',
+                                            opacity: line.is_active ? 1 : 0.6
+                                        }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>precision_manufacturing</span>
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>{line.name}</h3>
+                                            <div style={{
+                                                fontSize: 12,
+                                                color: 'var(--primary)',
+                                                fontWeight: 600,
+                                                backgroundColor: 'rgba(19, 127, 236, 0.1)',
+                                                padding: '2px 8px',
+                                                borderRadius: 4,
+                                                display: 'inline-block',
+                                                marginTop: 4
                                             }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <span style={{
-                                                        width: 20, height: 20, borderRadius: '50%',
-                                                        background: 'var(--primary)', color: '#fff',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontSize: 11, fontWeight: 700
-                                                    }}>{idx + 1}</span>
-                                                    <span style={{ fontWeight: 500 }}>{m.name}</span>
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>({m.code})</span>
-                                                </div>
-                                                <button
-                                                    className="btn btn-ghost btn-sm"
-                                                    onClick={() => handleRemoveMachine(line.id, m.id)}
-                                                    title="Lepas dari lini"
-                                                    style={{ padding: '2px 6px' }}
-                                                >
-                                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
-                                                </button>
+                                                {line.code}
                                             </div>
-                                        ))}
+                                        </div>
+                                    </div>
+                                    <div
+                                        onClick={() => handleToggleActive(line)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '6px 12px',
+                                            borderRadius: 20,
+                                            backgroundColor: line.is_active ? 'var(--success-light)' : 'var(--error-light)',
+                                            color: line.is_active ? 'var(--success)' : 'var(--error)',
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            transition: 'var(--transition)'
+                                        }}
+                                    >
+                                        <span className={`status-dot ${line.is_active ? 'pulse' : ''}`} style={{
+                                            width: 8, height: 8, borderRadius: '50%',
+                                            backgroundColor: 'currentColor'
+                                        }} />
+                                        {line.is_active ? 'ACTIVE' : 'INACTIVE'}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Actions */}
-                            <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                                <button className="btn btn-outline btn-sm" onClick={() => openAssignModal(line)}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-                                    Tambah Mesin
-                                </button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => openModal(line)}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
-                                    Edit
-                                </button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(line.id)} style={{ color: 'var(--error)' }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
-                                </button>
+                                {line.description && (
+                                    <p style={{
+                                        fontSize: 14,
+                                        color: 'var(--text-secondary)',
+                                        marginBottom: 20,
+                                        lineHeight: 1.5,
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {line.description}
+                                    </p>
+                                )}
+
+                                {/* Quick Stats Row */}
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(3, 1fr)',
+                                    gap: 12,
+                                    marginBottom: 24,
+                                    padding: 12,
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    borderRadius: 12
+                                }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{line._count?.Machine || 0}</div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Mesin</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{line._count?.Worksheet || 0}</div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Worksheets</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+                                            {line.capacity_per_hour ? Number(line.capacity_per_hour) : 0}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>kg/jam</div>
+                                    </div>
+                                </div>
+
+                                {/* Modern Machine Flow Visualization */}
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: 12
+                                    }}>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                                            MACHINE SEQUENCE
+                                        </span>
+                                        <button
+                                            className="btn btn-ghost btn-sm"
+                                            onClick={() => openAssignModal(line)}
+                                            style={{ color: 'var(--primary)', padding: '2px 8px' }}
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: 16, marginRight: 4 }}>add_circle</span>
+                                            Assign
+                                        </button>
+                                    </div>
+
+                                    {line.Machine && line.Machine.length > 0 ? (
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 8,
+                                            position: 'relative',
+                                            paddingLeft: 4
+                                        }}>
+                                            {/* Connector Line */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: 17, top: 20, bottom: 20,
+                                                width: 2,
+                                                background: 'linear-gradient(to bottom, var(--primary-light), var(--border-color))',
+                                                zIndex: 0,
+                                                opacity: 0.3
+                                            }} />
+
+                                            {line.Machine.sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0)).map((m, idx) => (
+                                                <div key={m.id} className="glass-card-sm premium-hover" style={{
+                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                    padding: '10px 14px', borderRadius: 10, background: 'var(--bg-surface)',
+                                                    border: '1px solid var(--border-subtle)',
+                                                    zIndex: 1,
+                                                    transition: 'var(--transition)'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div style={{
+                                                            width: 28, height: 28, borderRadius: 8,
+                                                            background: 'var(--bg-elevated)', color: 'var(--primary)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: 12, fontWeight: 800,
+                                                            boxShadow: 'inset 0 0 0 1px var(--border-subtle)'
+                                                        }}>{idx + 1}</div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{m.name}</div>
+                                                            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{m.code}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <span className={`badge ${m.status === 'RUNNING' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: 10, padding: '2px 6px' }}>
+                                                            {m.status}
+                                                        </span>
+                                                        <button
+                                                            className="btn btn-ghost btn-sm"
+                                                            onClick={() => handleRemoveMachine(line.id, m.id)}
+                                                            style={{ padding: 4, height: 28, width: 28, minWidth: 28, color: 'var(--error)' }}
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete_sweep</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div style={{
+                                            padding: '20px',
+                                            textAlign: 'center',
+                                            border: '2px dashed var(--border-color)',
+                                            borderRadius: 12,
+                                            color: 'var(--text-muted)',
+                                            fontSize: 13
+                                        }}>
+                                            Belum ada mesin ditugaskan
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer Actions */}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: 12,
+                                    marginTop: 'auto',
+                                    paddingTop: 20,
+                                    borderTop: '1px solid var(--border-subtle)'
+                                }}>
+                                    <button
+                                        className="btn btn-outline"
+                                        style={{ flex: 1, height: 40 }}
+                                        onClick={() => openModal(line)}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                                        Configure
+                                    </button>
+                                    <button
+                                        className="btn btn-ghost"
+                                        style={{ color: 'var(--error)', width: 40, height: 40, padding: 0 }}
+                                        onClick={() => handleDelete(line.id)}
+                                    >
+                                        <span className="material-symbols-outlined">delete_forever</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
