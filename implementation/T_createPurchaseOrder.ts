@@ -8,12 +8,17 @@ export const t_createPurchaseOrder: T_createPurchaseOrder = apiWrapper(async (re
     const user = await requireAuth(req, 'SUPERVISOR');
 
     // 1. Validation
-    const { id_factory, id_supplier, order_date, items } = req.body;
+    const { id_factory, id_supplier, order_date, items, pricing_type } = req.body;
 
     if (!id_factory) throw new ValidationError('Factory ID is required');
-    if (!id_supplier) throw new ValidationError('Supplier ID is required');
+    
+    // id_supplier is mandatory for STANDARD PO, but optional for PLAFON (can be general/UMUM)
+    if (pricing_type !== 'PLAFON' && !id_supplier) {
+        throw new ValidationError('Supplier ID is required');
+    }
+    
     if (!order_date) throw new ValidationError('Order date is required');
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (pricing_type !== 'PLAFON' && (!items || !Array.isArray(items) || items.length === 0)) {
         throw new ValidationError('At least one item is required');
     }
 

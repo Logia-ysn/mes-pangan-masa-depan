@@ -11,6 +11,11 @@ import { purchaseOrderRepository } from '../repositories/purchase-order.reposito
 import { goodsReceiptRepository } from '../repositories/goods-receipt.repository';
 import { NotFoundError, BusinessRuleError } from '../utils/errors';
 
+function toRoman(num: number): string {
+    const romanRows = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    return romanRows[num] || num.toString();
+}
+
 class PurchaseOrderService {
     /**
      * Create a new purchase order with items
@@ -42,28 +47,26 @@ class PurchaseOrderService {
             throw new NotFoundError('Factory', data.id_factory);
         }
 
-        if (!data.items || data.items.length === 0) {
+        if ((data as any).pricing_type !== 'PLAFON' && (!data.items || data.items.length === 0)) {
             throw new BusinessRuleError('Purchase order must have at least one item');
         }
 
-        // Auto-generate PO number: PO-{YYYYMMDD}-{seq}
+        // New PO number format: 00x/PMD-PO/BB/[Month Roman]/[Year]
         const today = new Date();
-        const dateStr = today.getFullYear().toString()
-            + (today.getMonth() + 1).toString().padStart(2, '0')
-            + today.getDate().toString().padStart(2, '0');
+        const year = today.getFullYear();
+        const monthRoman = toRoman(today.getMonth() + 1);
 
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59);
 
-        const poCountToday = await prisma.purchaseOrder.count({
+        const poCountYear = await prisma.purchaseOrder.count({
             where: {
-                created_at: { gte: startOfDay, lt: endOfDay }
+                created_at: { gte: startOfYear, lt: endOfYear }
             }
         });
 
-        const seq = (poCountToday + 1).toString().padStart(4, '0');
-        const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
-        const po_number = `PO-${dateStr}-${seq}-${randomSuffix}`;
+        const seq = (poCountYear + 1).toString().padStart(3, '0');
+        const po_number = `${seq}/PMD-PO/BB/${monthRoman}/${year}`;
 
         const subtotal = data.items.reduce(
             (sum, item) => sum + item.quantity * item.unit_price,
@@ -72,20 +75,32 @@ class PurchaseOrderService {
         const total = subtotal + (data.tax || 0) - (data.discount || 0);
 
         const po = await prisma.$transaction(async (tx) => {
+            // Helper to safely parse dates
+            const toDate = (d: any) => {
+                if (!d) return null;
+                const date = new Date(d);
+                return isNaN(date.getTime()) ? null : date;
+            };
+
             const createdPO = await tx.purchaseOrder.create({
                 data: {
                     id_factory: data.id_factory,
                     id_supplier: (validSupplierId ?? null) as any,
                     id_user: userId,
                     po_number,
-                    order_date: data.order_date,
-                    expected_date: data.expected_date || null,
+                    order_date: toDate(data.order_date) || new Date(),
+                    expected_date: toDate(data.expected_date),
                     subtotal,
                     tax: data.tax || 0,
                     discount: data.discount || 0,
                     total,
                     status: PurchaseOrder_status_enum.DRAFT,
-                    notes: data.notes
+                    notes: data.notes,
+                    // Plafon Padi fields
+                    valid_until: toDate((data as any).valid_until),
+                    id_variety: (data as any).id_variety || null,
+                    pricing_type: (data as any).pricing_type || 'STANDARD',
+                    pricing_data: (data as any).pricing_data || null
                 }
             });
 

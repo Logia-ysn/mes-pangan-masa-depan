@@ -41,10 +41,15 @@ interface PurchaseOrder {
     total: number;
     status: 'DRAFT' | 'APPROVED' | 'SENT' | 'PARTIAL_RECEIVED' | 'RECEIVED' | 'CANCELLED';
     notes?: string;
+    id_variety?: number | null;
+    valid_until?: string | null;
+    pricing_type?: 'STANDARD' | 'PLAFON';
+    pricing_data?: any;
     created_at: string;
     Supplier?: { id: number; name: string; code: string; phone?: string };
     Factory?: { id: number; name: string };
     User?: { id: number; fullname: string };
+    Variety?: { id: number; name: string; code: string };
     PurchaseOrderItem?: POItem[];
     GoodsReceipt?: GoodsReceipt[];
 }
@@ -246,6 +251,10 @@ const PurchaseOrderDetail = () => {
                         Kembali
                     </button>
                     <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-secondary" onClick={() => window.open(`/print/purchase-orders/${po.id}`, '_blank')}>
+                            <span className="material-symbols-outlined icon-sm">print</span>
+                            Cetak PO
+                        </button>
                         {po.status === 'DRAFT' && (
                             <button className="btn btn-primary" onClick={handleApprove}>
                                 <span className="material-symbols-outlined icon-sm">check_circle</span>
@@ -314,6 +323,43 @@ const PurchaseOrderDetail = () => {
                         )}
                     </div>
                 </div>
+                
+                {po.pricing_type === 'PLAFON' && po.pricing_data?.grid && (
+                    <div className="card" style={{ marginBottom: 24 }}>
+                        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 className="card-title">Plafon Harga Beli</h3>
+                                <p className="card-subtitle">Jenis Gabah: <span className="font-bold text-primary">{po.Variety?.name}</span></p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Berlaku Sampai</div>
+                                <div style={{ fontWeight: 600 }}>{formatDate(po.valid_until || po.order_date)}</div>
+                            </div>
+                        </div>
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style={{ textAlign: 'center' }}>% KA</th>
+                                        <th style={{ textAlign: 'right' }}>KW 1</th>
+                                        <th style={{ textAlign: 'right' }}>KW 2</th>
+                                        <th style={{ textAlign: 'right' }}>KW 3</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {po.pricing_data.grid.map((row: any, idx: number) => (
+                                        <tr key={idx}>
+                                            <td style={{ textAlign: 'center', fontWeight: 600 }}>{row.moisture}%</td>
+                                            <td style={{ textAlign: 'right' }} className="font-mono">{formatCurrency(row.kw1)}</td>
+                                            <td style={{ textAlign: 'right' }} className="font-mono">{formatCurrency(row.kw2)}</td>
+                                            <td style={{ textAlign: 'right' }} className="font-mono">{formatCurrency(row.kw3)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* Items Table */}
                 <div className="card" style={{ marginBottom: 24 }}>

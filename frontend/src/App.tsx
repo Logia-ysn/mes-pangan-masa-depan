@@ -14,6 +14,7 @@ const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const PurchaseOrders = React.lazy(() => import('./pages/purchasing/PurchaseOrders'));
 const PurchaseOrderDetail = React.lazy(() => import('./pages/purchasing/PurchaseOrderDetail'));
+const PurchaseOrderPrint = React.lazy(() => import('./pages/purchasing/PurchaseOrderPrint'));
 const Suppliers = React.lazy(() => import('./pages/purchasing/Suppliers'));
 const RawMaterialReceipt = React.lazy(() => import('./pages/production/RawMaterialReceipt'));
 const QCGabah = React.lazy(() => import('./pages/production/QCGabah'));
@@ -71,6 +72,13 @@ const AppRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        
+        {/* Print Layout (No Sidebar) */}
+        <Route path="/print/purchase-orders/:id" element={
+          <ProtectedRoute>
+            <PurchaseOrderPrint />
+          </ProtectedRoute>
+        } />
 
         <Route path="/" element={
           <ProtectedRoute>

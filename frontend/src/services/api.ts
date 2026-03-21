@@ -64,7 +64,7 @@ api.interceptors.response.use(
             || error.message
             || 'Terjadi kesalahan sistem';
 
-        if (status === 401) {
+        if (status === 401 || (status === 400 && error.config?.url?.includes('/auth/me'))) {
             // Auto-logout: redirect to login (cookie cleared server-side)
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';

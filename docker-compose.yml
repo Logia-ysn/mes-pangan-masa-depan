@@ -1,28 +1,23 @@
 # ==================================
-# Docker Compose - ERP Pangan Masa Depan
+# 💡 DOCKER MODES:
 # ==================================
+# A. FULL DOCKER (Production/Testing):
+#    Jalankan: docker compose up -d --build
+#    Akses: http://localhost:3010
 #
-# CARA PAKAI:
-# 1. Install Docker Desktop: https://docker.com/products/docker-desktop
-# 2. Buka terminal di folder ini
-# 3. Jalankan: docker-compose up -d
-# 4. Buka browser: http://localhost
-#
-# PERINTAH BERGUNA:
-# - Lihat status: docker-compose ps
-# - Lihat logs: docker-compose logs -f
-# - Stop semua: docker-compose down
-# - Rebuild: docker-compose up -d --build
-#
+# B. HYBRID MODE (Development):
+#    Hanya jalankan DB & ML di Docker:
+#    Jalankan: npm run docker:services
+#    Lalu jalankan aplikasi di luar: npm run dev
 # ==================================
 
 services:
   # ==================================
   # Database PostgreSQL
   # ==================================
-  db:
+  postgres_db:
     image: postgres:16-alpine
-    container_name: erp_pangan_db
+    container_name: erp_pangan_db_v2
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
@@ -49,11 +44,11 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      db:
+      postgres_db:
         condition: service_healthy
     environment:
       DB_TYPE: postgres
-      DB_HOST: db
+      DB_HOST: postgres_db
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:-postgres123}
@@ -61,7 +56,7 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key}
       ML_SERVICE_URL: http://ml-service:8000
-      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@db:5432/${DB_NAME:-erp_pangan_masa_depan}?schema=public
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@postgres_db:5432/${DB_NAME:-erp_pangan_masa_depan}?schema=public
       SEED_SECRET: ${SEED_SECRET:-P4ng4nM4s4D3p4nJ4y4!}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     restart: always
@@ -87,7 +82,7 @@ services:
         VITE_API_URL: /api
     container_name: erp_pangan_frontend
     ports:
-      - "8080:80"
+      - "3010:80"
     depends_on:
       - naiv
     restart: always

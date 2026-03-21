@@ -289,6 +289,7 @@ model RiceVariety {
   created_at       DateTime           @default(now())
   ProductType      ProductType[]
   QualityParameter QualityParameter[]
+  PurchaseOrder    PurchaseOrder[]
 }
 
 model RiceLevel {
@@ -654,10 +655,15 @@ model PurchaseOrder {
   notes             String?
   created_at        DateTime                  @default(now()) @db.Timestamp(6)
   updated_at        DateTime                  @updatedAt @db.Timestamp(6)
+  valid_until       DateTime?                 @db.Date
+  id_variety        Int?
+  pricing_type      String?                   @default("STANDARD") @db.VarChar(20)
+  pricing_data      Json?
   GoodsReceipt      GoodsReceipt[]
   Factory           Factory                   @relation(fields: [id_factory], references: [id], onDelete: NoAction, onUpdate: NoAction)
   Supplier          Supplier?                 @relation(fields: [id_supplier], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User              User                      @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Variety           RiceVariety?              @relation(fields: [id_variety], references: [id], onDelete: NoAction, onUpdate: NoAction)
   PurchaseOrderItem PurchaseOrderItem[]
   MaterialReceipt   MaterialReceipt[]
 

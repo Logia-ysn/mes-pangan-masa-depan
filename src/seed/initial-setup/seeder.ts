@@ -117,5 +117,21 @@ export async function seedInitialData(tx: any): Promise<Record<string, number>> 
         stats.quality_params = result.count;
     }
 
+    // 9. Suppliers
+    stats.suppliers = 0;
+    const existingSupplier = await tx.supplier.findFirst({ where: { code: 'SUP001' } });
+    if (!existingSupplier) {
+        await tx.supplier.create({
+            data: {
+                code: 'SUP001',
+                name: 'PADI UMUM',
+                contact_person: 'Umum',
+                phone: '-',
+                is_active: true
+            }
+        });
+        stats.suppliers++;
+    }
+
     return stats;
 }

@@ -50,6 +50,19 @@ export class T_createPurchaseOrder_body {
     @IsOptional()
     @IsString({ message: 'notes must be a string' })
     notes?: string
+    @IsOptional()
+    @Transform((param?: any): number | null => (param?.value === null || param?.value === undefined || param?.value === '') ? null : parseFloat(param.value))
+    @IsNumber({}, { message: 'id_variety must be a number (decimal)' })
+    id_variety?: number
+    @IsOptional()
+    @IsString({ message: 'valid_until must be a string' })
+    valid_until?: string
+    @IsOptional()
+    @IsString({ message: 'pricing_type must be a string' })
+    pricing_type?: string
+    @IsOptional()
+    @IsObject({ message: 'pricing_data must be an object' })
+    pricing_data?: any
     @IsNotEmpty({ message: 'items cannot be empty' })
     @IsArray({ message: 'items must be an array' })
     @ValidateNested({ each: true })

@@ -1,54 +1,54 @@
-# 🏠 Local Setup Guide - ERP Pangan Masa Depan
+# 🏠 Guide Setup - ERP Pangan Masa Depan
 
-## Tech Stack
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: PostgreSQL
-- **ORM**: Prisma
-- **Tools**: `ts-node`, `prisma-client`
+Pilih mode yang paling sesuai dengan kebutuhan Anda saat ini.
 
 ---
 
-## 1. Prerequisites
-- Docker (Recommended for Database)
-- Node.js >= 18.0.0
-- npm
+## 🛠️ Opsi A: Mode Hybrid (Sangat Direkomendasikan untuk Development)
+Gunakan ini jika Anda sedang aktif menulis kode (coding) agar mendapatkan fitur *Hot Reload*.
 
-## 2. Database Setup
-The easiest way is using Docker:
+### 1. Persiapan
+- Pastikan Node.js >= 18 dan Docker sudah terinstal.
+- Copy `.env.example` menjadi `.env`.
+
+### 2. Jalankan Infrastruktur (Docker)
+Jalankan Database dan ML Service di background:
 ```bash
-docker run --name erp-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres
+npm run docker:services
 ```
 
-## 3. Environment Configuration
-Copy `.env.example` to `.env` and adjust the `DATABASE_URL`:
-```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/postgres?schema=public"
-JWT_SECRET="your-local-secret"
-```
-
-## 4. Initialization
+### 3. Jalankan Aplikasi (NPM)
+Jalankan Frontend dan Backend di terminal lokal:
 ```bash
-# Install dependencies
+# Terminal 1: Backend
 npm install
-
-# Push schema to database
-npx prisma db push
-
-# Generate Prisma Client
 npx prisma generate
-```
-
-## 5. Running the Application
-```bash
-# Development mode (Auto-build & Start)
 npm run dev
 
-# Production build & Start
-npm run build
-npm start
+# Terminal 2: Frontend
+cd frontend
+npm install
+npm run dev
+```
+**Akses:** [http://localhost:5173](http://localhost:5173) (Frontend Dev)
+
+---
+
+## 🐳 Opsi B: Mode Full Docker (Simulasi Produksi/GitHub)
+Gunakan ini jika Anda ingin menjalankan seluruh sistem tanpa perlu mengurus Node/NPM di laptop. Ini juga cara tercepat untuk mencoba aplikasi.
+
+### 1. Jalankan Semuanya
+Cukup satu perintah:
+```bash
+npm run docker:full
 ```
 
-## 6. Development Tools
-- **Prisma Studio**: `npm run prisma:studio` (GUI for database)
-- **Dummy Data**: POST `/seed-data` to generate initial records
-- **Superuser**: POST `/seed-superuser` with `secretKey` to create first admin
+### 2. Selesai!
+Docker akan melakukan build frontend, backend, dan menyiapkan database secara otomatis.
+**Akses:** [http://localhost:3010](http://localhost:3010)
+
+---
+
+## 📝 Catatan Penting
+- **Database GUI**: Untuk melihat isi database, jalankan `npm run prisma:studio`.
+- **Produksi**: Saat di server produksi, Anda hanya perlu melakukan `git pull` lalu jalankan perintah di **Opsi B**.

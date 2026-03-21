@@ -13,6 +13,8 @@
     "postinstall": "prisma generate",
     "start": "npx prisma migrate deploy && node dist/index.js",
     "dev": "npm run build && npm start",
+    "docker:services": "docker compose up -d db ml-service",
+    "docker:full": "docker compose up -d --build",
     "seed-admin": "npx ts-node ./seed-admin.ts",
     "prisma:generate": "prisma generate",
     "prisma:pull": "prisma db pull",

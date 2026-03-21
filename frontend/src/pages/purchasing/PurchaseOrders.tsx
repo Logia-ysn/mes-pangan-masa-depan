@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { purchaseOrderApi, supplierApi, productTypeApi } from '../../services/api';
+import { purchaseOrderApi, supplierApi, productTypeApi, riceVarietyApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import { useToast } from '../../contexts/ToastContext';
 import { useFactory } from '../../hooks/useFactory';
@@ -20,8 +20,19 @@ interface PurchaseOrder {
     notes?: string;
     id_factory: number;
     id_supplier: number | null;
+    id_variety?: number | null;
+    valid_until?: string | null;
+    pricing_type?: string;
+    pricing_data?: any;
     Supplier?: { id: number; name: string; code: string };
     Factory?: { id: number; name: string };
+    Variety?: { id: number; name: string; code: string };
+}
+
+interface RiceVariety {
+    id: number;
+    code: string;
+    name: string;
 }
 
 interface Supplier {
@@ -60,8 +71,10 @@ const PurchaseOrders = () => {
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [productTypes, setProductTypes] = useState<ProductType[]>([]);
+    const [varieties, setVarieties] = useState<RiceVariety[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [pricingType, setPricingType] = useState<'STANDARD' | 'PLAFON'>('PLAFON');
 
     // Pagination & Factory hook
     const [page, setPage] = useState(1);
@@ -78,13 +91,22 @@ const PurchaseOrders = () => {
     const [formData, setFormData] = useState({
         id_factory: 0,
         id_supplier: 0,
+        id_variety: 0,
         order_date: new Date().toISOString().split('T')[0],
+        valid_until: '',
         expected_date: '',
         tax: '',
         discount: '',
         notes: ''
     });
+
     const [items, setItems] = useState<POItemForm[]>([{ id_product_type: 0, quantity: '', unit_price: '' }]);
+
+    const [basePrices, setBasePrices] = useState({
+        kw1: '',
+        kw2: '',
+        kw3: ''
+    });
 
     useEffect(() => {
         if (!factoryLoading) {
@@ -95,7 +117,18 @@ const PurchaseOrders = () => {
     useEffect(() => {
         fetchSuppliers();
         fetchProductTypes();
+        fetchVarieties();
     }, []);
+
+    const fetchVarieties = async () => {
+        try {
+            const response = await riceVarietyApi.getAll();
+            const data = response.data?.data || response.data || [];
+            setVarieties(Array.isArray(data) ? data : []);
+        } catch (error) {
+            logger.error('Error fetching varieties:', error);
+        }
+    };
 
     const fetchPurchaseOrders = async () => {
         try {
@@ -141,19 +174,39 @@ const PurchaseOrders = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const gridData: any[] = [];
+            if (pricingType === 'PLAFON') {
+                const levels = [14, 15, 16, 17, 18, 19, 20, 21, 22];
+                levels.forEach(lvl => {
+                    const diff = lvl <= 14 ? 0 : lvl - 14;
+                    gridData.push({
+                        moisture: lvl,
+                        kw1: (parseFloat(basePrices.kw1) || 0) - (diff * 100),
+                        kw2: (parseFloat(basePrices.kw2) || 0) - (diff * 100),
+                        kw3: (parseFloat(basePrices.kw3) || 0) - (diff * 100),
+                    });
+                });
+            }
+
             const payload = {
                 id_factory: formData.id_factory,
                 id_supplier: formData.id_supplier > 0 ? formData.id_supplier : null,
-                order_date: formData.order_date,
-                expected_date: formData.expected_date,
+                id_variety: formData.id_variety > 0 ? formData.id_variety : null,
+                order_date: new Date(formData.order_date || new Date()).toISOString(),
+                valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : undefined,
+                expected_date: formData.expected_date ? new Date(formData.expected_date).toISOString() : undefined,
+                pricing_type: pricingType,
+                pricing_data: pricingType === 'PLAFON' ? { basePrices, grid: gridData } : null,
                 tax: formData.tax ? parseFloat(formData.tax) : 0,
                 discount: formData.discount ? parseFloat(formData.discount) : 0,
                 notes: formData.notes || undefined,
-                items: items.filter(i => i.id_product_type > 0).map(i => ({
-                    id_product_type: i.id_product_type,
-                    quantity: parseFloat(i.quantity) || 0,
-                    unit_price: parseFloat(i.unit_price) || 0
-                }))
+                items: pricingType === 'STANDARD'
+                    ? items.filter(i => i.id_product_type > 0).map(i => ({
+                        id_product_type: i.id_product_type,
+                        quantity: parseFloat(i.quantity) || 0,
+                        unit_price: parseFloat(i.unit_price) || 0
+                    }))
+                    : [] 
             };
             await purchaseOrderApi.create(payload);
             showSuccess('Berhasil', 'Purchase Order berhasil dibuat');
@@ -182,13 +235,17 @@ const PurchaseOrders = () => {
         setFormData({
             id_factory: selectedFactory || (factories.length > 0 ? factories[0].id : 0),
             id_supplier: 0,
+            id_variety: 0,
             order_date: new Date().toISOString().split('T')[0],
+            valid_until: '',
             expected_date: '',
             tax: '',
             discount: '',
             notes: ''
         });
         setItems([{ id_product_type: 0, quantity: '', unit_price: '' }]);
+        setBasePrices({ kw1: '', kw2: '', kw3: '' });
+        setPricingType('PLAFON');
         setShowModal(true);
     };
 
@@ -380,40 +437,100 @@ const PurchaseOrders = () => {
 
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    {/* Tabs / Switcher */}
+                                    <div style={{ display: 'flex', gap: 8, marginBottom: 24, padding: 4, background: 'var(--bg-secondary)', borderRadius: 8 }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPricingType('PLAFON')}
+                                            className={`btn btn-sm ${pricingType === 'PLAFON' ? 'btn-primary' : 'btn-ghost'}`}
+                                            style={{ flex: 1 }}
+                                        >
+                                            Plafon Padi
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPricingType('STANDARD')}
+                                            className={`btn btn-sm ${pricingType === 'STANDARD' ? 'btn-primary' : 'btn-ghost'}`}
+                                            style={{ flex: 1 }}
+                                        >
+                                            Standard PO
+                                        </button>
+                                    </div>
+
                                     {/* Section 1: Info */}
-                                    <div style={{ marginBottom: 24 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-                                            <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>1</span>
-                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>INFORMASI PO</span>
+                                    <div style={{ marginBottom: 32, padding: 16, background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                                            <div style={{ background: 'var(--primary)', color: 'white', borderRadius: '8px', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>1</div>
+                                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>INFORMASI UTAMA PO</h4>
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                             <div className="form-group">
                                                 <label className="form-label">Pabrik <span style={{ color: 'var(--error)' }}>*</span></label>
-                                                <select className="form-input form-select" value={formData.id_factory} onChange={(e) => setFormData({ ...formData, id_factory: parseInt(e.target.value) })} required>
+                                                <select 
+                                                    className="form-input form-select" 
+                                                    value={formData.id_factory} 
+                                                    onChange={(e) => setFormData({ ...formData, id_factory: parseInt(e.target.value) })} 
+                                                    required
+                                                >
                                                     <option value={0}>Pilih Pabrik</option>
                                                     {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                                                 </select>
                                             </div>
                                             <div className="form-group">
                                                 <label className="form-label">Supplier</label>
-                                                <select className="form-input form-select" value={formData.id_supplier} onChange={(e) => setFormData({ ...formData, id_supplier: parseInt(e.target.value) })}>
-                                                    <option value={0}>General (Umum)</option>
-                                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+                                                <select
+                                                    className="form-input form-select"
+                                                    value={formData.id_supplier}
+                                                    onChange={(e) => setFormData({ ...formData, id_supplier: parseInt(e.target.value) })}
+                                                    required={pricingType === 'STANDARD'}
+                                                >
+                                                    <option value={0}>{pricingType === 'STANDARD' ? 'Pilih Supplier' : 'Umum (Opsional)'}</option>
+                                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                                 </select>
                                             </div>
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                             <div className="form-group">
-                                                <label className="form-label">Tanggal Order <span style={{ color: 'var(--error)' }}>*</span></label>
-                                                <input type="date" className="form-input" value={formData.order_date} onChange={(e) => setFormData({ ...formData, order_date: e.target.value })} required />
+                                                <label className="form-label">{pricingType === 'PLAFON' ? 'Berlaku Tanggal' : 'Tanggal Order'} <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <input 
+                                                    type="date" 
+                                                    className="form-input" 
+                                                    value={formData.order_date} 
+                                                    onChange={(e) => setFormData({ ...formData, order_date: e.target.value })} 
+                                                    required 
+                                                />
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">Tanggal Diharapkan <span style={{ color: 'var(--error)' }}>*</span></label>
-                                                <input type="date" className="form-input" value={formData.expected_date} onChange={(e) => setFormData({ ...formData, expected_date: e.target.value })} required />
+                                                <label className="form-label">{pricingType === 'PLAFON' ? 'S/D Tanggal' : 'Tanggal Diharapkan'} <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <input
+                                                    type="date"
+                                                    className="form-input"
+                                                    value={pricingType === 'PLAFON' ? formData.valid_until : formData.expected_date}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        [pricingType === 'PLAFON' ? 'valid_until' : 'expected_date']: e.target.value
+                                                    })}
+                                                    required
+                                                />
                                             </div>
                                         </div>
+
+                                        {pricingType === 'PLAFON' && (
+                                            <div className="form-group">
+                                                <label className="form-label">Jenis (Variety) <span style={{ color: 'var(--error)' }}>*</span></label>
+                                                <select
+                                                    className="form-input form-select"
+                                                    value={formData.id_variety}
+                                                    onChange={(e) => setFormData({ ...formData, id_variety: parseInt(e.target.value) })}
+                                                    required
+                                                >
+                                                    <option value={0}>Pilih Jenis Gabah</option>
+                                                    {varieties.map(v => <option key={v.id} value={v.id}>{v.name} ({v.code})</option>)}
+                                                </select>
+                                            </div>
+                                        )}
 
                                         <div className="form-group">
                                             <label className="form-label">Catatan</label>
@@ -421,102 +538,156 @@ const PurchaseOrders = () => {
                                         </div>
                                     </div>
 
-                                    {/* Section 2: Items */}
+                                    {/* Section 2: Items or Pricing Grid */}
                                     <div style={{ marginBottom: 24 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
                                             <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>2</span>
-                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>ITEM PRODUK</span>
+                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>
+                                                {pricingType === 'PLAFON' ? 'DAFTAR HARGA BELI' : 'ITEM PRODUK'}
+                                            </span>
                                         </div>
 
-                                        <div className="table-container" style={{ marginBottom: 12 }}>
-                                            <table>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Produk</th>
-                                                        <th>Qty</th>
-                                                        <th>Harga Satuan</th>
-                                                        <th>Subtotal</th>
-                                                        <th></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {items.map((item, idx) => (
-                                                        <tr key={idx}>
-                                                            <td>
-                                                                <select className="form-input form-select" value={item.id_product_type} onChange={(e) => updateItem(idx, 'id_product_type', parseInt(e.target.value))} style={{ minWidth: 160 }}>
-                                                                    <option value={0}>Pilih Produk</option>
-                                                                    {productTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name} ({pt.code})</option>)}
-                                                                </select>
-                                                            </td>
-                                                            <td>
-                                                                <input type="number" className="form-input" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} placeholder="0" min="0" step="0.01" style={{ width: 100 }} />
-                                                            </td>
-                                                            <td>
-                                                                <input type="number" className="form-input" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} placeholder="0" min="0" style={{ width: 140 }} />
-                                                            </td>
-                                                            <td>
-                                                                <span className="font-mono">{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</span>
-                                                            </td>
-                                                            <td>
-                                                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
-                                                                    <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <button type="button" className="btn btn-secondary btn-sm" onClick={addItemRow}>
-                                            <span className="material-symbols-outlined icon-sm">add</span>
-                                            Tambah Item
-                                        </button>
+                                        {pricingType === 'STANDARD' ? (
+                                            <>
+                                                <div className="table-container" style={{ marginBottom: 12 }}>
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Produk</th>
+                                                                <th>Qty</th>
+                                                                <th>Harga Satuan</th>
+                                                                <th>Subtotal</th>
+                                                                <th></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {items.map((item, idx) => (
+                                                                <tr key={idx}>
+                                                                    <td>
+                                                                        <select className="form-input form-select" value={item.id_product_type} onChange={(e) => updateItem(idx, 'id_product_type', parseInt(e.target.value))} style={{ minWidth: 160 }}>
+                                                                            <option value={0}>Pilih Produk</option>
+                                                                            {productTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name} ({pt.code})</option>)}
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" className="form-input" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} placeholder="0" min="0" step="0.01" style={{ width: 100 }} />
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" className="form-input" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} placeholder="0" min="0" style={{ width: 140 }} />
+                                                                    </td>
+                                                                    <td>
+                                                                        <span className="font-mono">{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
+                                                                            <span className="material-symbols-outlined icon-sm" style={{ color: 'var(--error)' }}>close</span>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <button type="button" className="btn btn-secondary btn-sm" onClick={addItemRow}>
+                                                    <span className="material-symbols-outlined icon-sm">add</span>
+                                                    Tambah Item
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+                                                    <div className="form-group">
+                                                        <label className="form-label" style={{ color: 'var(--primary)', fontWeight: 600 }}>Harga KW 1 (KA ≤ 14%)</label>
+                                                        <input type="number" className="form-input" value={basePrices.kw1} onChange={(e) => setBasePrices({ ...basePrices, kw1: e.target.value })} placeholder="Rp 0" required />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label" style={{ color: 'var(--warning)', fontWeight: 600 }}>Harga KW 2 (KA ≤ 14%)</label>
+                                                        <input type="number" className="form-input" value={basePrices.kw2} onChange={(e) => setBasePrices({ ...basePrices, kw2: e.target.value })} placeholder="Rp 0" required />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label" style={{ color: 'var(--secondary)', fontWeight: 600 }}>Harga KW 3 (KA ≤ 14%)</label>
+                                                        <input type="number" className="form-input" value={basePrices.kw3} onChange={(e) => setBasePrices({ ...basePrices, kw3: e.target.value })} placeholder="Rp 0" required />
+                                                    </div>
+                                                </div>
+
+                                                <div className="table-container" style={{ border: '1px solid var(--border)', borderRadius: 8 }}>
+                                                    <table style={{ margin: 0 }}>
+                                                        <thead style={{ background: 'var(--bg-secondary)' }}>
+                                                            <tr>
+                                                                <th style={{ textAlign: 'center' }}>% KA</th>
+                                                                <th>KW 1</th>
+                                                                <th>KW 2</th>
+                                                                <th>KW 3</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {[14, 15, 16, 17, 18, 19, 20, 21, 22].map(lvl => {
+                                                                const diff = lvl <= 14 ? 0 : lvl - 14;
+                                                                const p1 = (parseFloat(basePrices.kw1) || 0) - (diff * 100);
+                                                                const p2 = (parseFloat(basePrices.kw2) || 0) - (diff * 100);
+                                                                const p3 = (parseFloat(basePrices.kw3) || 0) - (diff * 100);
+                                                                return (
+                                                                    <tr key={lvl}>
+                                                                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{lvl <= 14 ? '≤ 14' : lvl} %</td>
+                                                                        <td className="font-mono" style={{ color: p1 > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{formatCurrency(p1)}</td>
+                                                                        <td className="font-mono" style={{ color: p2 > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{formatCurrency(p2)}</td>
+                                                                        <td className="font-mono" style={{ color: p3 > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{formatCurrency(p3)}</td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Section 3: Summary */}
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-                                            <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>3</span>
-                                            <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>RINGKASAN</span>
-                                        </div>
+                                    {/* Section 3: Summary (Only for Standard) */}
+                                    {pricingType === 'STANDARD' && (
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                                                <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>3</span>
+                                                <span style={{ fontWeight: 600, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontSize: 12 }}>RINGKASAN</span>
+                                            </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                            <div className="form-group">
-                                                <label className="form-label">Pajak (Rp)</label>
-                                                <input type="number" className="form-input" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" />
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                                <div className="form-group">
+                                                    <label className="form-label">Pajak (Rp)</label>
+                                                    <input type="number" className="form-input" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="form-label">Diskon (Rp)</label>
+                                                    <input type="number" className="form-input" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" />
+                                                </div>
                                             </div>
-                                            <div className="form-group">
-                                                <label className="form-label">Diskon (Rp)</label>
-                                                <input type="number" className="form-input" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" />
-                                            </div>
-                                        </div>
 
-                                        <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 16, marginTop: 8 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
-                                                <span className="font-mono">{formatCurrency(calcSubtotal())}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                <span style={{ color: 'var(--text-secondary)' }}>Pajak</span>
-                                                <span className="font-mono">+ {formatCurrency(parseFloat(formData.tax) || 0)}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                <span style={{ color: 'var(--text-secondary)' }}>Diskon</span>
-                                                <span className="font-mono">- {formatCurrency(parseFloat(formData.discount) || 0)}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '2px solid var(--border)', fontWeight: 700, fontSize: '1.1rem' }}>
-                                                <span>Total</span>
-                                                <span className="font-mono" style={{ color: 'var(--primary)' }}>{formatCurrency(calcTotal())}</span>
+                                            <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: 16, marginTop: 8 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
+                                                    <span className="font-mono">{formatCurrency(calcSubtotal())}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>Pajak</span>
+                                                    <span className="font-mono">+ {formatCurrency(parseFloat(formData.tax) || 0)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>Diskon</span>
+                                                    <span className="font-mono">- {formatCurrency(parseFloat(formData.discount) || 0)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '2px solid var(--border)', fontWeight: 700, fontSize: '1.1rem' }}>
+                                                    <span>Total</span>
+                                                    <span className="font-mono" style={{ color: 'var(--primary)' }}>{formatCurrency(calcTotal())}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="modal-footer">
                                     <button type="button" className="btn btn-secondary" onClick={closeModal}>Batal</button>
                                     <button type="submit" className="btn btn-primary">
                                         <span className="material-symbols-outlined icon-sm">save</span>
-                                        Buat Purchase Order
+                                        {pricingType === 'PLAFON' ? 'Buat Plafon Padi' : 'Buat Purchase Order'}
                                     </button>
                                 </div>
                             </form>

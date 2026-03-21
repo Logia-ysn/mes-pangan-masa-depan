@@ -38,6 +38,12 @@ import { t_deleteNCR } from './implementation/T_deleteNCR';
 import * as ppController from './implementation/process-parameter';
 import * as genealogyController from './implementation/batch-genealogy';
 import * as handoverController from './implementation/shift-handover';
+import { t_getWorkOrders } from './implementation/T_getWorkOrders';
+import { t_getWorkOrderById } from './implementation/T_getWorkOrderById';
+import { t_updateWorkOrder } from './implementation/T_updateWorkOrder';
+import { t_deleteWorkOrder } from './implementation/T_deleteWorkOrder';
+import { t_workOrderWorkflow } from './implementation/T_workOrderWorkflow';
+import { t_createWorkOrder } from './implementation/T_createWorkOrder';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map(o => o.trim());
@@ -477,6 +483,14 @@ server.express.delete('/qc-results', (req: any, res: any) => t_deleteQCResult(re
 server.express.get('/drying-logs', (req: any, res: any) => t_getDryingLogs(req as any, res as any));
 server.express.put('/drying-logs/:id', express.json(), (req: any, res: any) => t_updateDryingLog(req as any, res as any));
 server.express.delete('/drying-logs/:id', (req: any, res: any) => t_deleteDryingLog(req as any, res as any));
+
+// --- Work Order Routes (Manual Mount) ---
+server.express.get('/work-orders', (req: any, res: any) => t_getWorkOrders(req as any, res as any));
+server.express.get('/work-orders/:id', (req: any, res: any) => t_getWorkOrderById(req as any, res as any));
+server.express.post('/work-orders', express.json(), (req: any, res: any) => t_createWorkOrder(req as any, res as any));
+server.express.put('/work-orders/:id', express.json(), (req: any, res: any) => t_updateWorkOrder(req as any, res as any));
+server.express.delete('/work-orders/:id', (req: any, res: any) => t_deleteWorkOrder(req as any, res as any));
+server.express.post('/work-orders/:id/workflow', express.json(), (req: any, res: any) => t_workOrderWorkflow(req as any, res as any));
 
 // PO Receivable Items
 server.express.get('/purchase-orders/:id/receivable-items', (req: any, res: any) => t_getPOReceivableItems(req as any, res as any));

@@ -14,6 +14,7 @@ export class PurchaseOrderRepository extends BaseRepository<PurchaseOrder> {
                 Supplier: true,
                 Factory: true,
                 User: true,
+                Variety: true,
                 PurchaseOrderItem: {
                     include: { ProductType: true, GoodsReceiptItem: true }
                 },

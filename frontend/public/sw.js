@@ -1,4 +1,4 @@
-const CACHE_NAME = 'erp-pmd-v1';
+const CACHE_NAME = 'erp-pmd-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -8,9 +8,10 @@ const ASSETS_TO_CACHE = [
 
 // Install Event
 self.addEventListener('install', (event) => {
+    self.skipWaiting(); // Force the waiting service worker to become the active service worker
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('Opened cache');
+            console.log('Opened cache v2');
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
@@ -27,35 +28,52 @@ self.addEventListener('activate', (event) => {
                         return caches.delete(cacheName);
                     }
                 })
-            );
+            ).then(() => self.clients.claim()); // Take control of all open clients immediately
         })
     );
 });
 
 // Fetch Event
 self.addEventListener('fetch', (event) => {
-    // Only cache GET requests
-    if (event.request.method !== 'GET') return;
+    const url = new URL(event.request.url);
 
+    // Skip non-GET requests and API calls
+    if (event.request.method !== 'GET' || url.pathname.startsWith('/api')) {
+        return;
+    }
+
+    // Network-First Strategy for HTML/Root to avoid stale asset hashes
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Cache-First Strategy for static assets (images, manifest, etc.)
     event.respondWith(
         caches.match(event.request).then((response) => {
-            // Cache hit - return response
             if (response) {
                 return response;
             }
 
             return fetch(event.request).then((response) => {
-                // Check if we received a valid response
                 if (!response || response.status !== 200 || response.type !== 'basic') {
                     return response;
                 }
 
-                // Clone the response
                 const responseToCache = response.clone();
-
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Don't cache API calls in this basic SW
-                    if (!event.request.url.includes('/api') && !event.request.url.includes('localhost:')) {
+                    // Only cache internal assets, ignore dynamic/external ones
+                    if (!url.pathname.includes('/api/')) {
                         cache.put(event.request, responseToCache);
                     }
                 });
