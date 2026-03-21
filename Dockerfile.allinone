@@ -1,0 +1,147 @@
+# ============================================================
+# MES Pangan Masa Depan — All-in-One Docker Image
+# ============================================================
+# Semua service dalam 1 container:
+#   - PostgreSQL 16 (database)
+#   - Node.js 20   (backend API)
+#   - Nginx        (frontend + reverse proxy)
+#   - Python 3     (ML service)
+#
+# Build:  docker build -f Dockerfile.allinone -t mes-pangan .
+# Run:    docker run -d --name mes-pangan -p 80:80 mes-pangan
+# ============================================================
+
+# ==========================
+# Stage 1: Build Frontend
+# ==========================
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /build
+
+COPY frontend/package*.json ./
+RUN npm ci --ignore-scripts
+
+COPY frontend/ .
+
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+# ==========================
+# Stage 2: Build Backend
+# ==========================
+FROM node:20-alpine AS backend-builder
+
+WORKDIR /build
+
+RUN apk add --no-cache openssl python3 make g++
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY index.ts ./
+COPY src/ ./src/
+COPY implementation/ ./implementation/
+COPY types/ ./types/
+COPY json/ ./json/
+COPY utility/ ./utility/
+
+RUN npx prisma generate
+RUN npm run build
+
+# Note: skip npm prune because some runtime deps (reflect-metadata, typeorm)
+# are miscategorized as devDependencies in package.json
+
+# ==========================
+# Stage 3: Runtime (All-in-One)
+# ==========================
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Jakarta
+
+# ---- Install all runtimes in a single layer ----
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg lsb-release supervisor gosu \
+    nginx \
+    python3 python3-pip \
+    locales \
+    libglib2.0-0 libsm6 libxext6 libxrender1 libgl1 \
+    && locale-gen en_US.UTF-8 \
+    # ---- Install Node.js 20 ----
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    # ---- Install PostgreSQL 16 ----
+    && echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+       | gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg \
+    && apt-get update \
+    && apt-get install -y postgresql-16 \
+    # ---- Cleanup ----
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    # Remove auto-initialized PostgreSQL cluster (entrypoint will init properly)
+    && rm -rf /var/lib/postgresql/16/main/*
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# ---- Setup ML Service (Python) ----
+WORKDIR /app/ml-service
+
+COPY ml-service/requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY ml-service/app/ ./app/
+
+# ---- Setup Backend (Node.js) ----
+WORKDIR /app
+
+# Copy built backend from builder stage
+COPY --from=backend-builder /build/dist/ ./dist/
+COPY --from=backend-builder /build/node_modules/ ./node_modules/
+COPY --from=backend-builder /build/prisma/ ./prisma/
+COPY --from=backend-builder /build/package.json ./
+COPY --from=backend-builder /build/json/ ./json/
+
+# Re-generate Prisma client for Ubuntu runtime (builder uses Alpine/musl)
+RUN npx prisma generate
+
+# Copy frontend build to nginx html directory
+COPY --from=frontend-builder /build/dist/ /var/www/html/
+
+# ---- Create directories ----
+RUN mkdir -p /app/uploads /app/backups /var/log/supervisor /run/postgresql \
+    && chown postgres:postgres /run/postgresql
+
+# ---- Copy config files ----
+COPY docker/supervisord.conf /etc/supervisor/conf.d/mes-pangan.conf
+COPY docker/nginx-allinone.conf /etc/nginx/sites-available/default
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# ---- Environment defaults ----
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV DATABASE_URL=postgresql://mes_user:mes_password@localhost:5432/mes_pangan?schema=public
+ENV ML_SERVICE_URL=http://localhost:8000
+ENV JWT_SECRET=change-me-in-production
+ENV SEED_SECRET=P4ng4nM4s4D3p4nJ4y4!
+ENV FRONTEND_URL=http://localhost
+ENV DB_USER=mes_user
+ENV DB_PASSWORD=mes_password
+ENV DB_NAME=mes_pangan
+
+# ---- Volumes for data persistence ----
+VOLUME ["/var/lib/postgresql/16/main", "/app/uploads", "/app/backups"]
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost/api/health || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]
