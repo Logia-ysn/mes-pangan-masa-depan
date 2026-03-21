@@ -354,3 +354,17 @@
     font-size: 0.875rem;
     letter-spacing: 2px;
 }
+
+/* Inline field validation */
+.form-input.input-error {
+    border-color: var(--danger, #ef4444);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.field-error {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--danger, #ef4444);
+    line-height: 1.4;
+}

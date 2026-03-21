@@ -205,16 +205,26 @@ const AppRoutes = () => {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center',
               alignItems: 'center',
-              height: '60vh',
-              textAlign: 'center'
+              justifyContent: 'center',
+              minHeight: '60vh',
+              textAlign: 'center',
+              padding: '2rem',
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 64, color: 'var(--text-muted)', marginBottom: 16 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 80, color: 'var(--text-muted)', marginBottom: 16 }}>
                 search_off
               </span>
-              <h2 style={{ marginBottom: 8 }}>Halaman Tidak Ditemukan</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Halaman yang Anda cari tidak ada atau telah dipindahkan.</p>
+              <h1 style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>404</h1>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                Halaman Tidak Ditemukan
+              </h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 24, maxWidth: 400 }}>
+                Halaman yang Anda cari tidak ada atau telah dipindahkan.
+              </p>
+              <button className="btn btn-primary" onClick={() => window.location.href = '/dashboard'}>
+                <span className="material-symbols-outlined icon-sm">home</span>
+                Kembali ke Dashboard
+              </button>
             </div>
           } />
         </Route>

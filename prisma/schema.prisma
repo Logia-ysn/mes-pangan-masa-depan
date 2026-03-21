@@ -8,6 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// @scope OUT_OF_SCOPE - HR module managed by third-party application.
+/// Retained in schema for database compatibility. Do not extend or add features.
 model Attendance {
   id              Int                    @id(map: "PK_137a8eec2cec8606cdf8f1e4f67") @default(autoincrement())
   id_employee     Int
@@ -38,6 +40,8 @@ model Customer {
   Invoice        Invoice[]
 }
 
+/// @scope OUT_OF_SCOPE - Finance module managed by third-party application.
+/// Retained in schema for database compatibility. Do not extend or add features.
 model DailyExpense {
   id                  Int             @id(map: "PK_06292ff0a9a26203660b736a205") @default(autoincrement())
   id_factory          Int
@@ -58,6 +62,8 @@ model DailyExpense {
   @@index([expense_date], map: "IDX_daily_expense_date")
 }
 
+/// @scope OUT_OF_SCOPE - HR module managed by third-party application.
+/// Retained in schema for database compatibility. Do not extend or add features.
 model Employee {
   id                Int                             @id(map: "PK_9a993c20751b9867abc60108433") @default(autoincrement())
   id_factory        Int
@@ -242,7 +248,8 @@ model Maintenance {
   @@index([maintenance_date], map: "IDX_maintenance_date")
 }
 
-/// @deprecated Use FactoryMaterialConfig + ProductType instead. Kept for backward compatibility.
+/// @deprecated - Use FactoryMaterialConfig + ProductType instead. Will be removed in next major version.
+/// This model is kept for backward compatibility only. Do not use in new code.
 model OutputProduct {
   id            Int      @id(map: "PK_e3c20634774dc24c518a507ad93") @default(autoincrement())
   id_factory    Int
@@ -267,6 +274,9 @@ model Payment {
   created_at       DateTime                    @default(now()) @db.Timestamp(6)
   User             User                        @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_449e7a6f2e2359ffbb8746d11e8")
   Invoice          Invoice                     @relation(fields: [id_invoice], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_718e9dbbccb3bfd36ae3e8cd5c2")
+
+  @@index([id_invoice])
+  @@index([id_user])
 }
 
 model ProcessCategory {
@@ -370,7 +380,8 @@ model QualityParameter {
   @@index([id_variety], map: "IDX_quality_param_variety")
 }
 
-/// @deprecated Use ProductType with category filter instead. Kept for backward compatibility.
+/// @deprecated - Use ProductType with category filter instead. Will be removed in next major version.
+/// This model is kept for backward compatibility only. Do not use in new code.
 model RawMaterialCategory {
   id          Int      @id(map: "PK_ddf58cf202d3dc204e7bee72ad2") @default(autoincrement())
   code        String   @unique(map: "UQ_a30e2ec13b6a5c7e7ce45a8951f") @db.VarChar(20)
@@ -405,7 +416,8 @@ model RawMaterialQualityAnalysis {
   StockMovement      StockMovement? @relation(fields: [id_stock_movement], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_3d06912136df7e15154257cc8f3")
 }
 
-/// @deprecated Use RiceVariety instead. Kept for backward compatibility.
+/// @deprecated - Use RiceVariety instead. Will be removed in next major version.
+/// This model is kept for backward compatibility only. Do not use in new code.
 model RawMaterialVariety {
   id          Int      @id(map: "PK_e6b1cd87e5533fccbed8e7e24b9") @default(autoincrement())
   code        String   @unique(map: "UQ_b2486d09132793df46873cd3df9") @db.VarChar(20)
@@ -978,6 +990,7 @@ model DeliveryOrder {
   DeliveryOrderItem DeliveryOrderItem[]
 
   @@index([id_invoice])
+  @@index([id_user])
 }
 
 model DeliveryOrderItem {
@@ -988,6 +1001,8 @@ model DeliveryOrderItem {
 
   DeliveryOrder DeliveryOrder @relation(fields: [id_delivery_order], references: [id], onDelete: Cascade, onUpdate: NoAction)
   InvoiceItem   InvoiceItem   @relation(fields: [id_invoice_item], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id_invoice_item])
 }
 
 model StockOpname {
@@ -1040,6 +1055,7 @@ model QCResult {
 
   @@index([id_factory])
   @@index([batch_code])
+  @@index([id_user])
 }
 
 model WorkOrder {

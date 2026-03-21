@@ -78,8 +78,8 @@ class AuthService {
         }
 
         // Validate password strength
-        if (dto.password.length < 6) {
-            throw new ValidationError('Password must be at least 6 characters');
+        if (dto.password.length < 12) {
+            throw new ValidationError('Password must be at least 12 characters');
         }
 
         // Hash password
@@ -135,8 +135,8 @@ class AuthService {
         }
 
         // Validate new password
-        if (dto.newPassword.length < 6) {
-            throw new ValidationError('New password must be at least 6 characters');
+        if (dto.newPassword.length < 12) {
+            throw new ValidationError('New password must be at least 12 characters');
         }
 
         // Hash and update password

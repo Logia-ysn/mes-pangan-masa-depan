@@ -48,7 +48,7 @@ class ErrorBoundary extends Component<Props, State> {
                         className="btn btn-primary"
                         onClick={() => window.location.reload()}
                     >
-                        Has Refresh Page
+                        Refresh Halaman
                     </button>
                 </div>
             );

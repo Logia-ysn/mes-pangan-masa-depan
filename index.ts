@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import express from 'express';
+import helmet from 'helmet';
 import { getUserFromToken } from './utility/auth';
 import { pdfService } from './src/services/pdf.service';
 import { createWorkbook } from './src/services/excel.service';
@@ -59,19 +60,29 @@ const server = new Server({ noCors: true, noTrustProxy: true } as any);
 // Trust proxy for secure cookies in production (Railway/Vercel)
 server.express.set('trust proxy', 1);
 
+// --- Security Headers ---
+server.express.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP as frontend is separate
+  crossOriginEmbedderPolicy: false,
+}));
+
 // --- CORS with credentials ---
 server.express.use(cors({
   origin: (origin, callback) => {
-    // Allow local development
-    if (!origin || origin.startsWith('http://localhost:')) {
+    // Allow requests with no origin (server-to-server, mobile apps)
+    if (!origin) {
       return callback(null, true);
     }
 
-    // Check if origin matches allowed origins or is a Vercel preview
-    const isAllowed = allowedOrigins.includes(origin);
-    const isVercelPreview = origin.endsWith('.vercel.app');
+    // Allow localhost for development
+    if (origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
 
-    if (isAllowed || isVercelPreview) {
+    // Check against explicitly allowed origins only
+    const isAllowed = allowedOrigins.includes(origin);
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.warn('CORS Blocked for origin:', origin);
@@ -85,6 +96,10 @@ server.express.use(cors({
 
 // --- Cookie parser ---
 server.express.use(cookieParser());
+
+// --- Request body size limits ---
+server.express.use(express.json({ limit: '2mb' }));
+server.express.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // --- File upload (Surat Jalan/Tanda Terima) ---
 server.express.use(fileUpload({
@@ -156,7 +171,6 @@ server.express.get('/health', (_req: any, res: any) => {
 
 // --- Audit Logs API ---
 const auditLogsHandler = async (req: any, res: any) => {
-  console.log(`[DEBUG] Audit logs hit: ${req.method} ${req.originalUrl}`);
   try {
     const user = await getUserFromToken(req);
     // Only ADMIN or SUPERUSER can see audit logs
@@ -191,6 +205,8 @@ server.express.get('/api/audit-logs', auditLogsHandler);
 // --- Batch Code Generation API ---
 server.express.post('/batch-code/generate', express.json(), async (req: any, res: any) => {
   try {
+    await getUserFromToken(req);
+
     const { factoryCode, productTypeId, date } = req.body;
     if (!factoryCode || !productTypeId) {
       return res.status(400).json({ error: 'factoryCode and productTypeId are required' });
@@ -389,7 +405,6 @@ server.express.get('/reports/stock-report/excel', async (req: any, res: any) => 
 
 // --- Quality Trends API ---
 const qualityTrendsHandler = async (req: any, res: any) => {
-  console.log(`[DEBUG] Quality trends hit: ${req.method} ${req.originalUrl}`);
   try {
     await getUserFromToken(req);
     const { start_date, end_date, id_factory } = req.query;
@@ -438,22 +453,57 @@ server.express.get('/api/reports/quality-trends', qualityTrendsHandler);
 // --- File Upload API ---
 server.express.post('/upload', async (req: any, res: any) => {
   try {
+    // Require authentication
+    await getUserFromToken(req);
+
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ success: false, message: 'No files were uploaded.' });
     }
 
-    const { type } = req.query; // e.g. 'surat-jalan' or 'tanda-terima'
+    const { type } = req.query;
     const folder = type === 'tanda-terima' ? 'tanda-terima' : 'surat-jalan';
 
-    // Create folders if they don't exist
+    // Allowed MIME types and extensions
+    const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+
+    const file = req.files.file as any;
+
+    // Validate MIME type
+    if (!ALLOWED_MIMES.includes(file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: `File type not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`
+      });
+    }
+
+    // Validate file extension
+    const ext = path.extname(file.name).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return res.status(400).json({
+        success: false,
+        message: `File extension not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`
+      });
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return res.status(400).json({
+        success: false,
+        message: 'File size exceeds 10MB limit.'
+      });
+    }
+
     const fs = require('fs');
     const uploadDir = path.join(__dirname, 'uploads', folder);
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const file = req.files.file as any;
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    // Sanitize filename: use basename to prevent path traversal
+    const safeName = path.basename(file.name).replace(/\s+/g, '_');
+    const fileName = `${Date.now()}-${safeName}`;
     const uploadPath = path.join(uploadDir, fileName);
 
     await file.mv(uploadPath);
@@ -464,6 +514,9 @@ server.express.post('/upload', async (req: any, res: any) => {
       fileName: fileName
     });
   } catch (error: any) {
+    if (error.statusCode === 401) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
     console.error('Upload error:', error);
     res.status(500).json({ success: false, message: error.message });
   }

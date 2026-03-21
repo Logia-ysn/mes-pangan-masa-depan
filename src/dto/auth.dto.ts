@@ -33,7 +33,7 @@ export class RegisterSchema implements RegisterDTO {
     email!: string;
 
     @IsString()
-    @MinLength(6)
+    @MinLength(12)
     password!: string;
 
     @IsString()
@@ -56,7 +56,7 @@ export class ChangePasswordSchema implements ChangePasswordDTO {
     currentPassword!: string;
 
     @IsString()
-    @MinLength(6)
+    @MinLength(12)
     newPassword!: string;
 }
 

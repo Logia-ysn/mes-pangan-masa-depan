@@ -8,12 +8,21 @@
  * @module backup.service
  */
 
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Escape a string for safe use in shell commands (single-quote wrapping).
+ * Handles the edge case where the value itself contains single quotes.
+ */
+function shellEscape(str: string): string {
+    return "'" + str.replace(/'/g, "'\\''") + "'";
+}
 
 // Backup directory (project root / backups)
 const BACKUP_DIR = path.resolve(__dirname, '../../backups');
@@ -74,7 +83,9 @@ function ensureBackupDir(): void {
  */
 async function ensureContainerRunning(): Promise<void> {
     try {
-        const { stdout } = await execAsync(`docker inspect -f '{{.State.Running}}' ${DB_CONTAINER} 2>/dev/null`);
+        const { stdout } = await execFileAsync('docker', [
+            'inspect', '-f', '{{.State.Running}}', DB_CONTAINER,
+        ]);
         if (!stdout.trim().includes('true')) {
             throw new Error(`Docker container '${DB_CONTAINER}' is not running`);
         }
@@ -104,7 +115,8 @@ export class BackupService {
 
         // Run pg_dump inside Docker container, pipe output to local file
         // Using custom format (-Fc) for compressed output
-        const cmd = `docker exec -e PGPASSWORD='${conn.password}' ${DB_CONTAINER} pg_dump -U ${conn.user} -d ${conn.database} -Fc --no-owner --no-privileges > "${filePath}"`;
+        // Note: shell execution is required for output redirection (>), so credentials are shell-escaped
+        const cmd = `docker exec -e PGPASSWORD=${shellEscape(conn.password)} ${shellEscape(DB_CONTAINER)} pg_dump -U ${shellEscape(conn.user)} -d ${shellEscape(conn.database)} -Fc --no-owner --no-privileges > ${shellEscape(filePath)}`;
 
         try {
             await execAsync(cmd, { timeout: 120000 }); // 2 min timeout
@@ -152,16 +164,21 @@ export class BackupService {
         const containerPath = `/tmp/${path.basename(filePath)}`;
 
         try {
-            // Copy backup file into container
-            await execAsync(`docker cp "${filePath}" ${DB_CONTAINER}:${containerPath}`, { timeout: 60000 });
+            // Copy backup file into container (no shell needed)
+            await execFileAsync('docker', [
+                'cp', filePath, `${DB_CONTAINER}:${containerPath}`,
+            ], { timeout: 60000 });
 
             // Run pg_restore inside container
-            const restoreCmd = `docker exec -e PGPASSWORD='${conn.password}' ${DB_CONTAINER} pg_restore -U ${conn.user} -d ${conn.database} --clean --if-exists --no-owner --no-privileges --single-transaction "${containerPath}" 2>&1 || true`;
+            // Note: shell execution is required for 2>&1 and || true, so credentials are shell-escaped
+            const restoreCmd = `docker exec -e PGPASSWORD=${shellEscape(conn.password)} ${shellEscape(DB_CONTAINER)} pg_restore -U ${shellEscape(conn.user)} -d ${shellEscape(conn.database)} --clean --if-exists --no-owner --no-privileges --single-transaction ${shellEscape(containerPath)} 2>&1 || true`;
 
             const { stderr } = await execAsync(restoreCmd, { timeout: 300000 }); // 5 min timeout
 
-            // Cleanup temp file in container
-            await execAsync(`docker exec ${DB_CONTAINER} rm -f "${containerPath}"`).catch(() => { });
+            // Cleanup temp file in container (no shell needed)
+            await execFileAsync('docker', [
+                'exec', DB_CONTAINER, 'rm', '-f', containerPath,
+            ]).catch(() => { });
 
             // Check for fatal errors (warnings are expected with --clean)
             if (stderr && (stderr.includes('FATAL') || stderr.includes('could not connect'))) {
@@ -170,8 +187,10 @@ export class BackupService {
 
             return { success: true, message: 'Database restored successfully' };
         } catch (error: any) {
-            // Cleanup temp file in container
-            await execAsync(`docker exec ${DB_CONTAINER} rm -f "${containerPath}"`).catch(() => { });
+            // Cleanup temp file in container (no shell needed)
+            await execFileAsync('docker', [
+                'exec', DB_CONTAINER, 'rm', '-f', containerPath,
+            ]).catch(() => { });
 
             const msg = error.stderr || error.message || 'Unknown error';
             if (msg.includes('FATAL') || msg.includes('could not connect')) {

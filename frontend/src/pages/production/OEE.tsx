@@ -104,8 +104,11 @@ const OEE = () => {
         const availability = plannedTime > 0 ? (runTime / plannedTime) * 100 : 0;
 
         // Performance: Actual Output / (Run Time * Ideal Rate)
-        // Assuming ideal rate of 1000 kg/hour
-        const idealRate = 1000;
+        // Use average machine capacity, fallback to 1000 kg/hour
+        const avgCapacity = machines.length > 0
+            ? machines.reduce((sum, m) => sum + (m.capacity_per_hour || 0), 0) / machines.length
+            : 1000;
+        const idealRate = avgCapacity > 0 ? avgCapacity : 1000;
         const actualOutput = totalBerasOutput + totalMenirOutput + totalDedakOutput;
         const theoreticalOutput = runTime * idealRate;
         const performance = theoreticalOutput > 0 ? Math.min((actualOutput / theoreticalOutput) * 100, 100) : 0;

@@ -120,7 +120,6 @@ const Maintenance = () => {
                 ...formData,
                 id_machine: parseInt(formData.id_machine),
                 cost: parseFloat(formData.cost) || 0,
-                id_user: 1 // Default user for now, should come from auth
             };
 
             if (editingMaintenance) {

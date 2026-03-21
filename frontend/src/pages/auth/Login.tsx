@@ -11,12 +11,41 @@ const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
+    const validateEmail = (value: string): string => {
+        if (!value.trim()) return 'Email wajib diisi.';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Format email tidak valid.';
+        return '';
+    };
+
+    const validatePassword = (value: string): string => {
+        if (!value) return 'Password wajib diisi.';
+        if (value.length < 12) return `Password minimal 12 karakter (saat ini ${value.length}).`;
+        return '';
+    };
+
+    const isFormValid = (): boolean => {
+        const eErr = validateEmail(email);
+        const pErr = validatePassword(password);
+        return !eErr && !pErr;
+    };
     const { login } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const eErr = validateEmail(email);
+        const pErr = validatePassword(password);
+        setEmailError(eErr);
+        setPasswordError(pErr);
+
+        if (eErr || pErr) return;
+
         setError('');
         setLoading(true);
 
@@ -101,13 +130,18 @@ const Login = () => {
                                 <span className="material-symbols-outlined input-icon">person</span>
                                 <input
                                     type="email"
-                                    className="form-input"
+                                    className={`form-input${emailError ? ' input-error' : ''}`}
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (emailError) setEmailError(validateEmail(e.target.value));
+                                    }}
+                                    onBlur={() => setEmailError(validateEmail(email))}
                                     placeholder="admin@panganmasadepan.com"
                                     required
                                 />
                             </div>
+                            {emailError && <span className="field-error">{emailError}</span>}
                         </div>
 
                         <div className="form-group">
@@ -116,9 +150,13 @@ const Login = () => {
                                 <span className="material-symbols-outlined input-icon">lock</span>
                                 <input
                                     type={showPassword ? "text" : "password"}
-                                    className="form-input"
+                                    className={`form-input${passwordError ? ' input-error' : ''}`}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (passwordError) setPasswordError(validatePassword(e.target.value));
+                                    }}
+                                    onBlur={() => setPasswordError(validatePassword(password))}
                                     placeholder="••••••••"
                                     required
                                 />
@@ -132,6 +170,7 @@ const Login = () => {
                                     </span>
                                 </button>
                             </div>
+                            {passwordError && <span className="field-error">{passwordError}</span>}
                         </div>
 
                         <div className="form-options">
@@ -145,7 +184,7 @@ const Login = () => {
                         <button
                             type="submit"
                             className="btn btn-primary btn-lg btn-block"
-                            disabled={loading}
+                            disabled={loading || !isFormValid()}
                         >
                             {loading ? 'Memproses...' : (
                                 <>
