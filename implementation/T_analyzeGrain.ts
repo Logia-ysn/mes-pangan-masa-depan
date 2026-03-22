@@ -11,29 +11,34 @@ export const t_analyzeGrain: T_analyzeGrain = apiWrapper(async (req, res) => {
 
     const { image_base64, supplier, lot } = req.body;
 
-    console.log(`[ML-INFO] Calling ML Service at: ${ML_SERVICE_URL}`);
+    // Call ML Service via HTTP (with 60s timeout for image processing)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
-    // Call ML Service via HTTP
-    const response = await fetch(`${ML_SERVICE_URL}/analyze-base64`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            image_base64,
-            supplier,
-            lot
-        })
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${ML_SERVICE_URL}/analyze-base64`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_base64, supplier, lot }),
+            signal: controller.signal
+        });
+    } catch (err: any) {
+        clearTimeout(timeout);
+        if (err.name === 'AbortError') {
+            throw new Error('ML Service timeout: analisis gambar melebihi 60 detik');
+        }
+        throw new Error(`ML Service tidak dapat dihubungi: ${err.message}`);
+    } finally {
+        clearTimeout(timeout);
+    }
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[ML-ERROR] ML Service returned ${response.status}: ${errorText}`);
-        throw new Error(`ML Service Error: ${errorText}`);
+        throw new Error(`ML Service Error (${response.status}): ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('[ML-INFO] ML Analysis Result:', result);
 
     // Ensure values are numbers before saving
     const toNum = (v: any, fallback = 0) => typeof v === 'number' ? v : parseFloat(v || String(fallback));

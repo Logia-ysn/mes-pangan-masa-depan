@@ -65,16 +65,11 @@ export const apiWrapper = (handler: ApiHandler) => async (req: any, res: any) =>
         }
         return data;
     } catch (error: any) {
-        console.error('API Error:', error);
-
-        // Log to file for debugging
-        const fs = require('fs');
-        const logFile = '/tmp/erp-pmd-api-error.log';
-
-        fs.appendFileSync(
-            logFile,
-            `\n[${new Date().toISOString()}] ${req.method || 'GET'} ${req.url || '/'}\n${error.stack || error}\n`
-        );
+        // Log error to stderr (collected by Docker/supervisord logs)
+        console.error(`[API Error] ${req.method || 'GET'} ${req.url || '/'}:`, error.message || error);
+        if (process.env.NODE_ENV !== 'production') {
+            console.error(error.stack);
+        }
 
         if (error instanceof AppError) {
             res.status(error.statusCode).json({

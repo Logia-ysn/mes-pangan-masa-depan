@@ -100,13 +100,10 @@ gosu postgres "$PG_BIN/pg_ctl" -D "$PG_DATA" -w start
 log_info "Running Prisma migrations..."
 cd /app
 npx prisma migrate deploy 2>&1 || {
-    log_warn "Migration deploy failed, continuing with db push..."
-}
-
-# Always run db push to sync any schema changes not yet in migrations
-log_info "Syncing schema with db push..."
-npx prisma db push --accept-data-loss 2>&1 || {
-    log_error "Database schema sync failed!"
+    log_warn "Migration deploy failed, trying db push (safe mode)..."
+    npx prisma db push 2>&1 || {
+        log_error "Database schema sync failed!"
+    }
 }
 
 log_info "Database setup complete!"

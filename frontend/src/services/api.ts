@@ -1,12 +1,8 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// API URL: Use environment variable or fallback to Railway production URL, then localhost
-const PROD_API_URL = 'https://erp-pangan-masa-depan-production-7abe.up.railway.app'; // Fixed production URL
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PROD_API_URL : 'http://localhost:3005');
-
-console.log('Production mode:', import.meta.env.PROD);
-console.log('Using API Base URL:', API_URL);
+// API URL: Use environment variable, fallback to localhost for dev
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -19,19 +15,19 @@ const api = axios.create({
 
 // --- Request deduplication for GET requests ---
 // Prevents duplicate concurrent requests (e.g. multiple /auth/me on page load)
-const pendingRequests = new Map<string, Promise<any>>();
+const pendingRequests = new Map<string, AbortController>();
 
 api.interceptors.request.use((config) => {
     if (config.method === 'get') {
         const key = `${config.url}${JSON.stringify(config.params || {})}`;
-        const pending = pendingRequests.get(key);
-        if (pending) {
-            // Cancel this request — the first one will handle it
-            const controller = new AbortController();
-            config.signal = controller.signal;
-            // Return the pending promise's result via adapter
-            pending.then(() => controller.abort()).catch(() => controller.abort());
+        const existing = pendingRequests.get(key);
+        if (existing) {
+            // Cancel the previous duplicate request
+            existing.abort();
         }
+        const controller = new AbortController();
+        config.signal = controller.signal;
+        pendingRequests.set(key, controller);
     }
     return config;
 });

@@ -74,8 +74,8 @@ server.express.use(cors({
       return callback(null, true);
     }
 
-    // Allow localhost for development
-    if (origin.startsWith('http://localhost:')) {
+    // Allow localhost only in development
+    if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
 
@@ -159,14 +159,26 @@ server.express.use(globalLimiter);
 server.express.use('/auth/login', authLimiter);
 server.express.use('/auth/register', authLimiter);
 
-// --- Health check ---
-server.express.get('/health', (_req: any, res: any) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development',
-    uptime: process.uptime()
-  });
+// --- Health check (with DB connectivity) ---
+server.express.get('/health', async (_req: any, res: any) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      database: 'connected'
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'degraded',
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      database: 'disconnected'
+    });
+  }
 });
 
 // --- Audit Logs API ---
@@ -699,10 +711,17 @@ server.run({
   }
 });
 
-// Graceful shutdown
+// Graceful shutdown — drain HTTP server, then disconnect DB
+let isShuttingDown = false;
 const shutdown = async (signal: string) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   console.log(`${signal} received. Shutting down gracefully...`);
+
+  // Give in-flight requests time to finish (5s)
+  await new Promise(resolve => setTimeout(resolve, 5000));
   await prisma.$disconnect();
+  console.log('Prisma disconnected');
   process.exit(0);
 };
 

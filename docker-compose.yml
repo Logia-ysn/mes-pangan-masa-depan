@@ -1,91 +1,96 @@
-# ==================================
-# 💡 DOCKER MODES:
-# ==================================
-# A. FULL DOCKER (Production/Testing):
-#    Jalankan: docker compose up -d --build
-#    Akses: http://localhost:3010
-#
-# B. HYBRID MODE (Development):
-#    Hanya jalankan DB & ML di Docker:
-#    Jalankan: npm run docker:services
-#    Lalu jalankan aplikasi di luar: npm run dev
-# ==================================
+# ============================================================
+# MES Pangan Masa Depan — Docker Compose
+# ============================================================
+# Jalankan : docker compose up -d --build
+# Stop     : docker compose down
+# Logs     : docker compose logs -f
+# Akses    : http://localhost:3010
+# ============================================================
+
+name: mes-pangan-app
 
 services:
-  # ==================================
-  # Database PostgreSQL
-  # ==================================
-  postgres_db:
+  # ---- Database ----
+  database:
     image: postgres:16-alpine
-    container_name: erp_pangan_db_v2
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
-      POSTGRES_DB: erp_pangan_masa_depan
+      POSTGRES_DB: mes_pangan
     ports:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # ==================================
-  # Backend API (Node.js + TypeScript)
-  # ==================================
-  naiv:
+  # ---- Backend API ----
+  backend:
     build: .
-    container_name: erp_pangan_api
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "3000:3000"
     depends_on:
-      postgres_db:
+      database:
         condition: service_healthy
     environment:
       DB_TYPE: postgres
-      DB_HOST: postgres_db
+      DB_HOST: database
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:-postgres123}
-      DB_NAME: ${DB_NAME:-erp_pangan_masa_depan}
+      DB_NAME: ${DB_NAME:-mes_pangan}
       PORT: 3000
+      NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key}
       ML_SERVICE_URL: http://ml-service:8000
-      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@postgres_db:5432/${DB_NAME:-erp_pangan_masa_depan}?schema=public
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres123}@database:5432/${DB_NAME:-mes_pangan}?schema=public
       SEED_SECRET: ${SEED_SECRET:-P4ng4nM4s4D3p4nJ4y4!}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3010}
+    volumes:
+      - uploads_data:/app/uploads
+      - backups_data:/app/backups
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
 
-  # ==================================
-  # ML Service (Python + FastAPI)
-  # ==================================
+  # ---- ML Service ----
   ml-service:
     build: ./ml-service
-    container_name: erp_pangan_ml
     ports:
       - "8000:8000"
+    environment:
+      ALLOWED_ORIGINS: "http://localhost:3010,http://backend:3000"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
 
-  # ==================================
-  # Frontend (React + Nginx)
-  # ==================================
+  # ---- Frontend ----
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
-    container_name: erp_pangan_frontend
     ports:
       - "3010:80"
     depends_on:
-      - naiv
+      backend:
+        condition: service_healthy
     restart: always
 
 volumes:
   postgres_data:
+  uploads_data:
+  backups_data:

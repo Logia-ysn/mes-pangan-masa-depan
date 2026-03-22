@@ -1,27 +1,53 @@
-FROM node:18-alpine
+# ============================================================
+# MES Pangan Masa Depan — Backend Dockerfile (Multi-stage)
+# ============================================================
+
+# ---- Stage 1: Build ----
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install openssl (required for Prisma on Alpine)
-RUN apk add --no-cache openssl docker-cli
+RUN apk add --no-cache openssl python3 make g++
 
-# Copy package files
 COPY package*.json ./
+COPY prisma ./prisma/
 
-# Copy Prisma schema
-COPY prisma ./prisma
+RUN npm ci
 
-# Install dependencies (this will also run prisma generate via postinstall)
-RUN npm install
+COPY tsconfig.json ./
+COPY index.ts ./
+COPY src/ ./src/
+COPY implementation/ ./implementation/
+COPY types/ ./types/
+COPY json/ ./json/
+COPY utility/ ./utility/
 
-# Copy source code
-COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-# Generate Prisma client
+# ---- Stage 2: Runtime ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache openssl curl \
+    && addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy built artifacts from builder
+COPY --from=builder /app/dist/ ./dist/
+COPY --from=builder /app/node_modules/ ./node_modules/
+COPY --from=builder /app/prisma/ ./prisma/
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/json/ ./json/
+
+# Re-generate Prisma client for runtime (same Alpine, but ensures consistency)
 RUN npx prisma generate
 
-# Build TypeScript code
-RUN npm run build
+# Create directories for uploads and backups
+RUN mkdir -p /app/uploads /app/backups \
+    && chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 3000
 
