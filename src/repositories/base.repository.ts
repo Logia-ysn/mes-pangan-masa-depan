@@ -29,11 +29,11 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
 
     /**
-     * Find entity by ID
+     * Find entity by ID (auto-converts string to number)
      */
-    async findById(id: number): Promise<T | null> {
+    async findById(id: number | string): Promise<T | null> {
         return await this.model.findUnique({
-            where: { id }
+            where: { id: Number(id) }
         });
     }
 
@@ -54,22 +54,22 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
 
     /**
-     * Update existing entity
+     * Update existing entity (auto-converts string id to number)
      */
-    async update(id: number, data: any): Promise<T> {
+    async update(id: number | string, data: any): Promise<T> {
         return await this.model.update({
-            where: { id },
+            where: { id: Number(id) },
             data
         });
     }
 
     /**
-     * Delete entity by ID (hard delete)
+     * Delete entity by ID (hard delete, auto-converts string id to number)
      */
-    async delete(id: number): Promise<boolean> {
+    async delete(id: number | string): Promise<boolean> {
         try {
             await this.model.delete({
-                where: { id }
+                where: { id: Number(id) }
             });
             return true;
         } catch (error: any) {
@@ -88,9 +88,9 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     /**
      * Check if entity exists
      */
-    async exists(id: number): Promise<boolean> {
+    async exists(id: number | string): Promise<boolean> {
         const count = await this.model.count({
-            where: { id }
+            where: { id: Number(id) }
         });
         return count > 0;
     }

@@ -9,7 +9,7 @@ export const t_assignMachineToLine: T_assignMachineToLine = apiWrapper(async (re
     await productionLineService.assignMachine(
         req.path.id,
         Number(id_machine),
-        Number(sequence_order),
+        sequence_order != null ? Number(sequence_order) : 0,
         user.id
     );
     return { success: true };
